@@ -47,7 +47,7 @@ services:
     container_name: laudo-backend
     restart: unless-stopped
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       DATABASE_URL: postgresql://laudo_user:laudo_password@postgres:5432/laudo_db
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-in-production

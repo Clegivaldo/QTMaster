@@ -56,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0 lg:fixed lg:inset-y-0 lg:left-0 lg:z-50">
         <div className="flex flex-col w-64">
-          <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 pb-4 overflow-y-auto h-screen">
+          <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 overflow-y-auto h-screen">
             {/* Logo */}
             <div className="flex items-center flex-shrink-0 px-4">
               <div className="flex items-center">
@@ -112,8 +112,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className="flex-shrink-0 border-t border-gray-200">
               <div className="px-4 sm:px-6 lg:px-8">
                 <div className="py-3">
-                  <div className="text-xs text-gray-500 text-center">
-                    <span>Versão: {version} - {buildDate}</span>
+                  <div className="flex flex-col md:flex-row justify-center items-center">
+                    <div className="text-xs text-gray-500">
+                      <span>Versão: {version} - {buildDate}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -183,8 +185,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="flex-shrink-0 border-t border-gray-200">
             <div className="px-4 sm:px-6 lg:px-8">
               <div className="py-3">
-                <div className="text-xs text-gray-500 text-center">
-                  <span>Versão: {version} - {buildDate}</span>
+                <div className="flex flex-col md:flex-row justify-center items-center">
+                  <div className="text-xs text-gray-500">
+                    <span>Versão: {version} - {buildDate}</span>
+                  </div>
                 </div>
               </div>
             </div>

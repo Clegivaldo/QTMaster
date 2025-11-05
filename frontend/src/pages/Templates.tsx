@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
+import PageHeader from '@/components/Layout/PageHeader';
 import { useTemplates, useDeleteTemplate, useUpdateTemplate } from '../hooks/useTemplates';
 import { TemplateUploadForm } from '../components/TemplateUploadForm';
 import { ReportTemplate } from '../types/template';
@@ -64,17 +66,20 @@ const Templates: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Templates de Relatório</h1>
-        <button
-          onClick={() => setShowUploadForm(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-        >
-          Novo Template
-        </button>
-      </div>
+    <>
+      <PageHeader
+        title="Templates"
+        description="Gerencie os templates de relatórios"
+        actions={
+          <button
+            onClick={() => setShowUploadForm(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Template
+          </button>
+        }
+      />
 
       {/* Upload Form Modal */}
       {showUploadForm && (
@@ -100,14 +105,7 @@ const Templates: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <button 
-            type="submit" 
-            className="h-10 w-10 bg-primary-600 text-white rounded-full flex items-center justify-center hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </button>
+
         </form>
       </div>
 
@@ -191,11 +189,13 @@ const Templates: React.FC = () => {
                       >
                         {template.isActive ? (
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            <circle cx="12" cy="12" r="10" fill="#ef4444"/>
+                            <path d="M15 9l-6 6m0-6l6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
                           </svg>
                         ) : (
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            <circle cx="12" cy="12" r="10" fill="#22c55e"/>
+                            <path d="M9 12l2 2 4-4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         )}
                       </button>
@@ -316,7 +316,7 @@ const Templates: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

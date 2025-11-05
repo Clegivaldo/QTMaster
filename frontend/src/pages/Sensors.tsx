@@ -96,12 +96,7 @@ const Sensors: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <button 
-                type="submit" 
-                className="h-10 w-10 bg-primary-600 text-white rounded-full flex items-center justify-center hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-              >
-                <Search className="h-5 w-5" />
-              </button>
+
             </form>
           </div>
 

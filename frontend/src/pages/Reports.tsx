@@ -12,6 +12,7 @@ import {
   FileText as DocumentIcon,
   Printer as PrinterIcon,
 } from 'lucide-react';
+import PageHeader from '@/components/Layout/PageHeader';
 import { useReports, useDeleteReport, useReportStatistics, useGeneratePdf, usePreviewPdf, useDownloadReport } from '../hooks/useReports';
 import { useClients } from '../hooks/useClients';
 import { Report, ReportFilters, ReportStatus } from '../types/report';
@@ -122,21 +123,20 @@ export default function Reports() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestão de Relatórios</h1>
-          <p className="text-gray-600">Gerencie relatórios e laudos de qualificação térmica</p>
-        </div>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-        >
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Novo Relatório
-        </button>
-      </div>
+    <>
+      <PageHeader
+        title="Relatórios"
+        description="Gerencie relatórios e laudos de qualificação térmica"
+        actions={
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Novo Relatório
+          </button>
+        }
+      />
 
       {/* Statistics Cards */}
       {statisticsData && (
@@ -472,6 +472,6 @@ export default function Reports() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }

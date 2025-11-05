@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAvatar } from '@/contexts/AvatarContext';
 import { User, Mail, Shield, Calendar, Save, Camera } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
+import { apiService } from '@/services/api';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
+  const { avatarUrl, updateAvatar } = useAvatar();
   const { addNotification } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(() => {
-    // Recupera o avatar do localStorage global (simula servidor)
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(`global_avatar_${user?.email || 'default'}`) || null;
-    }
-    return null;
-  });
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -85,13 +82,13 @@ const Profile: React.FC = () => {
                     onClick={() => document.getElementById('avatar-upload')?.click()}
                     className="h-32 w-32 rounded-full flex items-center justify-center overflow-hidden cursor-pointer relative"
                     style={{
-                      backgroundImage: avatarPreview ? `url(${avatarPreview})` : undefined,
+                      backgroundImage: avatarUrl ? `url("${avatarUrl}")` : undefined,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
-                      backgroundColor: avatarPreview ? 'transparent' : '#2563eb'
+                      backgroundColor: avatarUrl ? 'transparent' : '#2563eb'
                     }}
                   >
-                    {!avatarPreview && (
+                    {!avatarUrl && (
                       <span className="text-4xl font-medium text-white">
                         {user?.name.charAt(0).toUpperCase()}
                       </span>
@@ -100,9 +97,14 @@ const Profile: React.FC = () => {
                   
                   <button 
                     onClick={() => document.getElementById('avatar-upload')?.click()}
-                    className="absolute bottom-0 right-0 h-10 w-10 bg-white rounded-full shadow-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 hover:shadow-xl transition-all duration-200"
+                    disabled={isUploadingAvatar}
+                    className="absolute bottom-0 right-0 h-10 w-10 bg-white rounded-full shadow-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Camera className="h-5 w-5 text-gray-600" />
+                    {isUploadingAvatar ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                    ) : (
+                      <Camera className="h-5 w-5 text-gray-600" />
+                    )}
                   </button>
                   
                   {/* Hidden file input */}
@@ -134,25 +136,45 @@ const Profile: React.FC = () => {
                           return;
                         }
                         
-                        // Create preview
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          const result = event.target?.result as string;
-                          setAvatarPreview(result);
+                        // Upload para o servidor
+                        const uploadAvatar = async () => {
+                          setIsUploadingAvatar(true);
                           
-                          // Salva no localStorage global (simula servidor)
-                          localStorage.setItem(`global_avatar_${user?.email || 'default'}`, result);
-                          
-                          // TODO: Implement actual upload to server
-                          console.log('File ready for upload:', file);
-                          
-                          addNotification({
-                            type: 'success',
-                            title: 'Avatar atualizado',
-                            message: `Imagem ${file.name} carregada com sucesso`
-                          });
+                          try {
+                            const formData = new FormData();
+                            formData.append('avatar', file);
+                            
+                            const response = await apiService.api.post('/users/avatar', formData, {
+                              headers: {
+                                'Content-Type': 'multipart/form-data',
+                              },
+                            });
+                            
+                            if (response.data.success) {
+                              // Usar a URL que já vem pronta do backend
+                              const avatarUrl = response.data.data.avatarUrl;
+                              const fullAvatarUrl = `${apiService.baseURL}/${avatarUrl}`;
+                              updateAvatar(fullAvatarUrl);
+                              
+                              addNotification({
+                                type: 'success',
+                                title: 'Avatar atualizado',
+                                message: `Imagem ${file.name} carregada com sucesso`
+                              });
+                            }
+                          } catch (error: any) {
+                            console.error('Erro no upload:', error);
+                            addNotification({
+                              type: 'error',
+                              title: 'Erro no upload',
+                              message: error.response?.data?.error || 'Erro ao fazer upload da imagem'
+                            });
+                          } finally {
+                            setIsUploadingAvatar(false);
+                          }
                         };
-                        reader.readAsDataURL(file);
+                        
+                        uploadAvatar();
                       }
                     }}
                   />

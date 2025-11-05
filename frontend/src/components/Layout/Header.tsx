@@ -9,6 +9,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAvatar } from '@/contexts/AvatarContext';
 import { User as UserType } from '@/types/auth';
 
 
@@ -21,6 +22,7 @@ const Header: React.FC<HeaderProps> = ({ user, onMenuClick }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { logout } = useAuth();
+  const { avatarUrl } = useAvatar();
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Close user menu when clicking outside
@@ -106,10 +108,20 @@ const Header: React.FC<HeaderProps> = ({ user, onMenuClick }) => {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center space-x-3 p-2 text-sm rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
-                <div className="h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-white">
-                    {user.name.charAt(0).toUpperCase()}
-                  </span>
+                <div 
+                  className="h-8 w-8 rounded-full flex items-center justify-center overflow-hidden"
+                  style={{
+                    backgroundImage: avatarUrl ? `url(${avatarUrl})` : undefined,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundColor: avatarUrl ? 'transparent' : '#2563eb'
+                  }}
+                >
+                  {!avatarUrl && (
+                    <span className="text-sm font-medium text-white">
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-gray-700">

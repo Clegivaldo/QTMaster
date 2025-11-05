@@ -113,13 +113,7 @@ const Validations: React.FC = () => {
             <option value="true">Aprovados</option>
             <option value="false">Reprovados</option>
           </select>
-          <button 
-            type="submit" 
-            className="h-10 w-10 bg-primary-600 text-white rounded-full flex items-center justify-center hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:w-auto sm:px-4 sm:rounded-md"
-          >
-            <Search className="h-5 w-5 sm:mr-2" />
-            <span className="hidden sm:inline">Buscar</span>
-          </button>
+
         </form>
       </div>
 

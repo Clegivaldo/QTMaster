@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,14 +8,14 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id          String       @id @default(cuid())
+  email       String       @unique
+  password    String
+  name        String
+  role        Role         @default(USER)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  avatar      String?
   reports     Report[]
   validations Validation[]
 
@@ -29,15 +26,14 @@ model User {
 }
 
 model Client {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?
-  phone     String?
-  address   String?
-  cnpj      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id          String       @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  cnpj        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   reports     Report[]
   validations Validation[]
 
@@ -49,30 +45,26 @@ model Client {
 }
 
 model SensorType {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   description String?
-
-  // Configurações específicas para parsing dos arquivos
-  dataConfig Json // Posições das colunas, formatos, etc.
-
-  sensors Sensor[]
+  dataConfig  Json
+  sensors     Sensor[]
 
   @@map("sensor_types")
 }
 
 model Sensor {
-  id              String    @id @default(cuid())
-  serialNumber    String    @unique
+  id              String           @id @default(cuid())
+  serialNumber    String           @unique
   model           String
   typeId          String
   calibrationDate DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  sensorData      SensorData[]
   type            SensorType       @relation(fields: [typeId], references: [id])
   suitcaseSensors SuitcaseSensor[]
-  sensorData      SensorData[]
 
   @@index([typeId])
   @@index([serialNumber])
@@ -82,12 +74,11 @@ model Sensor {
 }
 
 model Suitcase {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   name        String
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   sensors     SuitcaseSensor[]
   validations Validation[]
 
@@ -95,31 +86,29 @@ model Suitcase {
 }
 
 model SuitcaseSensor {
-  id         String @id @default(cuid())
+  id         String   @id @default(cuid())
   suitcaseId String
   sensorId   String
-  position   Int? // Posição física na maleta
-
-  suitcase Suitcase @relation(fields: [suitcaseId], references: [id])
-  sensor   Sensor   @relation(fields: [sensorId], references: [id])
+  position   Int?
+  sensor     Sensor   @relation(fields: [sensorId], references: [id])
+  suitcase   Suitcase @relation(fields: [suitcaseId], references: [id])
 
   @@unique([suitcaseId, sensorId])
   @@map("suitcase_sensors")
 }
 
 model SensorData {
-  id           String   @id @default(cuid())
+  id           String      @id @default(cuid())
   sensorId     String
   timestamp    DateTime
   temperature  Float
   humidity     Float?
-  fileName     String // Arquivo de origem
-  rowNumber    Int // Linha no arquivo original
-  createdAt    DateTime @default(now())
+  fileName     String
+  rowNumber    Int
+  createdAt    DateTime    @default(now())
   validationId String?
-
-  sensor     Sensor      @relation(fields: [sensorId], references: [id])
-  validation Validation? @relation(fields: [validationId], references: [id])
+  sensor       Sensor      @relation(fields: [sensorId], references: [id])
+  validation   Validation? @relation(fields: [validationId], references: [id])
 
   @@index([sensorId])
   @@index([timestamp])
@@ -131,31 +120,25 @@ model SensorData {
 }
 
 model Validation {
-  id          String   @id @default(cuid())
-  suitcaseId  String
-  clientId    String
-  userId      String
-  name        String
-  description String?
-
-  // Parâmetros de validação
+  id             String       @id @default(cuid())
+  suitcaseId     String
+  clientId       String
+  userId         String
+  name           String
+  description    String?
   minTemperature Float
   maxTemperature Float
   minHumidity    Float?
   maxHumidity    Float?
-
-  // Resultados
-  isApproved Boolean?
-  statistics Json? // Estatísticas calculadas
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  suitcase   Suitcase     @relation(fields: [suitcaseId], references: [id])
-  client     Client       @relation(fields: [clientId], references: [id])
-  user       User         @relation(fields: [userId], references: [id])
-  sensorData SensorData[]
-  reports    Report[]
+  isApproved     Boolean?
+  statistics     Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  reports        Report[]
+  sensorData     SensorData[]
+  client         Client       @relation(fields: [clientId], references: [id])
+  suitcase       Suitcase     @relation(fields: [suitcaseId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
 
   @@index([clientId])
   @@index([userId])
@@ -171,32 +154,30 @@ model ReportTemplate {
   id           String   @id @default(cuid())
   name         String
   description  String?
-  templatePath String // Caminho para o arquivo FastReport
+  templatePath String
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
-  reports Report[]
+  reports      Report[]
 
   @@map("report_templates")
 }
 
 model Report {
-  id           String       @id @default(cuid())
+  id           String         @id @default(cuid())
   validationId String
   templateId   String
   userId       String
   clientId     String
   name         String
-  status       ReportStatus @default(DRAFT)
+  status       ReportStatus   @default(DRAFT)
   pdfPath      String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  validation Validation     @relation(fields: [validationId], references: [id])
-  template   ReportTemplate @relation(fields: [templateId], references: [id])
-  user       User           @relation(fields: [userId], references: [id])
-  client     Client         @relation(fields: [clientId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  client       Client         @relation(fields: [clientId], references: [id])
+  template     ReportTemplate @relation(fields: [templateId], references: [id])
+  user         User           @relation(fields: [userId], references: [id])
+  validation   Validation     @relation(fields: [validationId], references: [id])
 
   @@index([clientId])
   @@index([userId])
@@ -209,25 +190,20 @@ model Report {
   @@map("reports")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
 model AuditLog {
   id           String   @id @default(cuid())
-  action       String   // Action performed (CREATE, UPDATE, DELETE, LOGIN, etc.)
-  resource     String   // Resource affected (user, client, sensor, etc.)
-  resourceId   String?  // ID of the affected resource
-  userId       String?  // User who performed the action
-  userEmail    String?  // Email of the user who performed the action
-  ip           String?  // IP address of the request
-  userAgent    String?  // User agent of the request
-  oldValues    String?  // JSON string of old values (for updates/deletes)
-  newValues    String?  // JSON string of new values (for creates/updates)
-  metadata     String?  // Additional metadata as JSON string
-  success      Boolean  // Whether the action was successful
-  errorMessage String?  // Error message if action failed
+  action       String
+  resource     String
+  resourceId   String?
+  userId       String?
+  userEmail    String?
+  ip           String?
+  userAgent    String?
+  oldValues    String?
+  newValues    String?
+  metadata     String?
+  success      Boolean
+  errorMessage String?
   timestamp    DateTime @default(now())
 
   @@index([userId])
@@ -235,6 +211,11 @@ model AuditLog {
   @@index([action])
   @@index([timestamp])
   @@map("audit_logs")
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 enum ReportStatus {

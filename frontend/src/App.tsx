@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AvatarProvider } from '@/contexts/AvatarContext';
 import { QueryProvider } from '@/contexts/QueryProvider';
 import '@/styles/mobile.css';
 import Layout from '@/components/Layout/Layout';
@@ -88,7 +89,9 @@ function App() {
     <QueryProvider>
       <Router>
         <AuthProvider>
-          <AppRoutes />
+          <AvatarProvider>
+            <AppRoutes />
+          </AvatarProvider>
         </AuthProvider>
       </Router>
     </QueryProvider>

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authRoutes from './auth.js';
+import userRoutes from './users.js';
 import clientRoutes from './clients.js';
 import sensorTypeRoutes from './sensorTypes.js';
 import sensorRoutes from './sensors.js';
@@ -14,6 +15,7 @@ const router = Router();
 
 // Mount route modules
 router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
 router.use('/clients', clientRoutes);
 router.use('/sensor-types', sensorTypeRoutes);
 router.use('/sensors', sensorRoutes);
@@ -41,6 +43,7 @@ router.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       auth: '/api/auth',
+      users: '/api/users',
       clients: '/api/clients',
       sensorTypes: '/api/sensor-types',
       sensors: '/api/sensors',

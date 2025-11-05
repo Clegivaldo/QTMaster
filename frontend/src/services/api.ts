@@ -3,10 +3,12 @@ import { LoginCredentials, LoginResponse, User, ApiResponse } from '@/types/auth
 
 class ApiService {
   public api: AxiosInstance;
+  public baseURL: string;
 
   constructor() {
+    this.baseURL = 'http://localhost:5000';
     this.api = axios.create({
-      baseURL: '/api',
+      baseURL: `${this.baseURL}/api`,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
