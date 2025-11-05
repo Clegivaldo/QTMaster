@@ -10,6 +10,8 @@ import validationRoutes from './validations.js';
 import reportRoutes from './reports.js';
 import reportTemplateRoutes from './reportTemplates.js';
 import monitoringRoutes from './monitoring.js';
+import testRoutes from './test.js';
+import templateEditorRoutes from './templateEditor.js';
 
 const router = Router();
 
@@ -25,6 +27,8 @@ router.use('/validations', validationRoutes);
 router.use('/reports', reportRoutes);
 router.use('/report-templates', reportTemplateRoutes);
 router.use('/monitoring', monitoringRoutes);
+router.use('/test', testRoutes);
+router.use('/template-editor', templateEditorRoutes);
 
 // Legacy health check route (kept for backward compatibility)
 router.get('/health', (req, res) => {
@@ -53,6 +57,8 @@ router.get('/', (req, res) => {
       reports: '/api/reports',
       reportTemplates: '/api/report-templates',
       monitoring: '/api/monitoring',
+      test: '/api/test',
+      templateEditor: '/api/template-editor',
       health: '/api/health',
     },
   });

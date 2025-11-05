@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Laudo de Qualificação Térmica</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h3 {
+            color: #2563eb;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .chart-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .info-item {
+            margin-bottom: 8px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            display: inline-block;
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>LAUDO DE QUALIFICAÇÃO TÉRMICA - TESTE</h1>
+        <h2>{{validation.name}}</h2>
+        <p>Gerado em: {{formatDate generatedAt}}</p>
+    </div>
+
+    <div class="section">
+        <h3>INFORMAÇÕES DO CLIENTE</h3>
+        <div class="info-item">
+            <span class="info-label">Nome:</span>
+            <span>{{client.name}}</span>
+        </div>
+        {{#if client.email}}
+        <div class="info-item">
+            <span class="info-label">Email:</span>
+            <span>{{client.email}}</span>
+        </div>
+        {{/if}}
+    </div>
+
+    <div class="section">
+        <h3>PARÂMETROS DE VALIDAÇÃO</h3>
+        <div class="info-item">
+            <span class="info-label">Temp. Mínima:</span>
+            <span>{{validation.minTemperature}}°C</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Temp. Máxima:</span>
+            <span>{{validation.maxTemperature}}°C</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Status:</span>
+            <span>{{#if validation.isApproved}}APROVADO{{else}}PENDENTE{{/if}}</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>GRÁFICO DE TEMPERATURA</h3>
+        <div class="chart-container">
+            <canvas id="temperatureChart" width="600" height="300"></canvas>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>DADOS COLETADOS (AMOSTRA)</h3>
+        <p>Total de registros: {{totalDataCount}}</p>
+        <p>Primeiros {{sensorDataSample.length}} registros:</p>
+        {{#each sensorDataSample}}
+        <div>{{formatDateTime timestamp}} - {{sensor.serialNumber}}: {{formatNumber temperature 2}}°C</div>
+        {{/each}}
+    </div>
+
+    <script>
+        // Gráfico de Temperatura
+        const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+        const temperatureData = {{{temperatureChartData}}};
+        
+        new Chart(tempCtx, {
+            type: 'line',
+            data: temperatureData,
+            options: {
+                responsive: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Temperatura ao Longo do Tempo'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Temperatura (°C)'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

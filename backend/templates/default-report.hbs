@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laudo de Qualificação Térmica</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+            color: #2563eb;
+        }
+        
+        .header h2 {
+            font-size: 16px;
+            margin: 10px 0 0 0;
+            color: #666;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h3 {
+            font-size: 16px;
+            color: #2563eb;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            min-width: 120px;
+        }
+        
+        .info-value {
+            flex: 1;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .table th,
+        .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        
+        .table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .chart-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .chart-container img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            margin-top: 50px;
+            page-break-inside: avoid;
+        }
+        
+        .signature-box {
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 60px;
+            padding-top: 10px;
+        }
+        
+        .status-approved {
+            color: #16a34a;
+            font-weight: bold;
+        }
+        
+        .status-pending {
+            color: #ea580c;
+            font-weight: bold;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 15px;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <div class="header">
+        <h1>LAUDO DE QUALIFICAÇÃO TÉRMICA</h1>
+        <h2>{{validation.name}}</h2>
+        <p>Gerado em: {{formatDate generatedAt}}</p>
+    </div>
+
+    <!-- Informações do Cliente -->
+    <div class="section">
+        <h3>INFORMAÇÕES DO CLIENTE</h3>
+        <div class="info-grid">
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Nome:</span>
+                    <span class="info-value">{{client.name}}</span>
+                </div>
+                {{#if client.cnpj}}
+                <div class="info-item">
+                    <span class="info-label">CNPJ:</span>
+                    <span class="info-value">{{client.cnpj}}</span>
+                </div>
+                {{/if}}
+                {{#if client.email}}
+                <div class="info-item">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{client.email}}</span>
+                </div>
+                {{/if}}
+            </div>
+            <div>
+                {{#if client.phone}}
+                <div class="info-item">
+                    <span class="info-label">Telefone:</span>
+                    <span class="info-value">{{client.phone}}</span>
+                </div>
+                {{/if}}
+                {{#if client.address}}
+                <div class="info-item">
+                    <span class="info-label">Endereço:</span>
+                    <span class="info-value">{{client.address}}</span>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+    </div>
+
+    <!-- Parâmetros de Validação -->
+    <div class="section">
+        <h3>PARÂMETROS DE VALIDAÇÃO</h3>
+        <div class="info-grid">
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Temp. Mínima:</span>
+                    <span class="info-value">{{validation.minTemperature}}°C</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Temp. Máxima:</span>
+                    <span class="info-value">{{validation.maxTemperature}}°C</span>
+                </div>
+            </div>
+            <div>
+                {{#if validation.minHumidity}}
+                <div class="info-item">
+                    <span class="info-label">Umidade Mín.:</span>
+                    <span class="info-value">{{validation.minHumidity}}%</span>
+                </div>
+                {{/if}}
+                {{#if validation.maxHumidity}}
+                <div class="info-item">
+                    <span class="info-label">Umidade Máx.:</span>
+                    <span class="info-value">{{validation.maxHumidity}}%</span>
+                </div>
+                {{/if}}
+                <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value {{#if validation.isApproved}}status-approved{{else}}status-pending{{/if}}">
+                        {{#if validation.isApproved}}APROVADO{{else}}PENDENTE{{/if}}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensores Utilizados -->
+    <div class="section">
+        <h3>SENSORES UTILIZADOS</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Número de Série</th>
+                    <th>Modelo</th>
+                    <th>Tipo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each sensors}}
+                <tr>
+                    <td>{{serialNumber}}</td>
+                    <td>{{model}}</td>
+                    <td>{{type.name}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Maleta Utilizada -->
+    <div class="section">
+        <h3>EQUIPAMENTO DE MEDIÇÃO</h3>
+        <div class="info-item">
+            <span class="info-label">Maleta:</span>
+            <span class="info-value">{{suitcase.name}}</span>
+        </div>
+        {{#if suitcase.description}}
+        <div class="info-item">
+            <span class="info-label">Descrição:</span>
+            <span class="info-value">{{suitcase.description}}</span>
+        </div>
+        {{/if}}
+    </div>
+
+    <!-- Nova página para gráficos -->
+    <div class="page-break">
+        <div class="section">
+            <h3>GRÁFICO DE TEMPERATURA</h3>
+            <div class="chart-container">
+                <canvas id="temperatureChart" width="800" height="400"></canvas>
+            </div>
+        </div>
+
+        {{#if humidityChartData}}
+        <div class="section">
+            <h3>GRÁFICO DE UMIDADE</h3>
+            <div class="chart-container">
+                <canvas id="humidityChart" width="800" height="400"></canvas>
+            </div>
+        </div>
+        {{/if}}
+    </div>
+
+    <!-- Nova página para dados -->
+    <div class="page-break">
+        <div class="section">
+            <h3>DADOS COLETADOS (AMOSTRA)</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Sensor</th>
+                        <th>Temperatura (°C)</th>
+                        <th>Umidade (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each sensorDataSample}}
+                    <tr>
+                        <td>{{formatDateTime timestamp}}</td>
+                        <td>{{sensor.serialNumber}}</td>
+                        <td>{{formatNumber temperature 2}}</td>
+                        <td>{{#if humidity}}{{formatNumber humidity 2}}{{else}}N/A{{/if}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            {{#if hasMoreData}}
+            <p><em>... e mais {{totalDataCount}} registros no total</em></p>
+            {{/if}}
+        </div>
+    </div>
+
+    <!-- Assinaturas -->
+    <div class="page-break">
+        <div class="section">
+            <h3>ASSINATURAS</h3>
+            <div class="signatures">
+                <div class="signature-box">
+                    <p><strong>Responsável Técnico</strong></p>
+                    <p>{{user.name}}</p>
+                    <p>{{user.email}}</p>
+                    <div class="signature-line">
+                        Assinatura
+                    </div>
+                </div>
+                <div class="signature-box">
+                    <p><strong>Cliente</strong></p>
+                    <p>{{client.name}}</p>
+                    <div class="signature-line">
+                        Assinatura
+                    </div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 30px;">
+                <p><strong>Data:</strong> {{formatDate generatedAt}}</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gráfico de Temperatura
+        const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+        const temperatureData = {{{temperatureChartData}}};
+        
+        new Chart(tempCtx, {
+            type: 'line',
+            data: temperatureData,
+            options: {
+                responsive: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Temperatura ao Longo do Tempo'
+                    },
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Temperatura (°C)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tempo'
+                        }
+                    }
+                }
+            }
+        });
+
+        {{#if humidityChartData}}
+        // Gráfico de Umidade
+        const humCtx = document.getElementById('humidityChart').getContext('2d');
+        const humidityData = {{{humidityChartData}}};
+        
+        new Chart(humCtx, {
+            type: 'line',
+            data: humidityData,
+            options: {
+                responsive: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Umidade ao Longo do Tempo'
+                    },
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Umidade (%)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tempo'
+                        }
+                    }
+                }
+            }
+        });
+        {{/if}}
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<svg width="120" height="120" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="60" cy="60" r="55" fill="#16a34a" stroke="#15803d" stroke-width="3"/>
+  <text x="60" y="45" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">APROVADO</text>
+  <text x="60" y="65" text-anchor="middle" fill="white" font-family="Arial" font-size="8">QUALIFICAÇÃO</text>
+  <text x="60" y="80" text-anchor="middle" fill="white" font-family="Arial" font-size="8">TÉRMICA</text>
+  <path d="M35 60 L50 70 L85 40" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

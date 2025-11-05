@@ -250,6 +250,11 @@
 
 
 
+
+
+
+
+
   - Pesquisar e configurar integração com FastReport
   - Criar service para comunicação com FastReport engine
   - Implementar sistema de templates de laudo

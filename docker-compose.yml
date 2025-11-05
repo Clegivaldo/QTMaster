@@ -39,7 +39,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API
+  # Backend API with FastReport System
   backend:
     build:
       context: ./backend
@@ -54,11 +54,20 @@ services:
       JWT_EXPIRES_IN: 8h
       PORT: 5000
       FRONTEND_URL: http://localhost:3000
+      # FastReport System Environment Variables
+      TEMPLATE_EDITOR_ENABLED: true
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: false
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
+      REPORT_GENERATION_TIMEOUT: 30000
+      MAX_CONCURRENT_REPORTS: 5
     ports:
       - "5000:5000"
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/templates:/app/templates
+      - ./backend/public:/app/public
+      - reports_data:/app/uploads/reports
+      - gallery_data:/app/public/images/gallery
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,13 +81,17 @@ services:
       timeout: 10s
       retries: 3
 
-  # Frontend Web App
+  # Frontend Web App with Template Editor Integration
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: laudo-frontend
     restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+      REACT_APP_TEMPLATE_EDITOR_URL: http://localhost:5000/api/template-editor
+      REACT_APP_ENVIRONMENT: development
     ports:
       - "3000:80"
     depends_on:
@@ -90,6 +103,10 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  reports_data:
+    driver: local
+  gallery_data:
     driver: local
 
 networks:

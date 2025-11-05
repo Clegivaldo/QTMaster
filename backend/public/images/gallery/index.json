@@ -1,0 +1,55 @@
+{
+  "images": [
+    {
+      "name": "LOGO EMPRESA",
+      "filename": "logo-empresa.svg",
+      "type": "svg",
+      "category": "logos",
+      "url": "/public/images/gallery/logo-empresa.svg"
+    },
+    {
+      "name": "LOGO CERTIFICACAO",
+      "filename": "logo-certificacao.svg",
+      "type": "svg",
+      "category": "logos",
+      "url": "/public/images/gallery/logo-certificacao.svg"
+    },
+    {
+      "name": "FUNDO RELATORIO",
+      "filename": "fundo-relatorio.svg",
+      "type": "svg",
+      "category": "backgrounds",
+      "url": "/public/images/gallery/fundo-relatorio.svg"
+    },
+    {
+      "name": "SELO APROVADO",
+      "filename": "selo-aprovado.svg",
+      "type": "svg",
+      "category": "seals",
+      "url": "/public/images/gallery/selo-aprovado.svg"
+    },
+    {
+      "name": "MARCA DAGUA",
+      "filename": "marca-dagua.svg",
+      "type": "svg",
+      "category": "watermarks",
+      "url": "/public/images/gallery/marca-dagua.svg"
+    },
+    {
+      "name": "TERMOMETRO ICON",
+      "filename": "termometro-icon.svg",
+      "type": "svg",
+      "category": "icons",
+      "url": "/public/images/gallery/termometro-icon.svg"
+    }
+  ],
+  "categories": [
+    "logos",
+    "backgrounds",
+    "seals",
+    "watermarks",
+    "icons"
+  ],
+  "total": 6,
+  "lastUpdated": "2025-11-05T18:27:47.055Z"
+}

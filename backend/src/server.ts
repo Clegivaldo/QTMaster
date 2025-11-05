@@ -102,11 +102,20 @@ app.use(compression({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (avatars)
+// Serve static files (avatars and gallery)
 app.use('/uploads', express.static('uploads', {
   setHeaders: (res, path) => {
     // Set cache headers for images
     if (path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+    }
+  }
+}));
+
+app.use('/public', express.static('public', {
+  setHeaders: (res, path) => {
+    // Set cache headers for public assets
+    if (path.match(/\.(jpg|jpeg|png|gif|webp|svg|css|js)$/i)) {
       res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
     }
   }

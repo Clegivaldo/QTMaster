@@ -1,0 +1,6 @@
+<svg width="150" height="150" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="75" cy="75" r="70" fill="#16a34a" stroke="#15803d" stroke-width="3"/>
+  <text x="75" y="65" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">ISO</text>
+  <text x="75" y="85" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">17025</text>
+  <path d="M45 75 L65 90 L105 50" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

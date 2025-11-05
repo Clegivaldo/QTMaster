@@ -24,6 +24,22 @@ FROM node:18-alpine AS production
 
 WORKDIR /app
 
+# Install system dependencies for Puppeteer and PDF generation
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    wget \
+    curl
+
+# Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -36,8 +52,8 @@ COPY --from=builder /app/src ./src
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 
-# Create uploads directory
-RUN mkdir -p uploads
+# Create necessary directories
+RUN mkdir -p uploads uploads/reports templates public/images/gallery
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs

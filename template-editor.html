@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Visual de Templates - FastReport</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2563eb;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+        
+        .description {
+            color: #64748b;
+            font-size: 18px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+        
+        .feature {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+        }
+        
+        .feature h3 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .feature p {
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        .launch-button {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+        
+        .launch-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+        
+        .demo-links {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .demo-link {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .demo-link:hover {
+            background: #e2e8f0;
+            color: #334155;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Editor Visual de Templates</h1>
+        <p class="description">
+            Crie templates profissionais para seus laudos de qualificação térmica com nossa interface visual intuitiva.
+            Arraste e solte elementos, personalize cores, fontes e layouts sem precisar escrever código!
+        </p>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>🖱️ Drag & Drop</h3>
+                <p>Arraste elementos da paleta para o canvas e organize seu layout visualmente</p>
+            </div>
+            <div class="feature">
+                <h3>🎨 Personalização</h3>
+                <p>Altere cores, fontes, tamanhos, alinhamento e espaçamento em tempo real</p>
+            </div>
+            <div class="feature">
+                <h3>🖼️ Galeria de Imagens</h3>
+                <p>Biblioteca de logos, fundos e elementos visuais para seus templates</p>
+            </div>
+            <div class="feature">
+                <h3>👁️ Preview Instantâneo</h3>
+                <p>Visualize seu template como PDF a qualquer momento durante a edição</p>
+            </div>
+            <div class="feature">
+                <h3>💾 Salvar & Carregar</h3>
+                <p>Salve seus templates e reutilize em diferentes projetos</p>
+            </div>
+            <div class="feature">
+                <h3>📱 Responsivo</h3>
+                <p>Interface adaptável que funciona em desktop, tablet e mobile</p>
+            </div>
+        </div>
+        
+        <a href="http://localhost:5000/api/template-editor" class="launch-button" target="_blank">
+            🚀 Abrir Editor Visual
+        </a>
+        
+        <div class="demo-links">
+            <a href="http://localhost:5000/api/test/templates" class="demo-link">📋 Ver Templates</a>
+            <a href="http://localhost:5000/api/test/mock-report" class="demo-link">📄 PDF Exemplo</a>
+            <a href="http://localhost:5000/api/test/advanced-report" class="demo-link">🎯 PDF Avançado</a>
+            <a href="http://localhost:5000/api" class="demo-link">🔧 API Docs</a>
+        </div>
+        
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 14px;">
+            <p><strong>Funcionalidades Implementadas:</strong></p>
+            <p>✅ Drag & Drop • ✅ Formatação de Texto • ✅ Cores & Fontes • ✅ Alinhamento • ✅ Espaçamento • ✅ Galeria de Imagens • ✅ Preview PDF • ✅ Salvar/Carregar</p>
+        </div>
+    </div>
+</body>
+</html>
