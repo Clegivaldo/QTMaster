@@ -32,14 +32,14 @@ const Sensors: React.FC = () => {
           <div className="flex space-x-2">
             <button 
               onClick={() => {/* TODO: Open sensor type form */}}
-              className="btn-secondary"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
               <Settings className="h-4 w-4 mr-2" />
               Tipos
             </button>
             <button 
               onClick={() => {/* TODO: Open sensor form */}}
-              className="btn-primary"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
               <Plus className="h-4 w-4 mr-2" />
               Novo Sensor
@@ -88,7 +88,7 @@ const Sensors: React.FC = () => {
                 <input
                   name="search"
                   type="text"
-                  className="input w-full pl-10"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Buscar por número de série ou modelo..."
                   defaultValue={filters.search || ''}
                 />
@@ -96,7 +96,7 @@ const Sensors: React.FC = () => {
               <select
                 value={filters.typeId || ''}
                 onChange={(e) => setFilters({ ...filters, typeId: e.target.value || undefined, page: 1 })}
-                className="input"
+                className="block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="">Todos os tipos</option>
                 {sensorTypes?.map((type) => (
@@ -105,8 +105,11 @@ const Sensors: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <button type="submit" className="btn-primary">
-                Buscar
+              <button 
+                type="submit" 
+                className="h-10 w-10 bg-primary-600 text-white rounded-full flex items-center justify-center hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              >
+                <Search className="h-5 w-5" />
               </button>
             </form>
           </div>

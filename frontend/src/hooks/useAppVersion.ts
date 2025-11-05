@@ -7,12 +7,13 @@ interface AppVersion {
 
 export const useAppVersion = (): AppVersion => {
   const [version, setVersion] = useState('1.0.0');
-  const [buildDate] = useState(new Date().toLocaleDateString('pt-BR'));
+  // Data de build fixa para esta versão - em produção viria de variável de ambiente
+  const [buildDate] = useState('05/11/2025');
 
   useEffect(() => {
-    // In a real app, you might fetch this from an API or environment variable
-    // For now, we'll use the package.json version
-    const packageVersion = '1.0.0'; // This would come from package.json in a real build
+    // Em uma aplicação real, isso viria do package.json via processo de build
+    // ou de uma variável de ambiente VITE_APP_VERSION
+    const packageVersion = '1.0.0';
     setVersion(packageVersion);
   }, []);
 

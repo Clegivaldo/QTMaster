@@ -76,7 +76,7 @@ const Clients: React.FC = () => {
         actions={
           <button 
             onClick={() => setShowForm(true)}
-            className="btn-primary"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Cliente
@@ -99,9 +99,12 @@ const Clients: React.FC = () => {
               defaultValue={filters.search || ''}
             />
           </div>
-          <button type="submit" className="btn-primary w-full sm:w-auto">
-            <Search className="h-4 w-4 mr-2 sm:hidden" />
-            Buscar
+          <button 
+            type="submit" 
+            className="h-10 w-10 bg-primary-600 text-white rounded-full flex items-center justify-center hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:w-auto sm:px-4 sm:rounded-md"
+          >
+            <Search className="h-5 w-5 sm:mr-2" />
+            <span className="hidden sm:inline">Buscar</span>
           </button>
         </form>
       </div>

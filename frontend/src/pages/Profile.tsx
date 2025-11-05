@@ -7,7 +7,13 @@ const Profile: React.FC = () => {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(() => {
+    // Recupera o avatar do localStorage ao inicializar
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(`avatar_${user?.id || 'default'}`) || null;
+    }
+    return null;
+  });
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -133,6 +139,9 @@ const Profile: React.FC = () => {
                         reader.onload = (event) => {
                           const result = event.target?.result as string;
                           setAvatarPreview(result);
+                          
+                          // Salva no localStorage para persistir
+                          localStorage.setItem(`avatar_${user?.id || 'default'}`, result);
                           
                           // TODO: Implement actual upload to server
                           console.log('File ready for upload:', file);

@@ -11,7 +11,7 @@ import {
 } from '../types/template';
 
 export class TemplateService {
-  private baseUrl = '/api/report-templates';
+  private baseUrl = '/report-templates';
 
   async getTemplates(params?: TemplateQueryParams): Promise<TemplateListResponse> {
     const response = await apiService.api.get(this.baseUrl, { params });
