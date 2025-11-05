@@ -14,6 +14,7 @@ import {
   Layout
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppVersion } from '@/hooks/useAppVersion';
 import clsx from 'clsx';
 
 interface SidebarProps {
@@ -44,6 +45,7 @@ const navigation: NavigationItem[] = [
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { user } = useAuth();
+  const { version, buildDate } = useAppVersion();
 
   const filteredNavigation = navigation.filter(item => 
     !item.adminOnly || user?.role === 'ADMIN'
@@ -107,10 +109,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </nav>
 
             {/* System info */}
-            <div className="flex-shrink-0 border-t border-gray-200 p-4">
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>v1.0.0</span>
-                <span>{new Date().toLocaleDateString('pt-BR')}</span>
+            <div className="flex-shrink-0 border-t border-gray-200 p-3">
+              <div className="text-xs text-gray-500 text-center">
+                <span>Versão: {version} - {buildDate}</span>
               </div>
             </div>
           </div>
@@ -175,10 +176,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </nav>
 
           {/* Mobile system info */}
-          <div className="flex-shrink-0 border-t border-gray-200 p-4">
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>v1.0.0</span>
-              <span>{new Date().toLocaleDateString('pt-BR')}</span>
+          <div className="flex-shrink-0 border-t border-gray-200 p-3">
+            <div className="text-xs text-gray-500 text-center">
+              <span>Versão: {version} - {buildDate}</span>
             </div>
           </div>
         </div>

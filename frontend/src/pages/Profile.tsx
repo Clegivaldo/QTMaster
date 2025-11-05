@@ -7,6 +7,7 @@ const Profile: React.FC = () => {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -76,15 +77,19 @@ const Profile: React.FC = () => {
                 <div className="relative">
                   <div 
                     onClick={() => document.getElementById('avatar-upload')?.click()}
-                    className="h-32 w-32 bg-primary-600 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group hover:opacity-90 transition-opacity"
+                    className="h-32 w-32 rounded-full flex items-center justify-center overflow-hidden cursor-pointer relative"
+                    style={{
+                      backgroundImage: avatarPreview ? `url(${avatarPreview})` : undefined,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundColor: avatarPreview ? 'transparent' : '#2563eb'
+                    }}
                   >
-                    <span className="text-4xl font-medium text-white">
-                      {user?.name.charAt(0).toUpperCase()}
-                    </span>
-                    {/* Overlay for hover effect */}
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
-                      <Camera className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
+                    {!avatarPreview && (
+                      <span className="text-4xl font-medium text-white">
+                        {user?.name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   
                   <button 
@@ -126,14 +131,16 @@ const Profile: React.FC = () => {
                         // Create preview
                         const reader = new FileReader();
                         reader.onload = (event) => {
+                          const result = event.target?.result as string;
+                          setAvatarPreview(result);
+                          
                           // TODO: Implement actual upload to server
                           console.log('File ready for upload:', file);
-                          console.log('Preview URL:', event.target?.result);
                           
                           addNotification({
                             type: 'success',
-                            title: 'Avatar selecionado',
-                            message: `Arquivo ${file.name} pronto para upload`
+                            title: 'Avatar atualizado',
+                            message: `Imagem ${file.name} carregada com sucesso`
                           });
                         };
                         reader.readAsDataURL(file);

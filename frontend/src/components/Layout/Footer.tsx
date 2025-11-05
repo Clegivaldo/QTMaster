@@ -6,7 +6,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-white border-t border-gray-200">
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="py-6">
+        <div className="py-3">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             {/* Left side - Copyright */}
             <div className="flex items-center space-x-2 text-sm text-gray-600">
