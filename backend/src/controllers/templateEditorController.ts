@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ReportGenerationService } from '../services/reportGenerationService.js';
+import { ReportGenerationService } from '../services/reportGenerationService';
 import fs from 'fs';
 import path from 'path';
 
@@ -635,6 +635,11 @@ export class TemplateEditorController {
             // Atualizar contador
             updateElementCount();
             
+            // Selecionar automaticamente o novo elemento
+            setTimeout(() => {
+                selectElement(elementId);
+            }, 100);
+            
             console.log(\`✅ Elemento "\${type}" adicionado: \${elementId}\`);
         }
         
@@ -680,56 +685,64 @@ export class TemplateEditorController {
             // Aplicar estilos
             Object.assign(elementDiv.style, element.styles);
             
+            // Converter estilos para string CSS
+            const styleString = Object.entries(element.styles)
+                .map(([key, value]) => \`\${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: \${value}\`)
+                .join('; ');
+            
             // Conteúdo baseado no tipo
             switch (element.type) {
                 case 'image':
                     if (element.data && element.data.imageUrl) {
                         elementDiv.innerHTML = \`
-                            <div style="background-image: url(\${element.data.imageUrl}); background-size: contain; background-repeat: no-repeat; background-position: center; min-height: 100px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; color: #666;">
+                            <div style="background-image: url(\${element.data.imageUrl}); background-size: contain; background-repeat: no-repeat; background-position: center; min-height: 100px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; color: #666; \${styleString}">
                                 \${element.content}
                             </div>
                         \`;
                     } else {
                         elementDiv.innerHTML = \`
-                            <div style="background: #f3f4f6; padding: 20px; text-align: center; border: 2px dashed #d1d5db; min-height: 100px; display: flex; align-items: center; justify-content: center;">
+                            <div style="background: #f3f4f6; padding: 20px; text-align: center; border: 2px dashed #d1d5db; min-height: 100px; display: flex; align-items: center; justify-content: center; \${styleString}">
                                 🖼️ \${element.content}
                             </div>
                         \`;
                     }
                     break;
                 case 'header':
-                    elementDiv.innerHTML = \`<h1>\${element.content}</h1>\`;
+                    elementDiv.innerHTML = \`<h1 style="\${styleString}">\${element.content}</h1>\`;
+                    break;
+                case 'text':
+                    elementDiv.innerHTML = \`<div style="\${styleString}">\${element.content}</div>\`;
                     break;
                 case 'table':
                     elementDiv.innerHTML = \`
-                        <div style="border: 1px solid #ddd; padding: 20px; text-align: center; background: #f9f9f9;">
+                        <div style="border: 1px solid #ddd; padding: 20px; text-align: center; background: #f9f9f9; \${styleString}">
                             📊 \${element.content}
                         </div>
                     \`;
                     break;
                 case 'chart':
                     elementDiv.innerHTML = \`
-                        <div style="border: 1px solid #ddd; padding: 20px; text-align: center; background: #f0f9ff;">
+                        <div style="border: 1px solid #ddd; padding: 20px; text-align: center; background: #f0f9ff; \${styleString}">
                             📈 \${element.content}
                         </div>
                     \`;
                     break;
                 case 'signature':
                     elementDiv.innerHTML = \`
-                        <div style="border: 2px dashed #ccc; padding: 30px; text-align: center; background: #fefefe;">
+                        <div style="border: 2px dashed #ccc; padding: 30px; text-align: center; background: #fefefe; \${styleString}">
                             ✍️ \${element.content}
                         </div>
                     \`;
                     break;
                 case 'footer':
                     elementDiv.innerHTML = \`
-                        <div style="border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
+                        <div style="border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px; text-align: center; font-size: 12px; color: #666; \${styleString}">
                             🦶 \${element.content}
                         </div>
                     \`;
                     break;
                 default:
-                    elementDiv.innerHTML = element.content;
+                    elementDiv.innerHTML = \`<div style="\${styleString}">\${element.content}</div>\`;
             }
             
             // Controles
@@ -750,6 +763,8 @@ export class TemplateEditorController {
         }
         
         function selectElement(elementId) {
+            console.log(\`🎯 Selecionando elemento: \${elementId}\`);
+            
             // Remover seleção anterior
             document.querySelectorAll('.canvas-element').forEach(el => {
                 el.classList.remove('selected');
@@ -760,43 +775,94 @@ export class TemplateEditorController {
             if (elementDiv) {
                 elementDiv.classList.add('selected');
                 selectedElement = currentTemplate.elements.find(el => el.id === elementId);
-                updatePropertiesPanel();
                 
-                // Mostrar/esconder controles específicos
-                const imageControls = document.getElementById('imageControls');
-                if (selectedElement && selectedElement.type === 'image') {
-                    imageControls.style.display = 'block';
+                if (selectedElement) {
+                    console.log(\`✅ Elemento selecionado: \${selectedElement.type} - \${selectedElement.content}\`);
+                    updatePropertiesPanel();
+                    
+                    // Mostrar/esconder controles específicos
+                    const imageControls = document.getElementById('imageControls');
+                    if (selectedElement.type === 'image') {
+                        if (imageControls) imageControls.style.display = 'block';
+                    } else {
+                        if (imageControls) imageControls.style.display = 'none';
+                    }
+                    
+                    // Scroll para o elemento se necessário
+                    elementDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
-                    imageControls.style.display = 'none';
+                    console.error(\`❌ Elemento não encontrado no template: \${elementId}\`);
                 }
+            } else {
+                console.error(\`❌ Elemento DOM não encontrado: \${elementId}\`);
             }
         }
         
         function updatePropertiesPanel() {
-            if (!selectedElement) return;
+            if (!selectedElement) {
+                console.log('⚠️ Nenhum elemento selecionado');
+                return;
+            }
             
-            const styles = selectedElement.styles;
+            const styles = selectedElement.styles || {};
+            
+            console.log(\`🎛️ Atualizando painel para elemento: \${selectedElement.id}\`, styles);
             
             // Atualizar controles gerais
-            document.getElementById('fontSize').value = parseInt(styles.fontSize) || 16;
-            document.getElementById('textColor').value = styles.color || '#000000';
-            document.getElementById('backgroundColor').value = styles.backgroundColor || '#ffffff';
-            document.getElementById('padding').value = styles.padding || '';
-            document.getElementById('margin').value = styles.margin || '';
-            document.getElementById('width').value = styles.width || '';
-            document.getElementById('height').value = styles.height || '';
+            const fontSize = document.getElementById('fontSize');
+            const textColor = document.getElementById('textColor');
+            const backgroundColor = document.getElementById('backgroundColor');
+            const padding = document.getElementById('padding');
+            const margin = document.getElementById('margin');
+            const width = document.getElementById('width');
+            const height = document.getElementById('height');
+            
+            if (fontSize) fontSize.value = parseInt(styles.fontSize) || 16;
+            if (textColor) textColor.value = styles.color || '#000000';
+            if (backgroundColor) backgroundColor.value = styles.backgroundColor || '#ffffff';
+            if (padding) padding.value = styles.padding || '';
+            if (margin) margin.value = styles.margin || '';
+            if (width) width.value = styles.width || '';
+            if (height) height.value = styles.height || '';
             
             // Atualizar controles de imagem se for uma imagem
             if (selectedElement.type === 'image') {
-                document.getElementById('imageWidth').value = parseInt(styles.width) || 200;
-                document.getElementById('imageHeight').value = parseInt(styles.height) || 150;
-                document.getElementById('imageFit').value = styles.backgroundSize || 'contain';
+                const imageWidth = document.getElementById('imageWidth');
+                const imageHeight = document.getElementById('imageHeight');
+                const imageFit = document.getElementById('imageFit');
+                
+                if (imageWidth) imageWidth.value = parseInt(styles.width) || 200;
+                if (imageHeight) imageHeight.value = parseInt(styles.height) || 150;
+                if (imageFit) imageFit.value = styles.backgroundSize || 'contain';
             }
             
             // Atualizar botões de formatação
-            document.getElementById('boldBtn').classList.toggle('active', styles.fontWeight === 'bold');
-            document.getElementById('italicBtn').classList.toggle('active', styles.fontStyle === 'italic');
-            document.getElementById('underlineBtn').classList.toggle('active', styles.textDecoration === 'underline');
+            const boldBtn = document.getElementById('boldBtn');
+            const italicBtn = document.getElementById('italicBtn');
+            const underlineBtn = document.getElementById('underlineBtn');
+            
+            if (boldBtn) {
+                boldBtn.classList.toggle('active', styles.fontWeight === 'bold');
+            }
+            if (italicBtn) {
+                italicBtn.classList.toggle('active', styles.fontStyle === 'italic');
+            }
+            if (underlineBtn) {
+                underlineBtn.classList.toggle('active', styles.textDecoration === 'underline');
+            }
+            
+            // Atualizar botões de alinhamento
+            document.querySelectorAll('.font-controls')[1]?.querySelectorAll('.font-control').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const alignmentButtons = document.querySelectorAll('.font-controls')[1]?.querySelectorAll('.font-control');
+            if (alignmentButtons) {
+                const textAlign = styles.textAlign;
+                if (textAlign === 'left') alignmentButtons[0]?.classList.add('active');
+                else if (textAlign === 'center') alignmentButtons[1]?.classList.add('active');
+                else if (textAlign === 'right') alignmentButtons[2]?.classList.add('active');
+            }
         }
         
         function setupPropertyListeners() {
@@ -865,30 +931,95 @@ export class TemplateEditorController {
             selectedElement.styles[property] = value;
             const elementDiv = document.querySelector(\`[data-element-id="\${selectedElement.id}"]\`);
             if (elementDiv) {
+                // Aplicar estilo ao elemento principal
                 elementDiv.style[property] = value;
+                
+                // Para elementos de texto, também aplicar ao conteúdo interno
+                if (selectedElement.type === 'text' || selectedElement.type === 'header') {
+                    const contentElement = elementDiv.querySelector('h1, div:not(.element-controls)');
+                    if (contentElement) {
+                        contentElement.style[property] = value;
+                    }
+                }
+                
+                console.log(\`✅ Estilo aplicado: \${property} = \${value}\`);
             }
         }
         
         function toggleBold() {
-            const isActive = document.getElementById('boldBtn').classList.contains('active');
-            updateSelectedElementStyle('fontWeight', isActive ? 'normal' : 'bold');
-            document.getElementById('boldBtn').classList.toggle('active');
+            if (!selectedElement) {
+                alert('Selecione um elemento primeiro');
+                return;
+            }
+            
+            const boldBtn = document.getElementById('boldBtn');
+            const isActive = boldBtn.classList.contains('active');
+            const newWeight = isActive ? 'normal' : 'bold';
+            
+            updateSelectedElementStyle('fontWeight', newWeight);
+            boldBtn.classList.toggle('active', !isActive);
+            
+            console.log(\`🔤 Negrito \${!isActive ? 'ativado' : 'desativado'}\`);
         }
         
         function toggleItalic() {
-            const isActive = document.getElementById('italicBtn').classList.contains('active');
-            updateSelectedElementStyle('fontStyle', isActive ? 'normal' : 'italic');
-            document.getElementById('italicBtn').classList.toggle('active');
+            if (!selectedElement) {
+                alert('Selecione um elemento primeiro');
+                return;
+            }
+            
+            const italicBtn = document.getElementById('italicBtn');
+            const isActive = italicBtn.classList.contains('active');
+            const newStyle = isActive ? 'normal' : 'italic';
+            
+            updateSelectedElementStyle('fontStyle', newStyle);
+            italicBtn.classList.toggle('active', !isActive);
+            
+            console.log(\`🔤 Itálico \${!isActive ? 'ativado' : 'desativado'}\`);
         }
         
         function toggleUnderline() {
-            const isActive = document.getElementById('underlineBtn').classList.contains('active');
-            updateSelectedElementStyle('textDecoration', isActive ? 'none' : 'underline');
-            document.getElementById('underlineBtn').classList.toggle('active');
+            if (!selectedElement) {
+                alert('Selecione um elemento primeiro');
+                return;
+            }
+            
+            const underlineBtn = document.getElementById('underlineBtn');
+            const isActive = underlineBtn.classList.contains('active');
+            const newDecoration = isActive ? 'none' : 'underline';
+            
+            updateSelectedElementStyle('textDecoration', newDecoration);
+            underlineBtn.classList.toggle('active', !isActive);
+            
+            console.log(\`🔤 Sublinhado \${!isActive ? 'ativado' : 'desativado'}\`);
         }
         
         function setAlignment(align) {
+            if (!selectedElement) {
+                alert('Selecione um elemento primeiro');
+                return;
+            }
+            
             updateSelectedElementStyle('textAlign', align);
+            
+            // Atualizar visual dos botões de alinhamento
+            document.querySelectorAll('.font-control').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Ativar o botão correto baseado no alinhamento
+            const alignmentMap = {
+                'left': 0,
+                'center': 1,
+                'right': 2
+            };
+            
+            const alignmentButtons = document.querySelectorAll('.font-controls')[1]?.querySelectorAll('.font-control');
+            if (alignmentButtons && alignmentMap[align] !== undefined) {
+                alignmentButtons[alignmentMap[align]]?.classList.add('active');
+            }
+            
+            console.log(\`📐 Alinhamento alterado para: \${align}\`);
         }
         
         function updatePageMargin(side, value) {
@@ -981,13 +1112,45 @@ export class TemplateEditorController {
         function editElement(elementId) {
             const element = currentTemplate.elements.find(el => el.id === elementId);
             if (element) {
-                const newContent = prompt('Editar conteúdo:', element.content);
-                if (newContent !== null) {
-                    element.content = newContent;
-                    const elementDiv = document.querySelector(\`[data-element-id="\${elementId}"]\`);
-                    if (elementDiv && element.type !== 'image') {
-                        elementDiv.innerHTML = newContent + elementDiv.querySelector('.element-controls').outerHTML;
-                    }
+                // Criar um input inline para edição mais intuitiva
+                const elementDiv = document.querySelector(\`[data-element-id="\${elementId}"]\`);
+                if (elementDiv && element.type !== 'image') {
+                    const currentContent = element.content;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = currentContent;
+                    input.style.cssText = 'width: 100%; padding: 5px; border: 2px solid #2563eb; border-radius: 4px; font-size: inherit; background: white;';
+                    
+                    // Substituir temporariamente o conteúdo
+                    const originalHTML = elementDiv.innerHTML;
+                    elementDiv.innerHTML = '';
+                    elementDiv.appendChild(input);
+                    input.focus();
+                    input.select();
+                    
+                    // Função para salvar
+                    const saveEdit = () => {
+                        const newContent = input.value.trim();
+                        if (newContent && newContent !== currentContent) {
+                            element.content = newContent;
+                            renderElement(element);
+                            // Re-selecionar o elemento
+                            setTimeout(() => selectElement(elementId), 100);
+                        } else {
+                            elementDiv.innerHTML = originalHTML;
+                        }
+                    };
+                    
+                    // Eventos para salvar
+                    input.addEventListener('blur', saveEdit);
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveEdit();
+                        } else if (e.key === 'Escape') {
+                            elementDiv.innerHTML = originalHTML;
+                        }
+                    });
                 }
             }
         }

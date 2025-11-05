@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import { TemplateService } from './templateService.js';
+import { TemplateService } from './templateService';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
