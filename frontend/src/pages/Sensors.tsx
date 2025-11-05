@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Settings, AlertTriangle } from 'lucide-react';
+import { Plus, Search, AlertTriangle } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
 import { useSensors, useSensorTypes } from '@/hooks/useSensors';
 import { SensorFilters } from '@/types/sensor';
@@ -29,22 +29,13 @@ const Sensors: React.FC = () => {
         title="Sensores"
         description="Gerencie os sensores e tipos de sensores"
         actions={
-          <div className="flex space-x-2">
-            <button 
-              onClick={() => {/* TODO: Open sensor type form */}}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Tipos
-            </button>
-            <button 
-              onClick={() => {/* TODO: Open sensor form */}}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Sensor
-            </button>
-          </div>
+          <button 
+            onClick={() => {/* TODO: Open sensor form */}}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Sensor
+          </button>
         }
       />
 

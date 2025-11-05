@@ -165,11 +165,7 @@ const LoginForm: React.FC = () => {
               </button>
             </div>
 
-            <div className="text-center pt-4 border-t border-gray-100">
-              <p className="text-xs text-gray-500">
-                Credenciais demo: admin@sistema.com / admin123
-              </p>
-            </div>
+
           </form>
         </div>
       </div>

@@ -8,9 +8,9 @@ const Profile: React.FC = () => {
   const { addNotification } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(() => {
-    // Recupera o avatar do localStorage ao inicializar
+    // Recupera o avatar do localStorage global (simula servidor)
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(`avatar_${user?.id || 'default'}`) || null;
+      return localStorage.getItem(`global_avatar_${user?.email || 'default'}`) || null;
     }
     return null;
   });
@@ -140,8 +140,8 @@ const Profile: React.FC = () => {
                           const result = event.target?.result as string;
                           setAvatarPreview(result);
                           
-                          // Salva no localStorage para persistir
-                          localStorage.setItem(`avatar_${user?.id || 'default'}`, result);
+                          // Salva no localStorage global (simula servidor)
+                          localStorage.setItem(`global_avatar_${user?.email || 'default'}`, result);
                           
                           // TODO: Implement actual upload to server
                           console.log('File ready for upload:', file);
