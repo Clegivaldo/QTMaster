@@ -67,6 +67,7 @@ export class TemplateEditorController {
     <title>Editor Visual de Templates - FastReport</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -388,6 +389,10 @@ export class TemplateEditorController {
             <button onclick="saveTemplate()">💾 Salvar</button>
             <button onclick="loadTemplate()">📂 Carregar</button>
             <button onclick="exportTemplate()">📤 Exportar</button>
+            <button onclick="loadImageGallery()">🔄 Recarregar</button>
+            <span style="margin-left: auto; font-size: 14px;">
+                Elementos: <span id="elementCount">0</span>
+            </span>
         </div>
         
         <!-- Sidebar Esquerda - Elementos -->
@@ -414,6 +419,9 @@ export class TemplateEditorController {
                         <div class="palette-item" draggable="true" data-type="signature">
                             ✍️<br>Assinatura
                         </div>
+                        <div class="palette-item" draggable="true" data-type="footer">
+                            🦶<br>Rodapé
+                        </div>
                     </div>
                 </div>
             </div>
@@ -421,13 +429,8 @@ export class TemplateEditorController {
             <div class="sidebar-section">
                 <div class="sidebar-header">🖼️ Galeria de Imagens</div>
                 <div class="sidebar-content">
-                    <div class="image-gallery">
-                        <div class="gallery-item" data-image="logo1">Logo 1</div>
-                        <div class="gallery-item" data-image="logo2">Logo 2</div>
-                        <div class="gallery-item" data-image="bg1">Fundo 1</div>
-                        <div class="gallery-item" data-image="bg2">Fundo 2</div>
-                        <div class="gallery-item" data-image="seal">Selo</div>
-                        <div class="gallery-item" data-image="watermark">Marca</div>
+                    <div class="image-gallery" id="imageGallery">
+                        <div class="gallery-item loading">Carregando...</div>
                     </div>
                 </div>
             </div>
@@ -448,7 +451,7 @@ export class TemplateEditorController {
                 <h3>🎨 Aparência</h3>
                 <div class="property-item">
                     <label class="property-label">Tamanho da Fonte</label>
-                    <input type="range" class="property-input" id="fontSize" min="8" max="72" value="16">
+                    <input type="number" class="property-input" id="fontSize" min="8" max="72" value="16" step="1">
                 </div>
                 <div class="property-item">
                     <label class="property-label">Cor do Texto</label>
@@ -505,6 +508,46 @@ export class TemplateEditorController {
                     <input type="text" class="property-input" id="height" placeholder="auto">
                 </div>
             </div>
+            
+            <div class="property-group">
+                <h3>📄 Configurações da Página</h3>
+                <div class="property-item">
+                    <label class="property-label">Margem Superior</label>
+                    <input type="text" class="property-input" id="pageMarginTop" placeholder="20mm" value="20mm">
+                </div>
+                <div class="property-item">
+                    <label class="property-label">Margem Inferior</label>
+                    <input type="text" class="property-input" id="pageMarginBottom" placeholder="20mm" value="20mm">
+                </div>
+                <div class="property-item">
+                    <label class="property-label">Margem Esquerda</label>
+                    <input type="text" class="property-input" id="pageMarginLeft" placeholder="15mm" value="15mm">
+                </div>
+                <div class="property-item">
+                    <label class="property-label">Margem Direita</label>
+                    <input type="text" class="property-input" id="pageMarginRight" placeholder="15mm" value="15mm">
+                </div>
+            </div>
+            
+            <div class="property-group" id="imageControls" style="display: none;">
+                <h3>🖼️ Controles de Imagem</h3>
+                <div class="property-item">
+                    <label class="property-label">Largura da Imagem</label>
+                    <input type="number" class="property-input" id="imageWidth" min="50" max="800" step="10" placeholder="200">
+                </div>
+                <div class="property-item">
+                    <label class="property-label">Altura da Imagem</label>
+                    <input type="number" class="property-input" id="imageHeight" min="50" max="600" step="10" placeholder="150">
+                </div>
+                <div class="property-item">
+                    <label class="property-label">Ajuste da Imagem</label>
+                    <select class="property-input" id="imageFit">
+                        <option value="contain">Conter</option>
+                        <option value="cover">Cobrir</option>
+                        <option value="fill">Preencher</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -532,6 +575,7 @@ export class TemplateEditorController {
         document.addEventListener('DOMContentLoaded', function() {
             initializeDragAndDrop();
             setupPropertyListeners();
+            loadImageGallery();
         });
         
         function initializeDragAndDrop() {
@@ -584,7 +628,20 @@ export class TemplateEditorController {
             
             // Esconder drop zone se houver elementos
             if (currentTemplate.elements.length > 0) {
-                document.getElementById('dropZone').style.display = 'none';
+                const dropZone = document.getElementById('dropZone');
+                if (dropZone) dropZone.style.display = 'none';
+            }
+            
+            // Atualizar contador
+            updateElementCount();
+            
+            console.log(\`✅ Elemento "\${type}" adicionado: \${elementId}\`);
+        }
+        
+        function updateElementCount() {
+            const countElement = document.getElementById('elementCount');
+            if (countElement) {
+                countElement.textContent = currentTemplate.elements.length;
             }
         }
         
@@ -595,7 +652,8 @@ export class TemplateEditorController {
                 image: '[Imagem]',
                 table: '[Tabela de Dados]',
                 chart: '[Gráfico]',
-                signature: '[Área de Assinatura]'
+                signature: '[Área de Assinatura]',
+                footer: 'Rodapé do documento - Página {pageNumber}'
             };
             return defaults[type] || 'Elemento';
         }
@@ -607,7 +665,8 @@ export class TemplateEditorController {
                 image: { width: '200px', height: '150px', border: '1px solid #ddd' },
                 table: { width: '100%', border: '1px solid #ddd' },
                 chart: { width: '400px', height: '300px' },
-                signature: { height: '80px', border: '1px dashed #ccc', textAlign: 'center' }
+                signature: { height: '80px', border: '1px dashed #ccc', textAlign: 'center' },
+                footer: { fontSize: '12px', color: '#666666', textAlign: 'center', borderTop: '1px solid #ccc', paddingTop: '10px', marginTop: '20px' }
             };
             return defaults[type] || {};
         }
@@ -621,15 +680,56 @@ export class TemplateEditorController {
             // Aplicar estilos
             Object.assign(elementDiv.style, element.styles);
             
-            // Conteúdo
-            if (element.type === 'image') {
-                elementDiv.innerHTML = \`
-                    <div style="background: #f3f4f6; padding: 20px; text-align: center; border: 2px dashed #d1d5db;">
-                        🖼️ \${element.content}
-                    </div>
-                \`;
-            } else {
-                elementDiv.innerHTML = element.content;
+            // Conteúdo baseado no tipo
+            switch (element.type) {
+                case 'image':
+                    if (element.data && element.data.imageUrl) {
+                        elementDiv.innerHTML = \`
+                            <div style="background-image: url(\${element.data.imageUrl}); background-size: contain; background-repeat: no-repeat; background-position: center; min-height: 100px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; color: #666;">
+                                \${element.content}
+                            </div>
+                        \`;
+                    } else {
+                        elementDiv.innerHTML = \`
+                            <div style="background: #f3f4f6; padding: 20px; text-align: center; border: 2px dashed #d1d5db; min-height: 100px; display: flex; align-items: center; justify-content: center;">
+                                🖼️ \${element.content}
+                            </div>
+                        \`;
+                    }
+                    break;
+                case 'header':
+                    elementDiv.innerHTML = \`<h1>\${element.content}</h1>\`;
+                    break;
+                case 'table':
+                    elementDiv.innerHTML = \`
+                        <div style="border: 1px solid #ddd; padding: 20px; text-align: center; background: #f9f9f9;">
+                            📊 \${element.content}
+                        </div>
+                    \`;
+                    break;
+                case 'chart':
+                    elementDiv.innerHTML = \`
+                        <div style="border: 1px solid #ddd; padding: 20px; text-align: center; background: #f0f9ff;">
+                            📈 \${element.content}
+                        </div>
+                    \`;
+                    break;
+                case 'signature':
+                    elementDiv.innerHTML = \`
+                        <div style="border: 2px dashed #ccc; padding: 30px; text-align: center; background: #fefefe;">
+                            ✍️ \${element.content}
+                        </div>
+                    \`;
+                    break;
+                case 'footer':
+                    elementDiv.innerHTML = \`
+                        <div style="border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
+                            🦶 \${element.content}
+                        </div>
+                    \`;
+                    break;
+                default:
+                    elementDiv.innerHTML = element.content;
             }
             
             // Controles
@@ -661,6 +761,14 @@ export class TemplateEditorController {
                 elementDiv.classList.add('selected');
                 selectedElement = currentTemplate.elements.find(el => el.id === elementId);
                 updatePropertiesPanel();
+                
+                // Mostrar/esconder controles específicos
+                const imageControls = document.getElementById('imageControls');
+                if (selectedElement && selectedElement.type === 'image') {
+                    imageControls.style.display = 'block';
+                } else {
+                    imageControls.style.display = 'none';
+                }
             }
         }
         
@@ -669,7 +777,7 @@ export class TemplateEditorController {
             
             const styles = selectedElement.styles;
             
-            // Atualizar controles
+            // Atualizar controles gerais
             document.getElementById('fontSize').value = parseInt(styles.fontSize) || 16;
             document.getElementById('textColor').value = styles.color || '#000000';
             document.getElementById('backgroundColor').value = styles.backgroundColor || '#ffffff';
@@ -677,6 +785,13 @@ export class TemplateEditorController {
             document.getElementById('margin').value = styles.margin || '';
             document.getElementById('width').value = styles.width || '';
             document.getElementById('height').value = styles.height || '';
+            
+            // Atualizar controles de imagem se for uma imagem
+            if (selectedElement.type === 'image') {
+                document.getElementById('imageWidth').value = parseInt(styles.width) || 200;
+                document.getElementById('imageHeight').value = parseInt(styles.height) || 150;
+                document.getElementById('imageFit').value = styles.backgroundSize || 'contain';
+            }
             
             // Atualizar botões de formatação
             document.getElementById('boldBtn').classList.toggle('active', styles.fontWeight === 'bold');
@@ -712,6 +827,36 @@ export class TemplateEditorController {
             document.getElementById('height').addEventListener('input', function() {
                 updateSelectedElementStyle('height', this.value);
             });
+            
+            // Listeners para controles de imagem
+            document.getElementById('imageWidth').addEventListener('input', function() {
+                updateSelectedElementStyle('width', this.value + 'px');
+            });
+            
+            document.getElementById('imageHeight').addEventListener('input', function() {
+                updateSelectedElementStyle('height', this.value + 'px');
+            });
+            
+            document.getElementById('imageFit').addEventListener('change', function() {
+                updateSelectedElementStyle('backgroundSize', this.value);
+            });
+            
+            // Listeners para margens da página
+            document.getElementById('pageMarginTop').addEventListener('input', function() {
+                updatePageMargin('top', this.value);
+            });
+            
+            document.getElementById('pageMarginBottom').addEventListener('input', function() {
+                updatePageMargin('bottom', this.value);
+            });
+            
+            document.getElementById('pageMarginLeft').addEventListener('input', function() {
+                updatePageMargin('left', this.value);
+            });
+            
+            document.getElementById('pageMarginRight').addEventListener('input', function() {
+                updatePageMargin('right', this.value);
+            });
         }
         
         function updateSelectedElementStyle(property, value) {
@@ -744,6 +889,93 @@ export class TemplateEditorController {
         
         function setAlignment(align) {
             updateSelectedElementStyle('textAlign', align);
+        }
+        
+        function updatePageMargin(side, value) {
+            if (!currentTemplate.globalStyles.margins) {
+                currentTemplate.globalStyles.margins = {
+                    top: '20mm',
+                    right: '15mm',
+                    bottom: '20mm',
+                    left: '15mm'
+                };
+            }
+            currentTemplate.globalStyles.margins[side] = value;
+            console.log(\`📐 Margem \${side} atualizada para: \${value}\`);
+        }
+        
+        async function loadImageGallery() {
+            try {
+                console.log('🖼️ Carregando galeria de imagens...');
+                
+                const response = await fetch('/api/template-editor/gallery');
+                if (response.ok) {
+                    const data = await response.json();
+                    const gallery = document.getElementById('imageGallery');
+                    
+                    if (data.success && data.data.images) {
+                        gallery.innerHTML = '';
+                        data.data.images.forEach(image => {
+                            const item = document.createElement('div');
+                            item.className = 'gallery-item';
+                            item.dataset.imageUrl = image.url;
+                            item.dataset.imageName = image.name;
+                            item.innerHTML = image.name.substring(0, 8);
+                            item.title = image.name;
+                            
+                            item.addEventListener('click', function() {
+                                addImageToCanvas(image.url, image.name);
+                            });
+                            
+                            gallery.appendChild(item);
+                        });
+                        console.log(\`✅ \${data.data.images.length} imagens carregadas na galeria\`);
+                    } else {
+                        gallery.innerHTML = '<div class="gallery-item">Sem imagens</div>';
+                    }
+                } else {
+                    console.error('❌ Erro ao carregar galeria');
+                    document.getElementById('imageGallery').innerHTML = '<div class="gallery-item">Erro</div>';
+                }
+            } catch (error) {
+                console.error('❌ Erro de rede ao carregar galeria:', error);
+                document.getElementById('imageGallery').innerHTML = '<div class="gallery-item">Erro</div>';
+            }
+        }
+        
+        function addImageToCanvas(imageUrl, imageName) {
+            elementCounter++;
+            const elementId = 'image-' + elementCounter;
+            
+            const element = {
+                id: elementId,
+                type: 'image',
+                content: imageName,
+                styles: { 
+                    width: '200px', 
+                    height: '150px', 
+                    border: '1px solid #ddd',
+                    backgroundImage: \`url(\${imageUrl})\`,
+                    backgroundSize: 'contain',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'center'
+                },
+                data: { imageUrl: imageUrl }
+            };
+            
+            currentTemplate.elements.push(element);
+            renderElement(element);
+            
+            // Esconder drop zone se houver elementos
+            if (currentTemplate.elements.length > 0) {
+                const dropZone = document.getElementById('dropZone');
+                if (dropZone) dropZone.style.display = 'none';
+            }
+            
+            // Atualizar contador
+            updateElementCount();
+            
+            console.log(\`🖼️ Imagem "\${imageName}" adicionada ao canvas\`);
         }
         
         function editElement(elementId) {
@@ -782,8 +1014,12 @@ export class TemplateEditorController {
                 
                 // Mostrar drop zone se não houver elementos
                 if (currentTemplate.elements.length === 0) {
-                    document.getElementById('dropZone').style.display = 'block';
+                    const dropZone = document.getElementById('dropZone');
+                    if (dropZone) dropZone.style.display = 'block';
                 }
+                
+                // Atualizar contador
+                updateElementCount();
             }
         }
         
@@ -807,10 +1043,12 @@ export class TemplateEditorController {
                 document.getElementById('canvas').innerHTML = '<div class="drop-zone" id="dropZone">🎯 Arraste elementos aqui para começar a criar seu template</div>';
                 selectedElement = null;
                 elementCounter = 0;
+                updateElementCount();
             }
         }
         
         function saveTemplate() {
+            // Pedir nome do template
             const templateName = prompt('Nome do template:', currentTemplate.name);
             if (templateName) {
                 currentTemplate.name = templateName;
@@ -818,7 +1056,9 @@ export class TemplateEditorController {
                 
                 // Salvar no localStorage para demonstração
                 localStorage.setItem('template-' + currentTemplate.id, JSON.stringify(currentTemplate));
-                alert('Template salvo com sucesso!');
+                
+                // Salvar no servidor
+                saveTemplateToServer();
             }
         }
         
@@ -880,6 +1120,8 @@ export class TemplateEditorController {
         
         async function previewTemplate() {
             try {
+                console.log('🔄 Gerando preview do template...');
+                
                 const response = await fetch('/api/template-editor/preview', {
                     method: 'POST',
                     headers: {
@@ -892,12 +1134,53 @@ export class TemplateEditorController {
                     const blob = await response.blob();
                     const url = URL.createObjectURL(blob);
                     window.open(url, '_blank');
+                    console.log('✅ Preview gerado com sucesso!');
                 } else {
-                    alert('Erro ao gerar preview do template');
+                    const errorData = await response.json();
+                    console.error('❌ Erro do servidor:', errorData);
+                    alert('Erro ao gerar preview: ' + (errorData.details || 'Erro desconhecido'));
                 }
             } catch (error) {
-                console.error('Erro:', error);
-                alert('Erro ao gerar preview do template');
+                console.error('❌ Erro de rede:', error);
+                alert('Erro de conexão ao gerar preview. Verifique se o servidor está rodando.');
+            }
+        }
+        
+        async function saveTemplateToServer() {
+            try {
+                console.log('💾 Salvando template no servidor...');
+                
+                const templateToSave = {
+                    ...currentTemplate,
+                    updatedAt: new Date()
+                };
+                
+                const response = await fetch('/api/template-editor/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(templateToSave)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Template salvo:', result);
+                    alert('Template salvo com sucesso no servidor!');
+                    
+                    // Fechar a janela do editor e recarregar a página principal
+                    if (window.opener) {
+                        window.opener.location.reload();
+                        window.close();
+                    }
+                } else {
+                    const errorData = await response.json();
+                    console.error('❌ Erro ao salvar:', errorData);
+                    alert('Erro ao salvar template: ' + (errorData.details || 'Erro desconhecido'));
+                }
+            } catch (error) {
+                console.error('❌ Erro ao salvar:', error);
+                alert('Erro de conexão ao salvar template.');
             }
         }
     </script>
@@ -935,14 +1218,76 @@ export class TemplateEditorController {
       // Converter layout para HTML
       const html = TemplateEditorController.convertLayoutToHTML(templateLayout);
 
-      // Gerar PDF
-      const pdfBuffer = await reportService.generatePDFFromHTML(html);
+      try {
+        // Tentar gerar PDF
+        const pdfBuffer = await reportService.generatePDFFromHTML(html);
 
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'inline; filename="preview-template.pdf"');
-      res.setHeader('Content-Length', pdfBuffer.length);
-      
-      return res.send(pdfBuffer);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline; filename="preview-template.pdf"');
+        res.setHeader('Content-Length', pdfBuffer.length);
+        
+        return res.send(pdfBuffer);
+      } catch (pdfError) {
+        console.warn('⚠️ Erro no Puppeteer, retornando HTML:', pdfError);
+        
+        // Fallback: retornar HTML para visualização
+        const previewHtml = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview - ${templateLayout.name}</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .preview-container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 40px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+        }
+        .preview-header {
+            background: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            margin: -40px -40px 20px -40px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .error-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <div class="preview-header">
+            📄 Preview: ${templateLayout.name}
+        </div>
+        <div class="error-notice">
+            ⚠️ <strong>Modo Preview HTML:</strong> O PDF não pôde ser gerado devido a problemas com o Puppeteer. 
+            Visualizando em HTML para demonstração.
+        </div>
+        ${html.replace('<!DOCTYPE html>', '').replace(/<html[^>]*>/, '').replace('</html>', '').replace(/<head>[\s\S]*?<\/head>/, '').replace(/<body[^>]*>/, '').replace('</body>', '')}
+    </div>
+</body>
+</html>
+        `;
+
+        res.setHeader('Content-Type', 'text/html');
+        return res.send(previewHtml);
+      }
 
     } catch (error) {
       console.error('❌ Erro ao gerar preview:', error);
@@ -976,6 +1321,8 @@ export class TemplateEditorController {
           return `<div style="${styles}; border: 1px solid #ddd; padding: 20px; text-align: center;">📈 ${element.content}</div>`;
         case 'signature':
           return `<div style="${styles}; border: 1px dashed #ccc; padding: 20px; text-align: center;">✍️ ${element.content}</div>`;
+        case 'footer':
+          return `<div style="${styles}; border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px; text-align: center; font-size: 12px; color: #666;">🦶 ${element.content}</div>`;
         default:
           return `<div style="${styles}">${element.content}</div>`;
       }
@@ -1074,21 +1421,38 @@ export class TemplateEditorController {
         });
       }
 
+      // Criar diretório de templates se não existir
+      const templatesDir = path.join(process.cwd(), 'backend', 'templates');
+      if (!fs.existsSync(templatesDir)) {
+        fs.mkdirSync(templatesDir, { recursive: true });
+      }
+
       // Salvar como arquivo .hbs
       const templateHtml = TemplateEditorController.convertLayoutToHTML(templateLayout);
-      const templatePath = path.join(process.cwd(), 'templates', `${templateLayout.name.toLowerCase().replace(/\s+/g, '-')}.hbs`);
+      const fileName = `${templateLayout.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+      const templatePath = path.join(templatesDir, `${fileName}.hbs`);
       
       fs.writeFileSync(templatePath, templateHtml);
 
+      // Também salvar o layout JSON para futuras edições
+      const layoutPath = path.join(templatesDir, `${fileName}.json`);
+      fs.writeFileSync(layoutPath, JSON.stringify(templateLayout, null, 2));
+
       // Recarregar templates
-      reportService.templateService.reloadTemplates();
+      try {
+        reportService.templateService.reloadTemplates();
+      } catch (reloadError) {
+        console.warn('⚠️ Aviso: Não foi possível recarregar templates:', reloadError);
+      }
 
       return res.json({
         success: true,
         message: 'Template salvo com sucesso',
         data: {
           templateName: templateLayout.name,
-          templatePath: templatePath
+          fileName: fileName,
+          templatePath: templatePath,
+          layoutPath: layoutPath
         }
       });
 

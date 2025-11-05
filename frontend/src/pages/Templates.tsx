@@ -1,322 +1,222 @@
-import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
-import PageHeader from '@/components/Layout/PageHeader';
-import { useTemplates, useDeleteTemplate, useUpdateTemplate } from '../hooks/useTemplates';
-import { TemplateUploadForm } from '../components/TemplateUploadForm';
-import { ReportTemplate } from '../types/template';
+import React, { useState, useEffect } from 'react';
+import { Plus, FileText, Edit, Eye, Download } from 'lucide-react';
+import { apiService } from '../services/api';
+
+interface Template {
+  name: string;
+  filename: string;
+  type: string;
+  lastModified: string;
+  size: number;
+}
 
 const Templates: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showUploadForm, setShowUploadForm] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<ReportTemplate | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data, isLoading, error } = useTemplates({
-    page: currentPage,
-    limit: 10,
-    search: searchTerm || undefined,
-  });
+  useEffect(() => {
+    loadTemplates();
+  }, []);
 
-  const deleteTemplate = useDeleteTemplate();
-  const updateTemplate = useUpdateTemplate();
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1);
-  };
-
-  const handleDelete = async (template: ReportTemplate) => {
-    if (template._count?.reports && template._count.reports > 0) {
-      alert(`Não é possível excluir o template "${template.name}" pois ele possui ${template._count.reports} relatório(s) associado(s).`);
-      return;
-    }
-
-    if (window.confirm(`Tem certeza que deseja excluir o template "${template.name}"?`)) {
-      await deleteTemplate.mutateAsync(template.id);
+  const loadTemplates = async () => {
+    try {
+      const response = await apiService.api.get('/test/templates');
+      if (response.data.success) {
+        // Simular dados de templates para demonstração
+        const templateData = response.data.data.templates.map((name: string) => ({
+          name: name.replace('-', ' ').toUpperCase(),
+          filename: name + '.hbs',
+          type: 'Handlebars Template',
+          lastModified: new Date().toLocaleDateString('pt-BR'),
+          size: Math.floor(Math.random() * 50) + 10 // KB simulado
+        }));
+        setTemplates(templateData);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar templates:', error);
+      alert('Erro ao carregar templates');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleToggleActive = async (template: ReportTemplate) => {
-    await updateTemplate.mutateAsync({
-      id: template.id,
-      data: { isActive: !template.isActive },
-    });
+  const openTemplateEditor = () => {
+    // Abrir o editor em nova aba - usar URL correta sem duplicar /api
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const editorUrl = `${apiUrl}/template-editor`;
+    window.open(editorUrl, '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes');
   };
 
-  const handlePreview = (template: ReportTemplate) => {
-    setSelectedTemplate(template);
-    setShowPreview(true);
+  const previewTemplate = async (templateName: string) => {
+    try {
+      // Usar timeout maior para geração de PDF
+      const response = await apiService.api.get(`/test/templates/${templateName}`, {
+        responseType: 'blob',
+        timeout: 30000 // 30 segundos
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (error: any) {
+      console.error('Erro ao visualizar template:', error);
+      if (error.code === 'ECONNABORTED') {
+        alert('Timeout: A geração do PDF está demorando mais que o esperado. Tente novamente.');
+      } else {
+        alert('Erro ao visualizar template');
+      }
+    }
   };
 
-  if (isLoading) {
+  const downloadTemplate = async (templateName: string) => {
+    try {
+      // Usar timeout maior para geração de PDF
+      const response = await apiService.api.get(`/test/templates/${templateName}`, {
+        responseType: 'blob',
+        timeout: 30000 // 30 segundos
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${templateName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      alert('Template baixado com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao baixar template:', error);
+      if (error.code === 'ECONNABORTED') {
+        alert('Timeout: A geração do PDF está demorando mais que o esperado. Tente novamente.');
+      } else {
+        alert('Erro ao baixar template');
+      }
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <p className="text-red-800">Erro ao carregar templates</p>
-      </div>
-    );
-  }
-
   return (
-    <>
-      <PageHeader
-        title="Templates"
-        description="Gerencie os templates de relatórios"
-        actions={
-          <button
-            onClick={() => setShowUploadForm(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Templates de Relatórios</h1>
+          <p className="text-gray-600 mt-1">
+            Gerencie e crie templates personalizados para seus laudos
+          </p>
+        </div>
+        <button
+          onClick={openTemplateEditor}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Novo Template
+        </button>
+      </div>
+
+      {/* Templates Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {templates.map((template, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Template
+            {/* Template Icon */}
+            <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
+              <FileText className="h-6 w-6 text-blue-600" />
+            </div>
+
+            {/* Template Info */}
+            <div className="space-y-2 mb-4">
+              <h3 className="font-semibold text-gray-900">{template.name}</h3>
+              <p className="text-sm text-gray-500">{template.type}</p>
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>Modificado: {template.lastModified}</span>
+                <span>{template.size} KB</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => previewTemplate(template.filename.replace('.hbs', ''))}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm flex items-center justify-center gap-1 transition-colors"
+                title="Visualizar"
+              >
+                <Eye className="h-4 w-4" />
+                Ver
+              </button>
+              <button
+                onClick={() => downloadTemplate(template.filename.replace('.hbs', ''))}
+                className="flex-1 bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded text-sm flex items-center justify-center gap-1 transition-colors"
+                title="Baixar PDF"
+              >
+                <Download className="h-4 w-4" />
+                PDF
+              </button>
+              <button
+                onClick={openTemplateEditor}
+                className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded text-sm flex items-center justify-center gap-1 transition-colors"
+                title="Editar"
+              >
+                <Edit className="h-4 w-4" />
+                Editar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {templates.length === 0 && (
+        <div className="text-center py-12">
+          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Nenhum template encontrado
+          </h3>
+          <p className="text-gray-500 mb-4">
+            Comece criando seu primeiro template personalizado
+          </p>
+          <button
+            onClick={openTemplateEditor}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Criar Primeiro Template
           </button>
-        }
-      />
-
-      {/* Upload Form Modal */}
-      {showUploadForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <TemplateUploadForm
-              onSuccess={() => setShowUploadForm(false)}
-              onCancel={() => setShowUploadForm(false)}
-            />
-          </div>
         </div>
       )}
 
-      {/* Search */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <form onSubmit={handleSearch} className="flex gap-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Buscar templates..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-        </form>
-      </div>
-
-      {/* Templates List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nome
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Descrição
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Relatórios
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Criado em
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {data?.templates.map((template) => (
-                <tr key={template.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {template.name}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {template.templatePath}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 max-w-xs truncate">
-                      {template.description || '-'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        template.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {template.isActive ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {template._count?.reports || 0}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(template.createdAt).toLocaleDateString('pt-BR')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        onClick={() => handlePreview(template)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="Visualizar"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleToggleActive(template)}
-                        className={`${
-                          template.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'
-                        }`}
-                        title={template.isActive ? 'Desativar' : 'Ativar'}
-                      >
-                        {template.isActive ? (
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" fill="#ef4444"/>
-                            <path d="M15 9l-6 6m0-6l6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" fill="#22c55e"/>
-                            <path d="M9 12l2 2 4-4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(template)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Excluir"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {data && data.pagination.totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={!data.pagination.hasPrev}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Anterior
-              </button>
-              <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={!data.pagination.hasNext}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Próximo
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Mostrando{' '}
-                  <span className="font-medium">
-                    {(currentPage - 1) * data.pagination.limit + 1}
-                  </span>{' '}
-                  até{' '}
-                  <span className="font-medium">
-                    {Math.min(currentPage * data.pagination.limit, data.pagination.total)}
-                  </span>{' '}
-                  de{' '}
-                  <span className="font-medium">{data.pagination.total}</span> resultados
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    disabled={!data.pagination.hasPrev}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Anterior
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={!data.pagination.hasNext}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Próximo
-                  </button>
-                </nav>
-              </div>
+      {/* Info Card */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <FileText className="h-4 w-4 text-blue-600" />
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Preview Modal */}
-      {showPreview && selectedTemplate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Preview do Template</h2>
-              <button
-                onClick={() => setShowPreview(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium text-gray-900">{selectedTemplate.name}</h3>
-                <p className="text-sm text-gray-600">{selectedTemplate.description}</p>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-md">
-                <p className="text-sm text-gray-600">
-                  <strong>Arquivo:</strong> {selectedTemplate.templatePath}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Status:</strong> {selectedTemplate.isActive ? 'Ativo' : 'Inativo'}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Criado em:</strong> {new Date(selectedTemplate.createdAt).toLocaleString('pt-BR')}
-                </p>
-              </div>
-              
-              <div className="bg-blue-50 p-4 rounded-md">
-                <p className="text-sm text-blue-800">
-                  Funcionalidade de preview completo será implementada com integração ao FastReport.
-                </p>
-              </div>
-            </div>
+          <div>
+            <h4 className="font-medium text-blue-900 mb-1">
+              Editor Visual de Templates
+            </h4>
+            <p className="text-sm text-blue-700">
+              Use nosso editor visual com funcionalidades drag-and-drop para criar templates profissionais. 
+              Personalize cores, fontes, layouts e adicione elementos como gráficos, tabelas e imagens.
+            </p>
           </div>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 };
 

@@ -210,26 +210,46 @@ export class ReportGenerationService {
    * Gera PDF usando Puppeteer a partir de HTML
    */
   async generatePDFFromHTML(html: string): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu'
-      ],
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-      timeout: 60000,
-      protocolTimeout: 60000
-    });
-
+    let browser = null;
+    
     try {
+      // Configuração otimizada para Docker com novo headless
+      browser = await puppeteer.launch({
+        headless: 'new', // Usar novo modo headless
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-ipc-flooding-protection'
+        ],
+        executablePath: '/usr/bin/chromium-browser',
+        timeout: 30000,
+        protocolTimeout: 30000
+      });
+
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      
+      // Configurar timeouts da página
+      page.setDefaultTimeout(30000);
+      page.setDefaultNavigationTimeout(30000);
+      
+      // Configurar página
+      await page.setContent(html, { 
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
+      });
+      
+      // Aguardar renderização
+      await page.waitForTimeout(500);
       
       const pdfBuffer = await page.pdf({
         format: 'A4',
@@ -239,12 +259,22 @@ export class ReportGenerationService {
           right: '15mm',
           bottom: '20mm',
           left: '15mm'
-        }
+        },
+        timeout: 30000
       });
 
       return pdfBuffer;
+    } catch (error) {
+      console.error('❌ Erro na geração de PDF:', error);
+      throw new Error(`Erro na geração de PDF: ${error.message}`);
     } finally {
-      await browser.close();
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (closeError) {
+          console.warn('⚠️ Erro ao fechar browser:', closeError);
+        }
+      }
     }
   }
 }
