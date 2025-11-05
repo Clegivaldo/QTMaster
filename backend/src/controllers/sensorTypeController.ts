@@ -1,0 +1,252 @@
+import { Request, Response } from 'express';
+import { z } from 'zod';
+import { prisma } from '../lib/prisma.js';
+import { AuthenticatedRequest } from '../types/auth.js';
+import { logger } from '../utils/logger.js';
+
+// Validation schemas
+const createSensorTypeSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório').max(255, 'Nome muito longo'),
+  description: z.string().optional().or(z.literal('')),
+  dataConfig: z.object({
+    temperatureColumn: z.string().min(1, 'Coluna de temperatura é obrigatória'),
+    humidityColumn: z.string().optional().or(z.literal('')),
+    timestampColumn: z.string().min(1, 'Coluna de timestamp é obrigatória'),
+    startRow: z.number().min(1, 'Linha inicial deve ser maior que 0'),
+    dateFormat: z.string().min(1, 'Formato de data é obrigatório'),
+    hasHeader: z.boolean().optional().default(true),
+    separator: z.string().optional().default(','),
+  }),
+});
+
+const updateSensorTypeSchema = createSensorTypeSchema.partial();
+
+export class SensorTypeController {
+  async getSensorTypes(req: Request, res: Response) {
+    try {
+      const sensorTypes = await prisma.sensorType.findMany({
+        orderBy: { name: 'asc' },
+        include: {
+          _count: {
+            select: {
+              sensors: true,
+            },
+          },
+        },
+      });
+
+      res.json({
+        success: true,
+        data: { sensorTypes },
+      });
+    } catch (error) {
+      logger.error('Get sensor types error:', { error: error instanceof Error ? error.message : error });
+      res.status(500).json({
+        error: 'Internal server error',
+      });
+    }
+  }
+
+  async getSensorType(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const sensorType = await prisma.sensorType.findUnique({
+        where: { id },
+        include: {
+          sensors: {
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              serialNumber: true,
+              model: true,
+              createdAt: true,
+            },
+          },
+          _count: {
+            select: {
+              sensors: true,
+            },
+          },
+        },
+      });
+
+      if (!sensorType) {
+        return res.status(404).json({
+          error: 'Tipo de sensor não encontrado',
+        });
+      }
+
+      res.json({
+        success: true,
+        data: { sensorType },
+      });
+    } catch (error) {
+      logger.error('Get sensor type error:', { error: error instanceof Error ? error.message : error, sensorTypeId: req.params.id });
+      res.status(500).json({
+        error: 'Internal server error',
+      });
+    }
+  }
+
+  async createSensorType(req: AuthenticatedRequest, res: Response) {
+    try {
+      const validatedData = createSensorTypeSchema.parse(req.body);
+
+      // Convert empty description to null
+      const sensorTypeData = {
+        ...validatedData,
+        description: validatedData.description || null,
+      };
+
+      // Check if name already exists
+      const existingSensorType = await prisma.sensorType.findFirst({
+        where: { name: sensorTypeData.name },
+      });
+
+      if (existingSensorType) {
+        return res.status(400).json({
+          error: 'Nome do tipo de sensor já está em uso',
+        });
+      }
+
+      const sensorType = await prisma.sensorType.create({
+        data: sensorTypeData,
+      });
+
+      logger.info('Sensor type created:', { sensorTypeId: sensorType.id, name: sensorType.name, userId: req.user?.id });
+
+      res.status(201).json({
+        success: true,
+        data: { sensorType },
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: 'Validation error',
+          details: error.errors,
+        });
+      }
+
+      logger.error('Create sensor type error:', { error: error instanceof Error ? error.message : error, userId: req.user?.id });
+      res.status(500).json({
+        error: 'Internal server error',
+      });
+    }
+  }
+
+  async updateSensorType(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const validatedData = updateSensorTypeSchema.parse(req.body);
+
+      // Check if sensor type exists
+      const existingSensorType = await prisma.sensorType.findUnique({
+        where: { id },
+      });
+
+      if (!existingSensorType) {
+        return res.status(404).json({
+          error: 'Tipo de sensor não encontrado',
+        });
+      }
+
+      // Check if name already exists (if provided and different from current)
+      if (validatedData.name && validatedData.name !== existingSensorType.name) {
+        const nameExists = await prisma.sensorType.findFirst({
+          where: { 
+            name: validatedData.name,
+            id: { not: id },
+          },
+        });
+
+        if (nameExists) {
+          return res.status(400).json({
+            error: 'Nome do tipo de sensor já está em uso',
+          });
+        }
+      }
+
+      // Convert empty description to null
+      const sensorTypeData = {
+        ...validatedData,
+        description: validatedData.description === '' ? null : validatedData.description,
+      };
+
+      const sensorType = await prisma.sensorType.update({
+        where: { id },
+        data: sensorTypeData,
+      });
+
+      logger.info('Sensor type updated:', { sensorTypeId: sensorType.id, name: sensorType.name, userId: req.user?.id });
+
+      res.json({
+        success: true,
+        data: { sensorType },
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: 'Validation error',
+          details: error.errors,
+        });
+      }
+
+      logger.error('Update sensor type error:', { error: error instanceof Error ? error.message : error, sensorTypeId: req.params.id, userId: req.user?.id });
+      res.status(500).json({
+        error: 'Internal server error',
+      });
+    }
+  }
+
+  async deleteSensorType(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { id } = req.params;
+
+      // Check if sensor type exists
+      const existingSensorType = await prisma.sensorType.findUnique({
+        where: { id },
+        include: {
+          _count: {
+            select: {
+              sensors: true,
+            },
+          },
+        },
+      });
+
+      if (!existingSensorType) {
+        return res.status(404).json({
+          error: 'Tipo de sensor não encontrado',
+        });
+      }
+
+      // Check if sensor type has associated sensors
+      if (existingSensorType._count.sensors > 0) {
+        return res.status(400).json({
+          error: 'Não é possível excluir tipo de sensor com sensores associados',
+          details: {
+            sensors: existingSensorType._count.sensors,
+          },
+        });
+      }
+
+      await prisma.sensorType.delete({
+        where: { id },
+      });
+
+      logger.info('Sensor type deleted:', { sensorTypeId: id, name: existingSensorType.name, userId: req.user?.id });
+
+      res.json({
+        success: true,
+        message: 'Tipo de sensor excluído com sucesso',
+      });
+    } catch (error) {
+      logger.error('Delete sensor type error:', { error: error instanceof Error ? error.message : error, sensorTypeId: req.params.id, userId: req.user?.id });
+      res.status(500).json({
+        error: 'Internal server error',
+      });
+    }
+  }
+}

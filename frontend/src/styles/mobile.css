@@ -1,0 +1,267 @@
+/* Mobile-specific styles and utilities */
+
+/* Touch-friendly button sizes */
+@media (max-width: 640px) {
+  .btn-mobile {
+    @apply min-h-[44px] px-4 py-3 text-base;
+  }
+  
+  .input-mobile {
+    @apply min-h-[44px] px-4 py-3 text-base;
+  }
+}
+
+/* Improved touch targets */
+.touch-target {
+  @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+}
+
+/* Mobile-optimized spacing */
+.mobile-container {
+  @apply px-4 sm:px-6 lg:px-8;
+}
+
+.mobile-section {
+  @apply py-4 sm:py-6 lg:py-8;
+}
+
+/* Mobile-friendly cards */
+.mobile-card {
+  @apply p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200;
+}
+
+/* Responsive text sizes */
+.text-responsive-xs {
+  @apply text-xs sm:text-sm;
+}
+
+.text-responsive-sm {
+  @apply text-sm sm:text-base;
+}
+
+.text-responsive-base {
+  @apply text-base sm:text-lg;
+}
+
+.text-responsive-lg {
+  @apply text-lg sm:text-xl lg:text-2xl;
+}
+
+.text-responsive-xl {
+  @apply text-xl sm:text-2xl lg:text-3xl;
+}
+
+/* Mobile-optimized grids */
+.grid-mobile-1 {
+  @apply grid grid-cols-1;
+}
+
+.grid-mobile-2 {
+  @apply grid grid-cols-1 sm:grid-cols-2;
+}
+
+.grid-mobile-3 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.grid-mobile-4 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+}
+
+/* Mobile navigation improvements */
+.mobile-nav-item {
+  @apply flex items-center px-4 py-3 text-base font-medium rounded-md transition-colors duration-150;
+}
+
+/* Mobile modal improvements */
+.mobile-modal {
+  @apply fixed inset-0 z-50 overflow-y-auto;
+}
+
+.mobile-modal-content {
+  @apply inline-block align-bottom bg-white rounded-t-lg sm:rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full;
+}
+
+/* Improved mobile forms */
+.mobile-form-group {
+  @apply space-y-1;
+}
+
+.mobile-form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.mobile-form-input {
+  @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm;
+}
+
+/* Mobile-friendly tables */
+.mobile-table-card {
+  @apply block md:hidden divide-y divide-gray-200;
+}
+
+.mobile-table-row {
+  @apply p-4 hover:bg-gray-50;
+}
+
+/* Responsive flex utilities */
+.flex-mobile-col {
+  @apply flex flex-col sm:flex-row;
+}
+
+.flex-mobile-row {
+  @apply flex flex-row;
+}
+
+/* Mobile-optimized spacing */
+.space-mobile-2 {
+  @apply space-y-2 sm:space-y-0 sm:space-x-2;
+}
+
+.space-mobile-4 {
+  @apply space-y-4 sm:space-y-0 sm:space-x-4;
+}
+
+/* Mobile-friendly buttons */
+.btn-mobile-full {
+  @apply w-full sm:w-auto;
+}
+
+.btn-mobile-icon {
+  @apply inline-flex sm:hidden;
+}
+
+/* Improved mobile typography */
+.mobile-heading {
+  @apply text-lg sm:text-xl lg:text-2xl font-bold text-gray-900;
+}
+
+.mobile-subheading {
+  @apply text-base sm:text-lg font-medium text-gray-900;
+}
+
+.mobile-body {
+  @apply text-sm sm:text-base text-gray-600;
+}
+
+.mobile-caption {
+  @apply text-xs sm:text-sm text-gray-500;
+}
+
+/* Mobile-optimized shadows */
+.shadow-mobile {
+  @apply shadow-sm sm:shadow;
+}
+
+.shadow-mobile-lg {
+  @apply shadow sm:shadow-lg;
+}
+
+/* Mobile-friendly borders */
+.border-mobile {
+  @apply border-0 sm:border border-gray-200;
+}
+
+/* Mobile scroll improvements */
+.scroll-mobile {
+  @apply overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0;
+}
+
+/* Mobile-optimized padding */
+.p-mobile {
+  @apply p-4 sm:p-6;
+}
+
+.px-mobile {
+  @apply px-4 sm:px-6;
+}
+
+.py-mobile {
+  @apply py-4 sm:py-6;
+}
+
+/* Mobile-friendly aspect ratios */
+.aspect-mobile-square {
+  @apply aspect-square;
+}
+
+.aspect-mobile-video {
+  @apply aspect-video;
+}
+
+/* Mobile-optimized z-index */
+.z-mobile-overlay {
+  @apply z-40 lg:z-30;
+}
+
+.z-mobile-modal {
+  @apply z-50;
+}
+
+/* Mobile-friendly animations */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-mobile-slide-up {
+    animation: mobile-slide-up 0.3s ease-out;
+  }
+  
+  .animate-mobile-fade-in {
+    animation: mobile-fade-in 0.2s ease-out;
+  }
+}
+
+@keyframes mobile-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes mobile-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobile-specific utilities */
+.hide-mobile {
+  @apply hidden sm:block;
+}
+
+.show-mobile {
+  @apply block sm:hidden;
+}
+
+.mobile-only {
+  @apply sm:hidden;
+}
+
+.desktop-only {
+  @apply hidden sm:block;
+}
+
+/* Mobile-optimized focus states */
+.focus-mobile {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+}
+
+/* Mobile-friendly disabled states */
+.disabled-mobile {
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* Mobile loading states */
+.loading-mobile {
+  @apply animate-pulse bg-gray-200;
+}
+
+/* Mobile-optimized transitions */
+.transition-mobile {
+  @apply transition-all duration-200 ease-in-out;
+}

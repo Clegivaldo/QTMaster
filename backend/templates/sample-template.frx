@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" ReportInfo.Created="11/04/2025 17:30:00" ReportInfo.Modified="11/04/2025 17:30:00" ReportInfo.CreatorVersion="2023.2.21.0">
+  <Dictionary>
+    <BusinessObjectDataSource Name="Report" ReferenceName="Report" DataType="System.Int32" Enabled="true">
+      <Column Name="Id" DataType="System.String"/>
+      <Column Name="GeneratedAt" DataType="System.String"/>
+      <BusinessObjectDataSource Name="Client" ReferenceName="Report.Client" DataType="System.Int32" Enabled="true">
+        <Column Name="Id" DataType="System.String"/>
+        <Column Name="Name" DataType="System.String"/>
+        <Column Name="Email" DataType="System.String"/>
+        <Column Name="Phone" DataType="System.String"/>
+        <Column Name="Address" DataType="System.String"/>
+        <Column Name="Cnpj" DataType="System.String"/>
+      </BusinessObjectDataSource>
+      <BusinessObjectDataSource Name="Validation" ReferenceName="Report.Validation" DataType="System.Int32" Enabled="true">
+        <Column Name="Id" DataType="System.String"/>
+        <Column Name="Name" DataType="System.String"/>
+        <Column Name="Description" DataType="System.String"/>
+        <Column Name="MinTemperature" DataType="System.Double"/>
+        <Column Name="MaxTemperature" DataType="System.Double"/>
+        <Column Name="MinHumidity" DataType="System.Double"/>
+        <Column Name="MaxHumidity" DataType="System.Double"/>
+        <Column Name="IsApproved" DataType="System.Boolean"/>
+        <Column Name="CreatedAt" DataType="System.String"/>
+      </BusinessObjectDataSource>
+      <BusinessObjectDataSource Name="Statistics" ReferenceName="Report.Statistics" DataType="System.Int32" Enabled="true">
+        <Column Name="TotalReadings" DataType="System.Int32"/>
+      </BusinessObjectDataSource>
+    </BusinessObjectDataSource>
+    <BusinessObjectDataSource Name="SensorData" ReferenceName="SensorData" DataType="System.Int32" Enabled="true">
+      <Column Name="Id" DataType="System.String"/>
+      <Column Name="SensorId" DataType="System.String"/>
+      <Column Name="Timestamp" DataType="System.String"/>
+      <Column Name="Temperature" DataType="System.Double"/>
+      <Column Name="Humidity" DataType="System.Double"/>
+      <Column Name="FileName" DataType="System.String"/>
+      <Column Name="SensorSerialNumber" DataType="System.String"/>
+      <Column Name="SensorModel" DataType="System.String"/>
+      <Column Name="SensorType" DataType="System.String"/>
+    </BusinessObjectDataSource>
+  </Dictionary>
+  <ReportPage Name="Page1" Landscape="false" PaperWidth="210" PaperHeight="297" RawPaperSize="9" FirstPageSource="15" OtherPagesSource="15" Watermark.Font="Arial, 60pt">
+    <ReportTitleBand Name="ReportTitle1" Width="718.2" Height="113.4">
+      <TextObject Name="Text1" Left="0" Top="18.9" Width="718.2" Height="37.8" Text="LAUDO DE QUALIFICAÇÃO TÉRMICA" HorzAlign="Center" VertAlign="Center" Font="Arial, 16pt, style=Bold"/>
+      <TextObject Name="Text2" Left="0" Top="66.15" Width="718.2" Height="18.9" Text="[Report.Client.Name]" HorzAlign="Center" VertAlign="Center" Font="Arial, 12pt, style=Bold"/>
+    </ReportTitleBand>
+    <PageHeaderBand Name="PageHeader1" Top="117.4" Width="718.2" Height="75.6">
+      <TextObject Name="Text3" Left="0" Top="9.45" Width="94.5" Height="18.9" Text="Cliente:" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="Text4" Left="94.5" Top="9.45" Width="623.7" Height="18.9" Text="[Report.Client.Name]" Font="Arial, 10pt"/>
+      <TextObject Name="Text5" Left="0" Top="28.35" Width="94.5" Height="18.9" Text="Validação:" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="Text6" Left="94.5" Top="28.35" Width="623.7" Height="18.9" Text="[Report.Validation.Name]" Font="Arial, 10pt"/>
+      <TextObject Name="Text7" Left="0" Top="47.25" Width="94.5" Height="18.9" Text="Data:" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="Text8" Left="94.5" Top="47.25" Width="623.7" Height="18.9" Text="[Report.GeneratedAt]" Font="Arial, 10pt"/>
+    </PageHeaderBand>
+    <DataBand Name="Data1" Top="197" Width="718.2" Height="37.8" DataSource="SensorData">
+      <TextObject Name="Text9" Left="0" Top="9.45" Width="113.4" Height="18.9" Text="[SensorData.SensorSerialNumber]" Font="Arial, 9pt"/>
+      <TextObject Name="Text10" Left="113.4" Top="9.45" Width="113.4" Height="18.9" Text="[SensorData.Timestamp]" Font="Arial, 9pt"/>
+      <TextObject Name="Text11" Left="226.8" Top="9.45" Width="75.6" Height="18.9" Text="[SensorData.Temperature]°C" Font="Arial, 9pt"/>
+      <TextObject Name="Text12" Left="302.4" Top="9.45" Width="75.6" Height="18.9" Text="[SensorData.Humidity]%" Font="Arial, 9pt"/>
+    </DataBand>
+    <PageFooterBand Name="PageFooter1" Top="238.8" Width="718.2" Height="37.8">
+      <TextObject Name="Text13" Left="0" Top="9.45" Width="718.2" Height="18.9" Text="Página [Page] de [TotalPages]" HorzAlign="Center" Font="Arial, 9pt"/>
+    </PageFooterBand>
+  </ReportPage>
+</Report>
