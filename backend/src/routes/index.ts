@@ -10,7 +10,7 @@ import validationRoutes from './validations';
 import reportRoutes from './reports';
 import reportTemplateRoutes from './reportTemplates';
 import monitoringRoutes from './monitoring';
-import testRoutes from './test';
+
 import templateEditorRoutes from './templateEditor';
 import editorTemplatesRoutes from './editorTemplates';
 import uploadsRoutes from './uploads';
@@ -29,7 +29,7 @@ router.use('/validations', validationRoutes);
 router.use('/reports', reportRoutes);
 router.use('/report-templates', reportTemplateRoutes);
 router.use('/monitoring', monitoringRoutes);
-router.use('/test', testRoutes);
+
 router.use('/template-editor', templateEditorRoutes);
 router.use('/editor-templates', editorTemplatesRoutes);
 router.use('/uploads', uploadsRoutes);
@@ -61,7 +61,7 @@ router.get('/', (req, res) => {
       reports: '/api/reports',
       reportTemplates: '/api/report-templates',
       monitoring: '/api/monitoring',
-      test: '/api/test',
+
       templateEditor: '/api/template-editor',
       editorTemplates: '/api/editor-templates',
       uploads: '/api/uploads',
