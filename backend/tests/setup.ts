@@ -1,5 +1,5 @@
 /**
- * Setup de testes para o Template Editor
+ * Setup de testes para o Sistema de Laudos Térmicos
  */
 
 // Mock do Puppeteer para testes
@@ -23,7 +23,8 @@ export const mockRequest = (body: any = {}, params: any = {}, query: any = {}) =
   query,
   headers: {},
   method: 'POST',
-  url: '/test'
+  url: '/test',
+  user: { userId: '1', email: 'test@example.com', role: 'USER' }
 });
 
 export const mockResponse = () => {
@@ -42,6 +43,55 @@ export const mockFs = {
   writeFileSync: jest.fn(),
   readFileSync: jest.fn().mockReturnValue('mock file content'),
   readdirSync: jest.fn().mockReturnValue(['test-file.svg'])
+};
+
+// Mock do Prisma Client
+export const mockPrismaClient = {
+  user: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  client: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
+  },
+  sensor: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  suitcase: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  validation: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  report: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  $connect: jest.fn(),
+  $disconnect: jest.fn(),
 };
 
 // Template de teste padrão
@@ -100,6 +150,11 @@ export const mockTemplateLayout = {
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01')
 };
+
+// Mock de variáveis de ambiente para testes
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test-jwt-secret';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
 
 // Configuração global do Jest
 beforeEach(() => {

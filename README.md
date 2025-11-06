@@ -190,3 +190,6 @@ sistema-laudo-termico/
 ## 📝 Licença
 
 Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+docker-compose build --no-cache
+docker-compose up -d --force-recreate

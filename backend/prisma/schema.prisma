@@ -190,6 +190,32 @@ model Report {
   @@map("reports")
 }
 
+model EditorTemplate {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  category      String   @default("default")
+  elements      Json     // Array of template elements
+  globalStyles  Json     // Global styling configuration
+  pageSettings  Json     // Page configuration (size, margins, etc.)
+  tags          String[] // Array of tags for categorization
+  thumbnail     String?  // Optional thumbnail image URL
+  isPublic      Boolean  @default(false)
+  createdBy     String   // User ID who created the template
+  version       Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([createdBy])
+  @@index([category])
+  @@index([isPublic])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([createdBy, isPublic])
+  @@index([category, isPublic])
+  @@map("editor_templates")
+}
+
 model AuditLog {
   id           String   @id @default(cuid())
   action       String

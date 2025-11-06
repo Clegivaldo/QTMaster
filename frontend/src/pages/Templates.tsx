@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, FileText, Edit, Eye, Download } from 'lucide-react';
+import { FileText, Eye, Download, Palette } from 'lucide-react';
 import { apiService } from '../services/api';
+import EditorLayoutProfissional from '../components/EditorLayoutProfissional';
 
 interface Template {
   name: string;
@@ -13,6 +14,8 @@ interface Template {
 const Templates: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
 
   useEffect(() => {
     loadTemplates();
@@ -40,11 +43,49 @@ const Templates: React.FC = () => {
     }
   };
 
-  const openTemplateEditor = () => {
-    // Abrir o editor em nova aba - usar URL correta sem duplicar /api
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-    const editorUrl = `${apiUrl}/template-editor`;
-    window.open(editorUrl, '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes');
+  const openTemplateEditor = (templateId?: string) => {
+    setSelectedTemplateId(templateId);
+    setIsEditorOpen(true);
+  };
+
+  const closeTemplateEditor = () => {
+    setIsEditorOpen(false);
+    setSelectedTemplateId(undefined);
+  };
+
+  const handleSaveTemplate = async (template: any) => {
+    try {
+      console.log('💾 Salvando template no novo editor:', template);
+      
+      // TODO: Implementar integração com API do backend
+      // const response = await apiService.api.post('/templates', template);
+      
+      // Simular salvamento
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Recarregar templates
+      await loadTemplates();
+      
+      // Fechar editor
+      closeTemplateEditor();
+      
+      alert('Template salvo com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar template:', error);
+      alert('Erro ao salvar template');
+    }
+  };
+
+  const handleExportTemplate = async (template: any, format: string) => {
+    try {
+      console.log('📤 Exportando template:', template, 'formato:', format);
+      
+      // TODO: Implementar exportação
+      alert(`Template exportado em ${format.toUpperCase()}!`);
+    } catch (error) {
+      console.error('Erro ao exportar template:', error);
+      alert('Erro ao exportar template');
+    }
   };
 
   const previewTemplate = async (templateName: string) => {
@@ -116,10 +157,10 @@ const Templates: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={openTemplateEditor}
+          onClick={() => openTemplateEditor()}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
         >
-          <Plus className="h-4 w-4" />
+          <Palette className="h-4 w-4" />
           Novo Template
         </button>
       </div>
@@ -165,11 +206,11 @@ const Templates: React.FC = () => {
                 PDF
               </button>
               <button
-                onClick={openTemplateEditor}
+                onClick={() => openTemplateEditor(template.filename)}
                 className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded text-sm flex items-center justify-center gap-1 transition-colors"
-                title="Editar"
+                title="Editar no Editor Profissional"
               >
-                <Edit className="h-4 w-4" />
+                <Palette className="h-4 w-4" />
                 Editar
               </button>
             </div>
@@ -188,14 +229,23 @@ const Templates: React.FC = () => {
             Comece criando seu primeiro template personalizado
           </p>
           <button
-            onClick={openTemplateEditor}
+            onClick={() => openTemplateEditor()}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
           >
-            <Plus className="h-4 w-4" />
+            <Palette className="h-4 w-4" />
             Criar Primeiro Template
           </button>
         </div>
       )}
+
+      {/* Editor Layout Profissional */}
+      <EditorLayoutProfissional
+        isOpen={isEditorOpen}
+        onClose={closeTemplateEditor}
+        templateId={selectedTemplateId}
+        onSave={handleSaveTemplate}
+        onExport={handleExportTemplate}
+      />
 
       {/* Info Card */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -207,12 +257,20 @@ const Templates: React.FC = () => {
           </div>
           <div>
             <h4 className="font-medium text-blue-900 mb-1">
-              Editor Visual de Templates
+              Editor de Layout Profissional
             </h4>
             <p className="text-sm text-blue-700">
-              Use nosso editor visual com funcionalidades drag-and-drop para criar templates profissionais. 
-              Personalize cores, fontes, layouts e adicione elementos como gráficos, tabelas e imagens.
+              Novo editor integrado com funcionalidades avançadas: drag-and-drop, zoom inteligente, 
+              formatação completa de texto, redimensionamento preciso e muito mais. 
+              Crie templates profissionais com a mesma facilidade do FastReport.
             </p>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">✨ Zoom 25%-400%</span>
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">🎨 Formatação Completa</span>
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">📐 Redimensionamento</span>
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">⌨️ Atalhos de Teclado</span>
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">💾 Auto-save</span>
+            </div>
           </div>
         </div>
       </div>

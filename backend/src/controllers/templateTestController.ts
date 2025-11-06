@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ReportGenerationService } from '../services/reportGenerationService.js';
+import { ReportGenerationService } from '../services/reportGenerationService';
 
 const reportService = new ReportGenerationService();
 

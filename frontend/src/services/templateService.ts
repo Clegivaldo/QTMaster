@@ -1,6 +1,6 @@
 import { apiService } from './api';
 import {
-  ReportTemplate,
+  LegacyReportTemplate,
   CreateTemplateData,
   UpdateTemplateData,
   UploadTemplateData,
@@ -18,22 +18,22 @@ export class TemplateService {
     return response.data.data;
   }
 
-  async getTemplate(id: string): Promise<ReportTemplate> {
+  async getTemplate(id: string): Promise<LegacyReportTemplate> {
     const response = await apiService.api.get(`${this.baseUrl}/${id}`);
     return response.data.data.template;
   }
 
-  async getActiveTemplates(): Promise<ReportTemplate[]> {
+  async getActiveTemplates(): Promise<LegacyReportTemplate[]> {
     const response = await apiService.api.get(`${this.baseUrl}/active`);
     return response.data.data.templates;
   }
 
-  async createTemplate(data: CreateTemplateData): Promise<ReportTemplate> {
+  async createTemplate(data: CreateTemplateData): Promise<LegacyReportTemplate> {
     const response = await apiService.api.post(this.baseUrl, data);
     return response.data.data.template;
   }
 
-  async updateTemplate(id: string, data: UpdateTemplateData): Promise<ReportTemplate> {
+  async updateTemplate(id: string, data: UpdateTemplateData): Promise<LegacyReportTemplate> {
     const response = await apiService.api.put(`${this.baseUrl}/${id}`, data);
     return response.data.data.template;
   }
@@ -42,7 +42,7 @@ export class TemplateService {
     await apiService.api.delete(`${this.baseUrl}/${id}`);
   }
 
-  async uploadTemplate(data: UploadTemplateData): Promise<ReportTemplate> {
+  async uploadTemplate(data: UploadTemplateData): Promise<LegacyReportTemplate> {
     const formData = new FormData();
     formData.append('name', data.name);
     if (data.description) {

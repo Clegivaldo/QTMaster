@@ -1,4 +1,4 @@
-export interface ReportTemplate {
+export interface LegacyReportTemplate {
   id: string;
   name: string;
   description?: string;
@@ -41,7 +41,7 @@ export interface TemplateVersion {
 }
 
 export interface TemplatePreview {
-  template: ReportTemplate;
+  template: LegacyReportTemplate;
   preview: {
     message: string;
     templateExists: boolean;
@@ -49,7 +49,7 @@ export interface TemplatePreview {
 }
 
 export interface TemplateListResponse {
-  templates: ReportTemplate[];
+  templates: LegacyReportTemplate[];
   pagination: {
     page: number;
     limit: number;

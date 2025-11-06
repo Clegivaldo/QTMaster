@@ -1,17 +1,19 @@
 import { Router } from 'express';
-import authRoutes from './auth.js';
-import userRoutes from './users.js';
-import clientRoutes from './clients.js';
-import sensorTypeRoutes from './sensorTypes.js';
-import sensorRoutes from './sensors.js';
-import suitcaseRoutes from './suitcases.js';
-import fileRoutes from './files.js';
-import validationRoutes from './validations.js';
-import reportRoutes from './reports.js';
-import reportTemplateRoutes from './reportTemplates.js';
-import monitoringRoutes from './monitoring.js';
-import testRoutes from './test.js';
-import templateEditorRoutes from './templateEditor.js';
+import authRoutes from './auth';
+import userRoutes from './users';
+import clientRoutes from './clients';
+import sensorTypeRoutes from './sensorTypes';
+import sensorRoutes from './sensors';
+import suitcaseRoutes from './suitcases';
+import fileRoutes from './files';
+import validationRoutes from './validations';
+import reportRoutes from './reports';
+import reportTemplateRoutes from './reportTemplates';
+import monitoringRoutes from './monitoring';
+import testRoutes from './test';
+import templateEditorRoutes from './templateEditor';
+import editorTemplatesRoutes from './editorTemplates';
+import uploadsRoutes from './uploads';
 
 const router = Router();
 
@@ -29,6 +31,8 @@ router.use('/report-templates', reportTemplateRoutes);
 router.use('/monitoring', monitoringRoutes);
 router.use('/test', testRoutes);
 router.use('/template-editor', templateEditorRoutes);
+router.use('/editor-templates', editorTemplatesRoutes);
+router.use('/uploads', uploadsRoutes);
 
 // Legacy health check route (kept for backward compatibility)
 router.get('/health', (req, res) => {
@@ -59,6 +63,8 @@ router.get('/', (req, res) => {
       monitoring: '/api/monitoring',
       test: '/api/test',
       templateEditor: '/api/template-editor',
+      editorTemplates: '/api/editor-templates',
+      uploads: '/api/uploads',
       health: '/api/health',
     },
   });

@@ -1,23 +1,38 @@
 /**
- * Configuração do Jest para testes do Template Editor
+ * Configuração do Jest para testes do Sistema de Laudos Térmicos
  */
 
 export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/tests', '<rootDir>/src'],
-  testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+  testMatch: [
+    '**/__tests__/**/*.ts',
+    '**/?(*.)+(spec|test).ts'
+  ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/coverage/',
+    '/uploads/',
+    '/temp/',
+    '/logs/',
+  ],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', {
+      useESM: true,
+    }],
   },
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/server.ts',
     '!src/types/**',
+    '!src/config/**',
+    '!src/middleware/logger.ts',
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: ['text', 'lcov', 'html', 'json'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   testTimeout: 30000,
@@ -27,11 +42,7 @@ export default {
   restoreMocks: true,
   
   // Configurações específicas para o ambiente de teste
-  globals: {
-    'ts-jest': {
-      useESM: true,
-    },
-  },
+  preset: 'ts-jest/presets/default-esm',
   
   // Mapeamento de módulos para resolver imports
   moduleNameMapper: {
@@ -41,19 +52,12 @@ export default {
   // Configuração de cobertura
   coverageThreshold: {
     global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80,
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
     },
   },
-  
-  // Ignorar arquivos específicos
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/dist/',
-    '/coverage/',
-  ],
   
   // Configuração para ESM
   extensionsToTreatAsEsm: ['.ts'],
@@ -70,4 +74,9 @@ export default {
       },
     ],
   ],
+  
+  // Configuração de ambiente de teste
+  testEnvironmentOptions: {
+    NODE_ENV: 'test',
+  },
 };

@@ -1,0 +1,324 @@
+/* Editor Layout Profissional - CSS Grid Layout Otimizado */
+
+/* Layout principal com CSS Grid para proporções otimizadas */
+.editor-layout-grid {
+  display: grid;
+  grid-template-columns: 
+    [sidebar-left-start] minmax(200px, 15%) 
+    [sidebar-left-end canvas-start] 1fr 
+    [canvas-end sidebar-right-start] minmax(200px, 15%) 
+    [sidebar-right-end];
+  grid-template-areas: "sidebar-left canvas sidebar-right";
+  height: 100%;
+  min-height: 0; /* Permite que o grid shrink */
+}
+
+/* Quando apenas sidebar esquerda está visível */
+.editor-layout-grid:has(.editor-sidebar-left):not(:has(.editor-sidebar-right)) {
+  grid-template-columns: 
+    [sidebar-left-start] minmax(200px, 15%) 
+    [sidebar-left-end canvas-start] 1fr 
+    [canvas-end];
+  grid-template-areas: "sidebar-left canvas";
+}
+
+/* Quando apenas sidebar direita está visível */
+.editor-layout-grid:has(.editor-sidebar-right):not(:has(.editor-sidebar-left)) {
+  grid-template-columns: 
+    [canvas-start] 1fr 
+    [canvas-end sidebar-right-start] minmax(200px, 15%) 
+    [sidebar-right-end];
+  grid-template-areas: "canvas sidebar-right";
+}
+
+/* Quando nenhuma sidebar está visível - canvas ocupa 100% */
+.editor-layout-grid:not(:has(.editor-sidebar-left)):not(:has(.editor-sidebar-right)) {
+  grid-template-columns: [canvas-start] 1fr [canvas-end];
+  grid-template-areas: "canvas";
+}
+
+/* Áreas do grid */
+.editor-sidebar-left {
+  grid-area: sidebar-left;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.editor-canvas-area {
+  grid-area: canvas;
+  min-width: 0; /* Permite que o canvas shrink */
+}
+
+.editor-sidebar-right {
+  grid-area: sidebar-right;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+/* Responsividade para telas menores que 1200px */
+@media (max-width: 1199px) {
+  .editor-layout-grid {
+    grid-template-columns: 
+      [sidebar-left-start] minmax(180px, 20%) 
+      [sidebar-left-end canvas-start] 1fr 
+      [canvas-end sidebar-right-start] minmax(180px, 20%) 
+      [sidebar-right-end];
+  }
+
+  .editor-sidebar-left,
+  .editor-sidebar-right {
+    min-width: 180px;
+    max-width: 250px;
+  }
+}
+
+/* Responsividade para tablets (768px - 1023px) */
+@media (max-width: 1023px) {
+  .editor-layout-grid {
+    grid-template-columns: 
+      [sidebar-left-start] minmax(160px, 25%) 
+      [sidebar-left-end canvas-start] 1fr 
+      [canvas-end sidebar-right-start] minmax(160px, 25%) 
+      [sidebar-right-end];
+  }
+
+  .editor-sidebar-left,
+  .editor-sidebar-right {
+    min-width: 160px;
+    max-width: 200px;
+  }
+
+  /* Em tablets, ocultar sidebars por padrão para maximizar canvas */
+  .editor-layout-grid {
+    grid-template-columns: [canvas-start] 1fr [canvas-end];
+    grid-template-areas: "canvas";
+  }
+
+  /* Mostrar sidebars apenas quando explicitamente visíveis */
+  .editor-layout-grid.force-show-sidebars:has(.editor-sidebar-left):has(.editor-sidebar-right) {
+    grid-template-columns: 
+      [sidebar-left-start] minmax(160px, 25%) 
+      [sidebar-left-end canvas-start] 1fr 
+      [canvas-end sidebar-right-start] minmax(160px, 25%) 
+      [sidebar-right-end];
+    grid-template-areas: "sidebar-left canvas sidebar-right";
+  }
+
+  .editor-layout-grid.force-show-sidebars:has(.editor-sidebar-left):not(:has(.editor-sidebar-right)) {
+    grid-template-columns: 
+      [sidebar-left-start] minmax(160px, 30%) 
+      [sidebar-left-end canvas-start] 1fr 
+      [canvas-end];
+    grid-template-areas: "sidebar-left canvas";
+  }
+
+  .editor-layout-grid.force-show-sidebars:has(.editor-sidebar-right):not(:has(.editor-sidebar-left)) {
+    grid-template-columns: 
+      [canvas-start] 1fr 
+      [canvas-end sidebar-right-start] minmax(160px, 30%) 
+      [sidebar-right-end];
+    grid-template-areas: "canvas sidebar-right";
+  }
+}
+
+/* Responsividade para dispositivos móveis (até 767px) */
+@media (max-width: 767px) {
+  /* Em mobile, sempre usar layout de coluna única */
+  .editor-layout-grid {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .editor-canvas-area {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .editor-sidebar-left,
+  .editor-sidebar-right {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 1000;
+    background: white;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .editor-sidebar-left.mobile-visible {
+    left: 0;
+    transform: translateX(0);
+  }
+
+  .editor-sidebar-right {
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  .editor-sidebar-right.mobile-visible {
+    transform: translateX(0);
+  }
+
+  /* Overlay para fechar sidebars em mobile */
+  .mobile-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+}
+
+/* Transições suaves para mudanças de layout */
+.editor-layout-grid {
+  transition: grid-template-columns 0.3s ease-in-out;
+}
+
+.editor-sidebar-left,
+.editor-sidebar-right,
+.editor-canvas-area {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Melhorias de performance */
+.editor-canvas-area {
+  contain: layout style paint;
+}
+
+.editor-sidebar-left,
+.editor-sidebar-right {
+  contain: layout style;
+}
+
+/* Estados de foco para acessibilidade */
+.editor-layout-grid:focus-within .editor-canvas-area {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+/* Indicadores visuais para áreas ativas */
+.editor-canvas-area:hover {
+  background-color: #f8fafc;
+}
+
+/* Scrollbars customizadas para sidebars */
+.editor-sidebar-left::-webkit-scrollbar,
+.editor-sidebar-right::-webkit-scrollbar {
+  width: 6px;
+}
+
+.editor-sidebar-left::-webkit-scrollbar-track,
+.editor-sidebar-right::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.editor-sidebar-left::-webkit-scrollbar-thumb,
+.editor-sidebar-right::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.editor-sidebar-left::-webkit-scrollbar-thumb:hover,
+.editor-sidebar-right::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Melhorias adicionais para responsividade */
+
+/* Otimizações para telas muito pequenas (320px - 480px) */
+@media (max-width: 480px) {
+  .editor-sidebar-left,
+  .editor-sidebar-right {
+    width: 90vw;
+    max-width: 320px;
+  }
+
+  /* Header mais compacto em mobile */
+  .editor-layout-grid {
+    font-size: 14px;
+  }
+}
+
+/* Otimizações para landscape em mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+  .editor-sidebar-left,
+  .editor-sidebar-right {
+    width: 60vw;
+    max-width: 400px;
+  }
+}
+
+/* Melhorias para telas grandes (1440px+) */
+@media (min-width: 1440px) {
+  .editor-layout-grid {
+    grid-template-columns: 
+      [sidebar-left-start] minmax(250px, 12%) 
+      [sidebar-left-end canvas-start] 1fr 
+      [canvas-end sidebar-right-start] minmax(250px, 12%) 
+      [sidebar-right-end];
+  }
+
+  .editor-sidebar-left,
+  .editor-sidebar-right {
+    min-width: 250px;
+    max-width: 350px;
+  }
+}
+
+/* Melhorias para telas ultra-wide (1920px+) */
+@media (min-width: 1920px) {
+  .editor-layout-grid {
+    grid-template-columns: 
+      [sidebar-left-start] minmax(300px, 10%) 
+      [sidebar-left-end canvas-start] 1fr 
+      [canvas-end sidebar-right-start] minmax(300px, 10%) 
+      [sidebar-right-end];
+  }
+
+  .editor-sidebar-left,
+  .editor-sidebar-right {
+    min-width: 300px;
+    max-width: 400px;
+  }
+}
+
+/* Animações suaves para transições responsivas */
+@media (prefers-reduced-motion: no-preference) {
+  .editor-layout-grid,
+  .editor-sidebar-left,
+  .editor-sidebar-right,
+  .editor-canvas-area {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Melhorias de acessibilidade */
+@media (prefers-contrast: high) {
+  .editor-sidebar-left,
+  .editor-sidebar-right {
+    border-color: #000;
+  }
+}
+
+/* Suporte para modo escuro do sistema */
+@media (prefers-color-scheme: dark) {
+  .editor-sidebar-left::-webkit-scrollbar-track,
+  .editor-sidebar-right::-webkit-scrollbar-track {
+    background: #374151;
+  }
+
+  .editor-sidebar-left::-webkit-scrollbar-thumb,
+  .editor-sidebar-right::-webkit-scrollbar-thumb {
+    background: #6b7280;
+  }
+
+  .editor-sidebar-left::-webkit-scrollbar-thumb:hover,
+  .editor-sidebar-right::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+}

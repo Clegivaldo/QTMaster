@@ -4,9 +4,9 @@ import helmet from 'helmet';
 import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
-import routes from './routes/index.js';
-import { logger } from './utils/logger.js';
-import { redisService } from './services/redisService.js';
+import routes from './routes/index';
+import { logger } from './utils/logger';
+import { redisService } from './services/redisService';
 import { 
   generalRateLimit, 
   authRateLimit, 
@@ -14,14 +14,14 @@ import {
   reportGenerationRateLimit,
   dataModificationRateLimit,
   skipRateLimit 
-} from './middleware/rateLimitMiddleware.js';
+} from './middleware/rateLimitMiddleware';
 import { 
   metricsMiddleware, 
   auditMiddleware, 
   errorTrackingMiddleware 
-} from './middleware/metricsMiddleware.js';
-import { performanceMiddleware } from './services/performanceService.js';
-import { BackupService } from './services/backupService.js';
+} from './middleware/metricsMiddleware';
+import { performanceMiddleware } from './services/performanceService';
+import { BackupService } from './services/backupService';
 
 const app = express();
 const PORT = process.env.PORT || 5000;

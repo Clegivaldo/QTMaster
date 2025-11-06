@@ -40,7 +40,13 @@
 
 
 
-- [ ]* 1.3 Configurar testes e CI/CD básico
+- [x] 1.3 Configurar testes e CI/CD básico
+
+
+
+
+
+
   - Configurar Jest e React Testing Library para frontend
   - Configurar Jest para backend com banco de teste
   - Criar scripts de teste nos package.json
