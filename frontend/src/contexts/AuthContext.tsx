@@ -30,7 +30,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      apiService.clearTokens();
+      if (typeof apiService.clearTokens === 'function') {
+        apiService.clearTokens();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -64,7 +66,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      apiService.clearTokens();
+      if (typeof apiService.clearTokens === 'function') {
+        apiService.clearTokens();
+      }
       setUser(null);
     }
   };

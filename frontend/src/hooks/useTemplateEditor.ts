@@ -98,6 +98,9 @@ interface UseTemplateEditorReturn {
   
   // Validação
   validateTemplate: () => ValidationResult;
+  // Page settings & background image
+  updatePageSettings: (settings: any) => void;
+  updateBackgroundImage: (image: any) => void;
   
   // Agrupamento
   groupSelectedElements: () => string | null;
@@ -205,6 +208,15 @@ export const useTemplateEditor = (
       throw error;
     }
   }, [template]);
+
+  // Atualizar configurações de página diretamente no template
+  const updatePageSettings = useCallback((settings: any) => {
+    updateTemplate(prev => ({ ...prev, pageSettings: settings, updatedAt: new Date() }), 'Atualizar configurações da página');
+  }, [updateTemplate]);
+
+  const updateBackgroundImage = useCallback((image: any) => {
+    updateTemplate(prev => ({ ...prev, backgroundImage: image, updatedAt: new Date() }), 'Atualizar imagem de fundo');
+  }, [updateTemplate]);
   
   // Exportar template - integrado com useTemplateStorage
   const exportTemplate = useCallback(async (format: string) => {
@@ -721,6 +733,9 @@ export const useTemplateEditor = (
     
     // Validação
     validateTemplate: validateTemplateData,
+  // Page settings & background image
+  updatePageSettings,
+  updateBackgroundImage,
     
     // Agrupamento
     groupSelectedElements,

@@ -14,6 +14,7 @@ interface CanvasElementProps {
   onMove?: (elementId: string, newPosition: Position) => void;
   onResize?: (elementId: string, newSize: Size) => void;
   onEdit?: (elementId: string, newContent: any) => void;
+  snapToGrid?: (position: Position) => Position;
 }
 
 const CanvasElement: React.FC<CanvasElementProps> = ({
@@ -23,7 +24,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
   onSelect,
   onMove,
   onResize,
-  onEdit
+  onEdit,
+  snapToGrid
 }) => {
   const elementRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -102,10 +104,15 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
 
-    const newPosition = {
+    let newPosition = {
       x: (e.clientX - dragStart.x) / zoom,
       y: (e.clientY - dragStart.y) / zoom
     };
+
+    // Aplicar snap to grid se disponível
+    if (snapToGrid) {
+      newPosition = snapToGrid(newPosition);
+    }
 
     // Limitar posição para não sair do canvas
     const constrainedPosition = {
@@ -117,7 +124,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       x: constrainedPosition.x - element.position.x,
       y: constrainedPosition.y - element.position.y
     });
-  }, [isDragging, dragStart, zoom, element.position, element.size]);
+  }, [isDragging, dragStart, zoom, element.position, element.size, snapToGrid]);
 
   // Handler para fim do drag
   const handleMouseUp = useCallback(() => {
@@ -255,13 +262,6 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
     >
       {renderContent()}
       
-      {/* Indicador de elemento selecionado */}
-      {isSelected && (
-        <div className="absolute -top-6 -left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-none">
-          {element.type}
-        </div>
-      )}
-
       {/* Alças de redimensionamento */}
       {isSelected && onResize && onMove && (
         <SelectionHandles

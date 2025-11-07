@@ -8,8 +8,16 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 const mockLogin = vi.fn();
 vi.mock('../../services/api', () => ({
   apiService: {
+    // auth helpers used by AuthContext
+    getAuthToken: () => null,
+    getRefreshToken: () => null,
     setAuthToken: vi.fn(),
-    clearAuthToken: vi.fn(),
+    setRefreshToken: vi.fn(),
+    clearTokens: vi.fn(),
+    // API calls
+    getCurrentUser: async () => ({ data: { success: false } }),
+    login: async () => ({ data: { success: false } }),
+    logout: async () => ({ data: { success: true } }),
   },
 }));
 
@@ -92,9 +100,10 @@ describe('LoginForm', () => {
   it('should show password toggle functionality', () => {
     renderWithProviders(<LoginForm />);
     
-    const passwordInput = screen.getByPlaceholderText(/sua senha/i);
-    const toggleButtons = screen.getAllByRole('button');
-    const toggleButton = toggleButtons.find(btn => btn.type === 'button' && btn !== screen.getByRole('button', { name: /entrar/i }));
+  const passwordInput = screen.getByPlaceholderText(/sua senha/i);
+  const submitButton = screen.getByRole('button', { name: /entrar/i });
+  const toggleButtons = screen.getAllByRole('button');
+  const toggleButton = toggleButtons.find(btn => btn !== submitButton);
     
     expect(passwordInput).toHaveAttribute('type', 'password');
     

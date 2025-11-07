@@ -316,13 +316,6 @@ const SelectionHandles: React.FC<SelectionHandlesProps> = ({
           onMouseDown={(e) => handleMouseDown(e, handle.type)}
         />
       ))}
-
-      {/* Indicador de redimensionamento ativo */}
-      {isResizing && (
-        <div className="absolute -top-8 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded pointer-events-none">
-          {Math.round(element.size.width)} × {Math.round(element.size.height)}
-        </div>
-      )}
     </div>
   );
 };

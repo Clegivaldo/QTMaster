@@ -54,7 +54,6 @@ const Settings: React.FC = () => {
   const handleSave = async () => {
     try {
       // TODO: Implement API call to save settings
-      console.log('Saving settings:', settings);
       
       addNotification({
         type: 'success',

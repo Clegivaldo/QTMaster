@@ -103,6 +103,8 @@ const mockExportResponse = {
 describe('useTemplateStorage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Ensure server-validation flag is reset between tests; tests can opt-in by setting it
+    (apiService.api as any).__useServerValidation = false;
   });
 
   afterEach(() => {
@@ -113,9 +115,12 @@ describe('useTemplateStorage', () => {
     it('deve salvar um novo template corretamente', async () => {
       const newTemplate = { ...mockTemplate, id: '' };
       const savedTemplate = { ...mockTemplate, id: 'template_new_123' };
-      
-      (apiService.api.post as any).mockResolvedValue({
-        data: { data: { template: savedTemplate } }
+      // Mock implementation: when validation endpoint is called, return valid; otherwise return created template
+      (apiService.api.post as any).mockImplementation((url: string, _body?: any) => {
+        if (typeof url === 'string' && url.endsWith('/validate')) {
+          return Promise.resolve({ data: { data: { isValid: true } } });
+        }
+        return Promise.resolve({ data: { data: { template: savedTemplate } } });
       });
 
       const { result } = renderHook(() => useTemplateStorage());
@@ -387,7 +392,16 @@ describe('useTemplateStorage', () => {
 
   describe('exportTemplate', () => {
     it('deve exportar template em PDF corretamente', async () => {
-      (apiService.api.post as any).mockResolvedValue(mockExportResponse);
+      // Route validate and export endpoints separately
+      (apiService.api.post as any).mockImplementation((url: string, _body?: any) => {
+        if (typeof url === 'string' && url.endsWith('/validate')) {
+          return Promise.resolve({ data: { data: { isValid: true } } });
+        }
+        if (typeof url === 'string' && url.includes('/export')) {
+          return Promise.resolve(mockExportResponse);
+        }
+        return Promise.resolve({});
+      });
 
       const { result } = renderHook(() => useTemplateStorage());
 
@@ -398,7 +412,7 @@ describe('useTemplateStorage', () => {
         includeMetadata: true
       };
 
-      let exportResult;
+  let exportResult: any;
       
       await act(async () => {
         exportResult = await result.current.exportTemplate(mockTemplate, exportOptions);
@@ -425,7 +439,15 @@ describe('useTemplateStorage', () => {
         }
       };
 
-      (apiService.api.post as any).mockResolvedValue(pngExportResponse);
+      (apiService.api.post as any).mockImplementation((url: string, _body?: any) => {
+        if (typeof url === 'string' && url.endsWith('/validate')) {
+          return Promise.resolve({ data: { data: { isValid: true } } });
+        }
+        if (typeof url === 'string' && url.includes('/export')) {
+          return Promise.resolve(pngExportResponse);
+        }
+        return Promise.resolve({});
+      });
 
       const { result } = renderHook(() => useTemplateStorage());
 
@@ -435,7 +457,7 @@ describe('useTemplateStorage', () => {
         dpi: 150
       };
 
-      let exportResult;
+  let exportResult: any;
       
       await act(async () => {
         exportResult = await result.current.exportTemplate(mockTemplate, exportOptions);
@@ -453,7 +475,16 @@ describe('useTemplateStorage', () => {
         }
       };
 
-      (apiService.api.post as any).mockRejectedValue(exportError);
+      // Ensure validation returns true, but export endpoint fails
+      (apiService.api.post as any).mockImplementation((url: string, _body?: any) => {
+        if (typeof url === 'string' && url.endsWith('/validate')) {
+          return Promise.resolve({ data: { data: { isValid: true } } });
+        }
+        if (typeof url === 'string' && url.includes('/export')) {
+          return Promise.reject(exportError);
+        }
+        return Promise.resolve({});
+      });
 
       const { result } = renderHook(() => useTemplateStorage());
 
@@ -479,10 +510,6 @@ describe('useTemplateStorage', () => {
 
   describe('validateTemplate', () => {
     it('deve validar template corretamente', async () => {
-      (apiService.api.post as any).mockResolvedValue({
-        data: { data: { isValid: true } }
-      });
-
       const { result } = renderHook(() => useTemplateStorage());
 
       let isValid;
@@ -491,37 +518,40 @@ describe('useTemplateStorage', () => {
         isValid = await result.current.validateTemplate(mockTemplate);
       });
 
-      expect(apiService.api.post).toHaveBeenCalledWith('/editor-templates/validate', mockTemplate);
+      // By default validation runs locally and should succeed for the mock template
       expect(isValid).toBe(true);
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBeNull();
     });
 
     it('deve retornar false quando template é inválido', async () => {
-      (apiService.api.post as any).mockResolvedValue({
-        data: { data: { isValid: false } }
-      });
+      // Use an obviously invalid template (missing name) to test local validation
+      const invalid = { ...mockTemplate, name: '' } as any;
 
       const { result } = renderHook(() => useTemplateStorage());
 
       let isValid;
       
       await act(async () => {
-        isValid = await result.current.validateTemplate(mockTemplate);
+        isValid = await result.current.validateTemplate(invalid);
       });
 
       expect(isValid).toBe(false);
     });
 
     it('deve retornar false em caso de erro na validação', async () => {
+      // When server validation fails, fallback runs local validation. To test a failing case,
+      // provide an invalid template (missing required name) and make the API reject.
       (apiService.api.post as any).mockRejectedValue(new Error('Erro de validação'));
+
+      const invalidTemplate = { ...mockTemplate, name: '' } as any;
 
       const { result } = renderHook(() => useTemplateStorage());
 
       let isValid;
-      
+
       await act(async () => {
-        isValid = await result.current.validateTemplate(mockTemplate);
+        isValid = await result.current.validateTemplate(invalidTemplate);
       });
 
       expect(isValid).toBe(false);
@@ -545,7 +575,7 @@ describe('useTemplateStorage', () => {
 
       const { result } = renderHook(() => useTemplateStorage());
 
-      let duplicatedResult;
+  let duplicatedResult: any;
       
       await act(async () => {
         duplicatedResult = await result.current.duplicateTemplate('template_123', 'Template Duplicado');

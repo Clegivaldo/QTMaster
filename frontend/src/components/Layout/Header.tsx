@@ -93,7 +93,6 @@ const Header: React.FC<HeaderProps> = ({ user, onMenuClick }) => {
             <button 
               onClick={() => {
                 // TODO: Open notifications panel
-                console.log('Opening notifications');
               }}
               className="relative p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500"
             >

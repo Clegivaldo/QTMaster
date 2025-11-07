@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Tag, FolderOpen, Globe, Lock } from 'lucide-react';
+import { Save, Tag, FolderOpen, Globe, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import ResponsiveModal from '../../../ResponsiveModal';
 import { EditorTemplate } from '../../../../types/editor';
 import { useTemplateStorage } from '../../../../hooks/useTemplateStorage';
@@ -47,6 +47,8 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
   
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveAttempts, setSaveAttempts] = useState(0);
   
   // Resetar form quando modal abrir
   useEffect(() => {
@@ -60,6 +62,8 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
       });
       setTagInput('');
       setErrors({});
+      setSaveSuccess(false);
+      setSaveAttempts(0);
       clearError();
     }
   }, [isOpen, template, clearError]);
@@ -71,10 +75,22 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
       newErrors.name = 'Nome é obrigatório';
     } else if (formData.name.trim().length < 3) {
       newErrors.name = 'Nome deve ter pelo menos 3 caracteres';
+    } else if (formData.name.trim().length > 100) {
+      newErrors.name = 'Nome deve ter no máximo 100 caracteres';
     }
     
     if (formData.description && formData.description.length > 500) {
       newErrors.description = 'Descrição deve ter no máximo 500 caracteres';
+    }
+    
+    // Validar template
+    if (!template.elements || template.elements.length === 0) {
+      newErrors.template = 'Template deve conter pelo menos um elemento';
+    }
+    
+    // Validar tags
+    if (formData.tags.length > 10) {
+      newErrors.tags = 'Máximo de 10 tags permitidas';
     }
     
     setErrors(newErrors);
@@ -88,6 +104,8 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
       return;
     }
     
+    setSaveAttempts(prev => prev + 1);
+    
     try {
       const savedTemplate = await saveTemplate(template, {
         name: formData.name.trim(),
@@ -97,10 +115,17 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
         isPublic: formData.isPublic
       });
       
+      setSaveSuccess(true);
       onSave(savedTemplate);
-      onClose();
+      
+      // Fechar modal após 1.5 segundos para mostrar sucesso
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+      
     } catch (error) {
       console.error('Erro ao salvar template:', error);
+      // O erro já foi tratado pelo hook useTemplateStorage
     }
   };
   
@@ -297,10 +322,40 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
           </div>
         </div>
         
+        {/* Validação de template */}
+        {errors.template && (
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <div className="flex items-center">
+              <AlertCircle className="h-4 w-4 text-yellow-600 mr-2" />
+              <p className="text-sm text-yellow-700">{errors.template}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Sucesso */}
+        {saveSuccess && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+            <div className="flex items-center">
+              <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+              <p className="text-sm text-green-700">Template salvo com sucesso!</p>
+            </div>
+          </div>
+        )}
+
         {/* Erro da API */}
-        {error && (
+        {error && !saveSuccess && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{error.message}</p>
+            <div className="flex items-start">
+              <AlertCircle className="h-4 w-4 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-red-600">{error.message}</p>
+                {saveAttempts > 1 && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Tentativa {saveAttempts} - Verifique sua conexão
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         )}
         
@@ -312,25 +367,28 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
             disabled={isLoading}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            Cancelar
+            {saveSuccess ? 'Fechar' : 'Cancelar'}
           </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-          >
-            {isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Template
-              </>
-            )}
-          </button>
+          
+          {!saveSuccess && (
+            <button
+              type="submit"
+              disabled={isLoading || !formData.name.trim()}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar Template
+                </>
+              )}
+            </button>
+          )}
         </div>
       </form>
     </ResponsiveModal>

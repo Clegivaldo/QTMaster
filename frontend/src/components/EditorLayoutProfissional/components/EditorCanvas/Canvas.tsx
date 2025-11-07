@@ -3,6 +3,7 @@ import { CanvasProps, Position } from '../../../../types/editor';
 import { A4_SIZE, DEFAULT_MARGINS } from '../../../../types/editor-constants';
 import { sortElementsByZIndex } from '../../../../types/editor-utils';
 import { CanvasElement } from '.';
+import RulerOverlay from '../Utils/RulerOverlay';
 
 const Canvas: React.FC<CanvasProps> = ({
   elements,
@@ -12,17 +13,31 @@ const Canvas: React.FC<CanvasProps> = ({
   onElementSelect,
   onElementMove,
   onElementResize,
-  onElementEdit
+  onElementEdit,
+  showGrid = true,
+  gridSize = 20,
+  snapToGrid,
+  pageSettings,
+  backgroundImage,
+  onAddElement,
+  showRuler = false
 }) => {
+  // showRuler optionally passed from parent
   const canvasRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<Position>({ x: 0, y: 0 });
   const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
 
-  // Calcular tamanho do canvas baseado no zoom
-  const canvasWidth = A4_SIZE.portrait.width * zoom;
-  const canvasHeight = A4_SIZE.portrait.height * zoom;
+  // Calcular tamanho do canvas baseado nas configurações da página (em mm -> px)
+  const pageMM = pageSettings && typeof pageSettings.getPageSize === 'function'
+    ? pageSettings.getPageSize()
+    : null;
+
+  const mmToPx = (mm: number) => (mm * 96) / 25.4;
+
+  const canvasWidth = pageMM ? mmToPx(pageMM.width) * zoom : A4_SIZE.portrait.width * zoom;
+  const canvasHeight = pageMM ? mmToPx(pageMM.height) * zoom : A4_SIZE.portrait.height * zoom;
 
   // Ordenar elementos por z-index para renderização correta
   const sortedElements = sortElementsByZIndex(elements);
@@ -128,43 +143,71 @@ const Canvas: React.FC<CanvasProps> = ({
   // Handler para adicionar elemento via drop
   const handleCanvasDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    
+
     const elementType = e.dataTransfer.getData('text/plain');
-    if (elementType) {
-      getCanvasCoordinates(e.clientX, e.clientY);
-      // TODO: Implementar adição de elemento via drop
-      // onAddElement?.(elementType as ElementType, canvasCoords);
+    if (elementType && onAddElement) {
+      const canvasCoords = getCanvasCoordinates(e.clientX, e.clientY);
+
+      // Clamp position to page bounds (margins) if possible
+      const pageBounds = pageSettings?.getPageBounds ? pageSettings.getPageBounds() : null;
+      const mmToPxLocal = (mm: number) => (mm * 96) / 25.4;
+
+      let finalPos = { x: canvasCoords.x, y: canvasCoords.y };
+
+      if (pageBounds) {
+        const minX = mmToPxLocal(pageBounds.minX);
+        const minY = mmToPxLocal(pageBounds.minY);
+        const maxX = mmToPxLocal(pageBounds.maxX);
+        const maxY = mmToPxLocal(pageBounds.maxY);
+
+        // leave small padding so element center doesn't go out of bounds
+        finalPos.x = Math.max(minX, Math.min(finalPos.x, Math.max(minX, maxX - 10)));
+        finalPos.y = Math.max(minY, Math.min(finalPos.y, Math.max(minY, maxY - 10)));
+      }
+
+      try {
+        onAddElement(elementType as any, finalPos);
+      } catch (err) {
+        console.error('Erro ao adicionar elemento via drop:', err);
+      }
     }
-  }, [getCanvasCoordinates]);
+  }, [getCanvasCoordinates, onAddElement, pageSettings]);
 
   const handleCanvasDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
   }, []);
 
-  // Renderizar margens da página
+  // Renderizar margens da página (usar pageSettings.margins em mm quando disponível)
   const renderMargins = () => {
-    const margins = DEFAULT_MARGINS;
+    const marginsMM = pageSettings?.pageSettings?.margins;
+    const marginsPx = marginsMM ? {
+      top: mmToPx(marginsMM.top),
+      bottom: mmToPx(marginsMM.bottom),
+      left: mmToPx(marginsMM.left),
+      right: mmToPx(marginsMM.right)
+    } : DEFAULT_MARGINS;
+
     return (
       <div className="absolute inset-0 pointer-events-none">
         {/* Margem superior */}
         <div 
           className="absolute top-0 left-0 right-0 border-b border-blue-200 border-dashed opacity-50"
-          style={{ height: margins.top * zoom }}
+          style={{ height: marginsPx.top * zoom }}
         />
         {/* Margem inferior */}
         <div 
           className="absolute bottom-0 left-0 right-0 border-t border-blue-200 border-dashed opacity-50"
-          style={{ height: margins.bottom * zoom }}
+          style={{ height: marginsPx.bottom * zoom }}
         />
         {/* Margem esquerda */}
         <div 
           className="absolute top-0 left-0 bottom-0 border-r border-blue-200 border-dashed opacity-50"
-          style={{ width: margins.left * zoom }}
+          style={{ width: marginsPx.left * zoom }}
         />
         {/* Margem direita */}
         <div 
           className="absolute top-0 right-0 bottom-0 border-l border-blue-200 border-dashed opacity-50"
-          style={{ width: margins.right * zoom }}
+          style={{ width: marginsPx.right * zoom }}
         />
       </div>
     );
@@ -172,9 +215,9 @@ const Canvas: React.FC<CanvasProps> = ({
 
   // Renderizar grid
   const renderGrid = () => {
-    const gridSize = 20; // pixels
+    if (!showGrid) return null;
+
     const scaledGridSize = gridSize * zoom;
-    
     if (scaledGridSize < 5) return null; // Não mostrar grid muito pequeno
 
     // Grid pattern será renderizado via SVG
@@ -200,10 +243,9 @@ const Canvas: React.FC<CanvasProps> = ({
   };
 
   // Handler para wheel (zoom)
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    
+  const handleWheel = useCallback(() => {
     // Implementar zoom com wheel se necessário
+    // Removemos preventDefault para evitar warning do navegador sobre listeners passivos
     // Por enquanto, deixamos o zoom ser controlado pelos controles
   }, []);
 
@@ -218,13 +260,18 @@ const Canvas: React.FC<CanvasProps> = ({
       <div className="w-full h-full flex items-center justify-center">
         <div
           ref={canvasRef}
-          className="bg-white shadow-xl border border-gray-300 relative overflow-hidden"
+          className="shadow-xl border border-gray-300 relative overflow-hidden"
           style={{
             width: canvasWidth,
             height: canvasHeight,
             transform: `translate(${panOffset.x + dragOffset.x}px, ${panOffset.y + dragOffset.y}px)`,
             transformOrigin: 'center center',
-            cursor: 'grab'
+            cursor: 'grab',
+            backgroundColor: pageSettings?.pageSettings?.backgroundColor || '#ffffff',
+            backgroundImage: backgroundImage?.url ? `url(${backgroundImage.url})` : undefined,
+            backgroundSize: backgroundImage ? 'cover' : undefined,
+            backgroundPosition: backgroundImage ? 'center' : undefined,
+            backgroundRepeat: backgroundImage ? 'no-repeat' : undefined
           }}
           onClick={handleCanvasClick}
           onMouseDown={handleCanvasMouseDown}
@@ -233,6 +280,19 @@ const Canvas: React.FC<CanvasProps> = ({
         >
           {/* Grid de fundo */}
           {renderGrid()}
+
+          {/* Réguas integradas ao canvas (alinhadas ao conteúdo) */}
+          {showRuler && (
+            <RulerOverlay
+              show
+              unit="cm"
+              zoom={zoom}
+              gridSize={gridSize}
+              pageSize={{ width: canvasWidth, height: canvasHeight }}
+              insideCanvas
+              className="absolute inset-0 pointer-events-none"
+            />
+          )}
 
           {/* Margens da página */}
           {renderMargins()}
@@ -249,6 +309,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 onMove={onElementMove}
                 onResize={onElementResize}
                 onEdit={onElementEdit}
+                snapToGrid={snapToGrid}
               />
             ))}
           </div>

@@ -1,21 +1,28 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { X, Save, Eye, Grid, Ruler, Download, FolderOpen } from 'lucide-react';
+import { X, Save, Eye, Grid, Ruler, Download, FolderOpen, Settings, Minus, Plus } from 'lucide-react';
 import { useTemplateEditor } from '../../hooks/useTemplateEditor';
 import { useCanvasOperations } from '../../hooks/useCanvasOperations';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
+import { usePageSettings } from '../../hooks/usePageSettings';
 import { EditorProps } from '../../types/editor';
 import { KEYBOARD_SHORTCUTS } from '../../types/editor-constants';
 import './EditorLayout.css';
 
 // Componentes que serão implementados nas próximas tarefas
 import { Canvas } from './components/EditorCanvas';
+// Grid and Ruler are rendered inside the Canvas component for correct alignment
+import { useGridSnap } from '../../hooks/useGridSnap';
 import { ElementPalette, PropertiesPanel } from './components/Toolbars';
 import { ZoomControls, UndoRedoControls } from './components/Utils';
+import ErrorNotification from './components/Utils/ErrorNotification';
 
 // Modais de gerenciamento de templates
 import SaveTemplateModal from './components/Modals/SaveTemplateModal';
 import LoadTemplateModal from './components/Modals/LoadTemplateModal';
 import ExportModal from './components/Modals/ExportModal';
+import PreviewModal from './components/Modals/PreviewModal';
+import PageSettingsModal from './components/Modals/PageSettingsModal';
 
 const EditorLayoutProfissional: React.FC<EditorProps> = ({
   isOpen,
@@ -35,6 +42,9 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
     containerSize: { width: 800, height: 600 } // Será calculado dinamicamente
   });
 
+  // Hook para tratamento de erros
+  const { errors, dismissError, getErrorTitle } = useErrorHandler();
+
   // Estado para controlar visibilidade das sidebars
   const [showElementPalette, setShowElementPalette] = useState(true);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(true);
@@ -43,6 +53,23 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [forceShowSidebars, setForceShowSidebars] = useState(false);
+  // Grid / snap
+  const [showGrid, setShowGrid] = useState<boolean>(() => {
+    try { return localStorage.getItem('editor.showGrid') === 'true'; } catch { return false; }
+  });
+  const [snapToGrid, setSnapToGrid] = useState<boolean>(() => {
+    try { const val = localStorage.getItem('editor.snapToGrid'); return val === null ? true : val === 'true'; } catch { return true; }
+  });
+  const [showRuler, setShowRuler] = useState<boolean>(() => {
+    try { return localStorage.getItem('editor.showRuler') === 'true'; } catch { return false; }
+  });
+  const [showElementLabels, setShowElementLabels] = useState<boolean>(() => {
+    try { return localStorage.getItem('editor.showElementLabels') === 'true'; } catch { return false; }
+  });
+  const [gridSize, setGridSize] = useState<number>(() => {
+    try { return parseInt(localStorage.getItem('editor.gridSize') || '20'); } catch { return 20; }
+  });
+  const { snap } = useGridSnap({ gridSize, enabled: snapToGrid });
   
 
   
@@ -50,6 +77,16 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showPageSettingsModal, setShowPageSettingsModal] = useState(false);
+
+  // Hook para configurações de página
+  const pageSettings = usePageSettings(
+    editor.template.pageSettings,
+    editor.template.backgroundImage
+  );
+
+  // Calcular tamanho da página baseado nas configurações
 
   // Handlers para ações principais
   const handleSave = useCallback(() => {
@@ -76,9 +113,8 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   }, [editor]);
 
   const handlePreview = useCallback(() => {
-    // TODO: Implementar preview
-    console.log('Preview do template:', editor.template);
-  }, [editor.template]);
+    setShowPreviewModal(true);
+  }, []);
 
   // Atalhos de teclado usando hook dedicado
   useKeyboardShortcuts({
@@ -95,9 +131,9 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
     onZoomOut: canvas.zoomOut,
     onZoomFit: canvas.zoomToFit,
     // TODO: Implementar copy/paste/cut
-    onCopy: () => console.log('Copy - TODO'),
-    onPaste: () => console.log('Paste - TODO'),
-    onCut: () => console.log('Cut - TODO')
+    onCopy: () => {},
+    onPaste: () => {},
+    onCut: () => {}
   }, { enabled: isOpen });
 
   // Atalhos adicionais específicos do editor (toggle sidebars)
@@ -143,6 +179,14 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             if (isTablet || isMobile) {
               setForceShowSidebars(newState);
             }
+            break;
+          case 'r':
+            e.preventDefault();
+            // Toggle rulers (Ctrl+R)
+            setShowRuler(s => {
+              try { localStorage.setItem('editor.showRuler', String(!s)); } catch {}
+              return !s;
+            });
             break;
         }
       }
@@ -242,17 +286,79 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
 
             {/* Controles de visualização */}
             <button
-              className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors"
-              title="Mostrar/ocultar grade (em desenvolvimento)"
+              onClick={() => { 
+                setShowGrid(s => {
+                  try { localStorage.setItem('editor.showGrid', String(!s)); } catch {}
+                  return !s;
+                });
+                setSnapToGrid(s => {
+                  try { localStorage.setItem('editor.snapToGrid', String(!s)); } catch {}
+                  return !s;
+                });
+              }}
+              className={`p-2 rounded transition-colors ${showGrid ? 'text-white bg-gray-700' : 'text-gray-300 hover:text-white hover:bg-gray-700'}`}
+              title="Mostrar/ocultar grade (clicar alterna snap)"
             >
               <Grid className="h-4 w-4" />
             </button>
 
             <button
-              className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors"
-              title="Mostrar/ocultar réguas (em desenvolvimento)"
+              onClick={() => setShowRuler(s => {
+                try { localStorage.setItem('editor.showRuler', String(!s)); } catch {}
+                return !s;
+              })}
+              className={`p-2 rounded transition-colors ${showRuler ? 'text-white bg-gray-700' : 'text-gray-300 hover:text-white hover:bg-gray-700'}`}
+              title="Mostrar/ocultar réguas (Ctrl+R para atalho)"
             >
               <Ruler className="h-4 w-4" />
+            </button>
+
+            {/* Controles de tamanho da grade */}
+            <div className="flex items-center space-x-1 ml-2">
+              <button
+                onClick={() => setGridSize(s => {
+                  const newSize = Math.max(5, s - 5);
+                  try { localStorage.setItem('editor.gridSize', String(newSize)); } catch {}
+                  return newSize;
+                })}
+                className="p-1 rounded text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                title="Diminuir tamanho da grade"
+                disabled={gridSize <= 5}
+              >
+                <Minus className="h-3 w-3" />
+              </button>
+              <span className="text-xs text-gray-300 min-w-[24px] text-center">{gridSize}px</span>
+              <button
+                onClick={() => setGridSize(s => {
+                  const newSize = Math.min(100, s + 5);
+                  try { localStorage.setItem('editor.gridSize', String(newSize)); } catch {}
+                  return newSize;
+                })}
+                className="p-1 rounded text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                title="Aumentar tamanho da grade"
+                disabled={gridSize >= 100}
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowElementLabels(s => {
+                try { localStorage.setItem('editor.showElementLabels', String(!s)); } catch {}
+                return !s;
+              })}
+              className={`p-2 rounded transition-colors ${showElementLabels ? 'text-white bg-gray-700' : 'text-gray-300 hover:text-white hover:bg-gray-700'}`}
+              title="Mostrar/ocultar rótulos de elementos"
+            >
+              <span className="text-xs font-medium">Labels</span>
+            </button>
+
+            <button
+              onClick={() => setShowPageSettingsModal(true)}
+              className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors"
+              title="Configurações da página"
+            >
+              <Settings className="h-4 w-4" />
             </button>
 
             <div className="w-px h-6 bg-gray-600 mx-1 md:mx-2 hidden lg:block" />
@@ -384,17 +490,71 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
           )}
 
           {/* Área central - Canvas (70% da largura quando ambas sidebars visíveis) */}
-          <div className="bg-gray-100 relative overflow-hidden editor-canvas-area">
-            <Canvas
-              elements={editor.template.elements}
-              selectedElementIds={editor.selectedElementIds}
-              zoom={canvas.zoom}
-              panOffset={canvas.panOffset}
-              onElementSelect={editor.selectElement}
-              onElementMove={editor.moveElement}
-              onElementResize={editor.resizeElement}
-              onElementEdit={editor.updateElementContent}
-            />
+          <div className="bg-gray-100 relative overflow-auto editor-canvas-area">
+            <div className="relative w-full h-full">
+              {/* Grid and ruler are rendered inside the Canvas to keep them aligned to the page */}
+              <Canvas
+                elements={editor.template.elements}
+                selectedElementIds={editor.selectedElementIds}
+                zoom={canvas.zoom}
+                panOffset={canvas.panOffset}
+                onAddElement={editor.addElement}
+                showRuler={showRuler}
+                onElementSelect={editor.selectElement}
+                onElementMove={(id, newPos) => {
+                  // Constrain position to page bounds (margins) - pageSettings returns mm
+                  const bounds = pageSettings.getPageBounds();
+                  const mmToPx = (mm: number) => (mm * 96) / 25.4;
+                  const minX = mmToPx(bounds.minX);
+                  const maxX = mmToPx(bounds.maxX);
+                  const minY = mmToPx(bounds.minY);
+                  const maxY = mmToPx(bounds.maxY);
+
+                  const el = editor.getElementById(id);
+                  const elW = el?.size.width || 0;
+                  const elH = el?.size.height || 0;
+
+                  const clampedX = Math.max(minX, Math.min(newPos.x, Math.max(minX, maxX - elW)));
+                  const clampedY = Math.max(minY, Math.min(newPos.y, Math.max(minY, maxY - elH)));
+
+                  editor.moveElement(id, { x: clampedX, y: clampedY });
+                }}
+                onElementResize={(id, size) => {
+                  // Constrain resize so element doesn't cross page margins
+                  const bounds = pageSettings.getPageBounds();
+                  const mmToPx = (mm: number) => (mm * 96) / 25.4;
+                  const maxX = mmToPx(bounds.maxX);
+                  const maxY = mmToPx(bounds.maxY);
+
+                  const el = editor.getElementById(id);
+                  const posX = el?.position.x || 0;
+                  const posY = el?.position.y || 0;
+
+                  // Width/height must keep element inside right/bottom margins
+                  const maxAllowedW = Math.max(1, maxX - posX);
+                  const maxAllowedH = Math.max(1, maxY - posY);
+
+                  let newW = size.width;
+                  let newH = size.height;
+
+                  // Apply snapping if enabled
+                  if (showGrid && snapToGrid) {
+                    newW = Math.round(newW / gridSize) * gridSize;
+                    newH = Math.round(newH / gridSize) * gridSize;
+                  }
+
+                  newW = Math.max(1, Math.min(newW, maxAllowedW));
+                  newH = Math.max(1, Math.min(newH, maxAllowedH));
+
+                  editor.resizeElement(id, { width: newW, height: newH });
+                }}
+                onElementEdit={editor.updateElementContent}
+                showGrid={showGrid} // we manage grid overlay separately
+                snapToGrid={snapToGrid ? snap : undefined}
+                pageSettings={pageSettings}
+                backgroundImage={pageSettings.backgroundImage}
+              />
+            </div>
           </div>
 
           {/* Sidebar direita - Painel de propriedades (15% da largura) */}
@@ -461,6 +621,40 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
         template={editor.template}
+      />
+
+      <PageSettingsModal
+        isOpen={showPageSettingsModal}
+        onClose={() => setShowPageSettingsModal(false)}
+        pageSettings={pageSettings.pageSettings}
+        backgroundImage={pageSettings.backgroundImage}
+        onUpdatePageSettings={(settings) => {
+          pageSettings.updatePageSettings(settings);
+          editor.updatePageSettings(settings);
+        }}
+        onUpdateBackgroundImage={(image) => {
+          pageSettings.updateBackgroundImage(image);
+          editor.updateBackgroundImage(image);
+        }}
+      />
+
+      <PreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        template={editor.template}
+        pageSettings={pageSettings.pageSettings}
+        backgroundImage={pageSettings.backgroundImage}
+        onExport={() => {
+          setShowPreviewModal(false);
+          setShowExportModal(true);
+        }}
+      />
+
+      {/* Sistema de notificações de erro */}
+      <ErrorNotification
+        errors={errors}
+        onDismiss={dismissError}
+        getErrorTitle={getErrorTitle}
       />
     </div>
   );

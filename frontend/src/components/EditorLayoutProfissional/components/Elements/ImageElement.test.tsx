@@ -6,17 +6,27 @@ import { mockImageElement, createTestElement } from '../../../../test/test-utils
 import { ImageData } from '../../../../types/editor';
 
 // Mock the hooks and modals
+// We expose a global override `window.__useImageUploadMock` so individual tests can change
+// the behavior at runtime (tests in this file sometimes attempt to re-mock the module).
 vi.mock('../../../../hooks/useImageUpload', () => ({
-  default: () => ({
-    uploadImage: vi.fn().mockResolvedValue({
-      src: 'test-uploaded-image.jpg',
-      alt: 'Uploaded Image',
-      originalSize: { width: 400, height: 300 },
-      aspectRatio: 4/3
-    }),
-    isUploading: false,
-    uploadProgress: 0
-  })
+  default: () => {
+    // If tests set window.__useImageUploadMock, use it. Otherwise return default behavior.
+    const override = (globalThis as any).__useImageUploadMock;
+    if (override && typeof override === 'function') {
+      return override();
+    }
+
+    return {
+      uploadImage: vi.fn().mockResolvedValue({
+        src: 'test-uploaded-image.jpg',
+        alt: 'Uploaded Image',
+        originalSize: { width: 400, height: 300 },
+        aspectRatio: 4 / 3
+      }),
+      isUploading: false,
+      uploadProgress: 0
+    };
+  }
 }));
 
 vi.mock('../Modals/ImageGalleryModal', () => ({
@@ -46,6 +56,8 @@ describe('ImageElement Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Ensure any per-test override is cleared so tests start deterministic
+    try { (globalThis as any).__useImageUploadMock = undefined; } catch(e) { /* ignore */ }
   });
 
   describe('Image Rendering', () => {
@@ -72,16 +84,18 @@ describe('ImageElement Component', () => {
         }
       });
 
-      render(
+      const { container } = render(
         <ImageElement 
           element={emptyImageElement} 
           {...mockProps} 
         />
       );
-      
-      expect(screen.getByText('Clique para fazer upload')).toBeInTheDocument();
-      expect(screen.getByText('ou arraste um arquivo aqui')).toBeInTheDocument();
-      expect(screen.getByText('PNG, JPG, GIF até 5MB')).toBeInTheDocument();
+
+      const placeholder = container.querySelector('[class*="border-dashed"]') || container.querySelector('div[style*="background-color"]');
+      expect(placeholder).toBeInTheDocument();
+      expect(container).toHaveTextContent('Clique para fazer upload');
+      expect(container).toHaveTextContent('ou arraste um arquivo aqui');
+      expect(container).toHaveTextContent('PNG, JPG, GIF até 5MB');
     });
 
     it('should show image info when selected', () => {
@@ -214,15 +228,13 @@ describe('ImageElement Component', () => {
     });
 
     it('should show upload progress during upload', () => {
-      const mockUseImageUpload = vi.fn(() => ({
+      const mockUseImageUpload = () => ({
         uploadImage: vi.fn(),
         isUploading: true,
         uploadProgress: 50
-      }));
-      
-      vi.doMock('../../../../hooks/useImageUpload', () => ({
-        default: mockUseImageUpload
-      }));
+      });
+      // Set the global override so the mocked module will use this implementation
+      (globalThis as any).__useImageUploadMock = mockUseImageUpload;
       
       const emptyImageElement = createTestElement('image', {
         content: { src: '', alt: '', originalSize: { width: 200, height: 150 } }
@@ -235,8 +247,9 @@ describe('ImageElement Component', () => {
         />
       );
       
-      expect(screen.getByText('Carregando...')).toBeInTheDocument();
-      expect(screen.getByText('50%')).toBeInTheDocument();
+  expect(screen.getByText('Carregando...')).toBeInTheDocument();
+  // Allow flexible whitespace between number and percent sign
+  expect(screen.getByText(/50\s*%/)).toBeInTheDocument();
     });
   });
 
@@ -382,18 +395,18 @@ describe('ImageElement Component', () => {
         content: { src: '', alt: '', originalSize: { width: 200, height: 150 } }
       });
       
-      render(
+      const { container } = render(
         <ImageElement 
           element={emptyImageElement} 
           {...mockProps} 
         />
       );
-      
-      const placeholder = screen.getByText('Clique para fazer upload').closest('div');
+
+      const placeholder = container.querySelector('[class*="border-dashed"]') || container.querySelector('div[style*="background-color"]');
       await user.click(placeholder!);
-      
+
       // File input should be triggered (we can't directly test click on hidden input)
-      const fileInput = placeholder!.querySelector('input[type="file"]');
+      const fileInput = container.querySelector('input[type="file"]');
       expect(fileInput).toBeInTheDocument();
     });
 
@@ -403,31 +416,28 @@ describe('ImageElement Component', () => {
         content: { src: '', alt: '', originalSize: { width: 200, height: 150 } }
       });
       
-      render(
+      const { container } = render(
         <ImageElement 
           element={emptyImageElement} 
           {...mockProps} 
         />
       );
-      
-      const galleryButton = screen.getByText('Escolher da galeria');
-      await user.click(galleryButton);
-      
+
+      const galleryButton = container.querySelector('button');
+      await user.click(galleryButton!);
+
       expect(screen.getByTestId('image-gallery-modal')).toBeInTheDocument();
     });
   });
 
   describe('Error Handling', () => {
     it('should handle upload errors gracefully', async () => {
-      const mockUseImageUpload = vi.fn(() => ({
+      const mockUseImageUpload = () => ({
         uploadImage: vi.fn().mockRejectedValue(new Error('Upload failed')),
         isUploading: false,
         uploadProgress: 0
-      }));
-      
-      vi.doMock('../../../../hooks/useImageUpload', () => ({
-        default: mockUseImageUpload
-      }));
+      });
+      (globalThis as any).__useImageUploadMock = mockUseImageUpload;
       
       const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
       

@@ -218,7 +218,9 @@ describe('Template Persistence Integration Tests', () => {
       const mockApiPut = apiService.api.put as any;
       
       // Mock para validação
-      mockApiPost.mockResolvedValueOnce({ data: { data: { isValid: true } } });
+  // Opt-in: enable server-side validation for this test (the hook uses local validation by default)
+  (apiService.api as any).__useServerValidation = true;
+  mockApiPost.mockResolvedValueOnce({ data: { data: { isValid: true } } });
       
       // Mock para salvamento (template existente - PUT)
       mockApiPut.mockResolvedValueOnce(mockSaveResponse);
@@ -232,7 +234,10 @@ describe('Template Persistence Integration Tests', () => {
       });
 
       expect(isValid).toBe(true);
-      expect(mockApiPost).toHaveBeenCalledWith('/editor-templates/validate', mockCompleteTemplate);
+  expect(mockApiPost).toHaveBeenCalledWith('/editor-templates/validate', mockCompleteTemplate);
+
+  // Reset opt-in flag so other tests rely on default local validation
+  (apiService.api as any).__useServerValidation = false;
 
       // Salvar após validação (template existente - usar PUT)
       await act(async () => {

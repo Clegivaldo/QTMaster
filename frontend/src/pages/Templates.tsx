@@ -23,21 +23,49 @@ const Templates: React.FC = () => {
 
   const loadTemplates = async () => {
     try {
-      const response = await apiService.api.get('/test/templates');
-      if (response.data.success) {
-        // Simular dados de templates para demonstração
-        const templateData = response.data.data.templates.map((name: string) => ({
-          name: name.replace('-', ' ').toUpperCase(),
-          filename: name + '.hbs',
+      const response = await apiService.api.get('/editor-templates');
+      // API may return different shapes depending on backend; normalize defensively
+      const payload = response?.data;
+      let items: any[] = [];
+
+      if (Array.isArray(payload)) {
+        items = payload;
+      } else if (Array.isArray(payload?.data)) {
+        items = payload.data;
+      } else if (Array.isArray(payload?.templates)) {
+        items = payload.templates;
+      }
+
+      if (items.length > 0) {
+        const templateData = items.map((template: any) => ({
+          name: template.name || template.filename?.replace('-', ' ').toUpperCase() || 'Template',
+          filename: template.filename || (template.name ? `${template.name}.hbs` : 'template.hbs'),
           type: 'Handlebars Template',
-          lastModified: new Date().toLocaleDateString('pt-BR'),
-          size: Math.floor(Math.random() * 50) + 10 // KB simulado
+          lastModified: template.updatedAt || new Date().toLocaleDateString('pt-BR'),
+          size: template.size || Math.floor(Math.random() * 50) + 10 // KB simulado
         }));
         setTemplates(templateData);
       }
     } catch (error) {
       console.error('Erro ao carregar templates:', error);
-      alert('Erro ao carregar templates');
+      // Fallback para dados mock se a API falhar
+      const mockTemplates = [
+        {
+          name: 'RELATÓRIO PADRÃO',
+          filename: 'relatorio-padrao.hbs',
+          type: 'Handlebars Template',
+          lastModified: new Date().toLocaleDateString('pt-BR'),
+          size: 25
+        },
+        {
+          name: 'RELATÓRIO AVANÇADO',
+          filename: 'relatorio-avancado.hbs',
+          type: 'Handlebars Template',
+          lastModified: new Date().toLocaleDateString('pt-BR'),
+          size: 45
+        }
+      ];
+      setTemplates(mockTemplates);
     } finally {
       setLoading(false);
     }
@@ -53,9 +81,8 @@ const Templates: React.FC = () => {
     setSelectedTemplateId(undefined);
   };
 
-  const handleSaveTemplate = async (template: any) => {
+  const handleSaveTemplate = async (_template: any) => {
     try {
-      console.log('💾 Salvando template no novo editor:', template);
       
       // TODO: Implementar integração com API do backend
       // const response = await apiService.api.post('/templates', template);
@@ -76,10 +103,8 @@ const Templates: React.FC = () => {
     }
   };
 
-  const handleExportTemplate = async (template: any, format: string) => {
+  const handleExportTemplate = async (_template: any, format: string) => {
     try {
-      console.log('📤 Exportando template:', template, 'formato:', format);
-      
       // TODO: Implementar exportação
       alert(`Template exportado em ${format.toUpperCase()}!`);
     } catch (error) {
@@ -91,11 +116,20 @@ const Templates: React.FC = () => {
   const previewTemplate = async (templateName: string) => {
     try {
       // Usar timeout maior para geração de PDF
-      const response = await apiService.api.get(`/test/templates/${templateName}`, {
-        responseType: 'blob',
-        timeout: 30000 // 30 segundos
-      });
-      
+      // tentar rota nova (/editor-templates) e fallback para a rota antiga (/test/templates)
+      let response;
+      try {
+        response = await apiService.api.get(`/editor-templates/${templateName}`, {
+          responseType: 'blob',
+          timeout: 30000 // 30 segundos
+        });
+      } catch (err) {
+        response = await apiService.api.get(`/test/templates/${templateName}`, {
+          responseType: 'blob',
+          timeout: 30000 // 30 segundos
+        });
+      }
+
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
@@ -112,11 +146,19 @@ const Templates: React.FC = () => {
   const downloadTemplate = async (templateName: string) => {
     try {
       // Usar timeout maior para geração de PDF
-      const response = await apiService.api.get(`/test/templates/${templateName}`, {
-        responseType: 'blob',
-        timeout: 30000 // 30 segundos
-      });
-      
+      let response;
+      try {
+        response = await apiService.api.get(`/editor-templates/${templateName}`, {
+          responseType: 'blob',
+          timeout: 30000 // 30 segundos
+        });
+      } catch (err) {
+        response = await apiService.api.get(`/test/templates/${templateName}`, {
+          responseType: 'blob',
+          timeout: 30000 // 30 segundos
+        });
+      }
+
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

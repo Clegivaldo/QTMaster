@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Upload, Image as ImageIcon, X, RotateCw, Maximize2, FolderOpen } from 'lucide-react';
+import { Upload, Image as ImageIcon, X, RotateCw, FolderOpen } from 'lucide-react';
 import { ImageElement as ImageElementType, ImageData } from '../../../../types/editor';
 import useImageUpload from '../../../../hooks/useImageUpload';
 import ImageGalleryModal from '../Modals/ImageGalleryModal';
@@ -85,15 +85,6 @@ const ImageElement: React.FC<ImageElementProps> = ({
     setShowGallery(false);
   }, [element.id, onEdit]);
 
-  // Manter proporção ao redimensionar
-  const maintainAspectRatio = useCallback(() => {
-    if (element.content.aspectRatio) {
-      const newHeight = element.size.width / element.content.aspectRatio;
-      // Aqui você poderia chamar onResize se tivesse acesso a ele
-      console.log('Nova altura calculada:', newHeight);
-    }
-  }, [element.content.aspectRatio, element.size.width]);
-
   const hasImage = element.content.src;
 
   return (
@@ -128,48 +119,29 @@ const ImageElement: React.FC<ImageElementProps> = ({
 
           {/* Overlay com controles (visível apenas quando selecionado) */}
           {isSelected && (
-            <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="flex gap-2">
+            <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center">
+              <div className="flex gap-1 opacity-80">
                 <button
                   onClick={handleUploadClick}
-                  className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors"
+                  className="p-1.5 bg-white rounded shadow hover:bg-gray-50 transition-colors"
                   title="Fazer upload de nova imagem"
                 >
-                  <Upload className="h-4 w-4 text-gray-600" />
+                  <Upload className="h-3 w-3 text-gray-600" />
                 </button>
                 <button
                   onClick={handleOpenGallery}
-                  className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors"
+                  className="p-1.5 bg-white rounded shadow hover:bg-gray-50 transition-colors"
                   title="Escolher da galeria"
                 >
-                  <FolderOpen className="h-4 w-4 text-blue-600" />
+                  <FolderOpen className="h-3 w-3 text-blue-600" />
                 </button>
                 <button
                   onClick={handleRemoveImage}
-                  className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors"
+                  className="p-1.5 bg-white rounded shadow hover:bg-gray-50 transition-colors"
                   title="Remover imagem"
                 >
-                  <X className="h-4 w-4 text-red-600" />
+                  <X className="h-3 w-3 text-red-600" />
                 </button>
-                <button
-                  onClick={maintainAspectRatio}
-                  className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-colors"
-                  title="Manter proporção"
-                >
-                  <Maximize2 className="h-4 w-4 text-gray-600" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Informações da imagem */}
-          {isSelected && (
-            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
-              <div className="truncate">
-                {element.content.alt || 'Imagem'}
-              </div>
-              <div className="text-gray-300">
-                {element.content.originalSize.width} × {element.content.originalSize.height}px
               </div>
             </div>
           )}

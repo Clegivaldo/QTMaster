@@ -183,6 +183,13 @@ export interface PageSettings {
   customSize?: Size;
 }
 
+export interface BackgroundImageSettings {
+  url: string;
+  repeat: 'repeat' | 'no-repeat' | 'repeat-x' | 'repeat-y';
+  opacity: number;
+  position: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+}
+
 // Interface principal do template
 export interface EditorTemplate {
   id: string;
@@ -205,6 +212,7 @@ export interface EditorTemplate {
   isPublic: boolean;
   tags: string[];
   thumbnail?: string;
+  backgroundImage?: BackgroundImageSettings | null;
 }
 
 // Estado do editor
@@ -258,6 +266,13 @@ export interface CanvasProps {
   onElementMove: (elementId: string, newPosition: Position) => void;
   onElementResize: (elementId: string, newSize: Size) => void;
   onElementEdit: (elementId: string, newContent: any) => void;
+  showGrid?: boolean;
+  gridSize?: number;
+  snapToGrid?: (position: Position) => Position;
+  pageSettings?: any; // Configurações da página (tamanho, orientação, etc.)
+  backgroundImage?: any; // Imagem de fundo da página
+  onAddElement?: (type: ElementType, position?: Position) => void;
+  showRuler?: boolean;
 }
 
 export interface ElementPaletteProps {

@@ -22,7 +22,6 @@ const Profile: React.FC = () => {
   const handleSave = async () => {
     try {
       // TODO: Implement API call to update profile
-      console.log('Saving profile:', formData);
       
       addNotification({
         type: 'success',

@@ -5,12 +5,13 @@ import {
   Image, 
   Code, 
   Settings,
-  Info,
-  CheckCircle
+  Info
 } from 'lucide-react';
 import ResponsiveModal from '../../../ResponsiveModal';
 import { EditorTemplate, ExportFormat, ExportOptions } from '../../../../types/editor';
 import { useTemplateStorage } from '../../../../hooks/useTemplateStorage';
+import { useNotifications } from '../Utils/NotificationSystem';
+import { useLoadingOverlay } from '../Utils/LoadingOverlay';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -89,10 +90,11 @@ const ExportModal: React.FC<ExportModalProps> = ({
   template
 }) => {
   const { exportTemplate, isLoading, error, clearError } = useTemplateStorage();
+  const { showExportSuccess, showError } = useNotifications();
+  const { showExportLoading, updateProgress, hideLoading } = useLoadingOverlay();
   
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('pdf');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [exportSuccess, setExportSuccess] = useState<string | null>(null);
   
   const [config, setConfig] = useState<ExportConfig>({
     format: 'pdf',
@@ -107,7 +109,6 @@ const ExportModal: React.FC<ExportModalProps> = ({
     if (isOpen) {
       setSelectedFormat('pdf');
       setShowAdvanced(false);
-      setExportSuccess(null);
       setConfig({
         format: 'pdf',
         quality: 0.9,
@@ -116,8 +117,9 @@ const ExportModal: React.FC<ExportModalProps> = ({
         filename: template.name || 'template'
       });
       clearError();
+      hideLoading();
     }
-  }, [isOpen, template.name, clearError]);
+  }, [isOpen, template.name, clearError, hideLoading]);
   
   // Atualizar formato no config quando seleção mudar
   React.useEffect(() => {
@@ -125,9 +127,8 @@ const ExportModal: React.FC<ExportModalProps> = ({
   }, [selectedFormat]);
   
   const handleExport = async () => {
+    let progressInterval: any;
     try {
-      setExportSuccess(null);
-      
       const options: ExportOptions = {
         format: config.format,
         quality: config.quality,
@@ -135,7 +136,22 @@ const ExportModal: React.FC<ExportModalProps> = ({
         includeMetadata: config.includeMetadata
       };
       
-      const result = await exportTemplate(template, options);
+      // Mostrar loading overlay
+      showExportLoading(config.format, template.name || 'template');
+      
+      // Simular progresso para melhor UX
+      progressInterval = setInterval(() => {
+        updateProgress(Math.random() * 30 + 10); // Progresso aleatório até 40%
+      }, 500);
+      
+  const result = await exportTemplate(template, options);
+      
+  // Limpar interval e mostrar progresso completo
+  clearInterval(progressInterval);
+      updateProgress(100, 'Finalizando...');
+      
+      // Aguardar um pouco para mostrar 100%
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Criar link para download
       const link = document.createElement('a');
@@ -145,14 +161,26 @@ const ExportModal: React.FC<ExportModalProps> = ({
       link.click();
       document.body.removeChild(link);
       
-      setExportSuccess(`Template exportado como ${result.filename}`);
+      // Esconder loading e mostrar sucesso
+      hideLoading();
+      showExportSuccess(result.filename, config.format);
       
-      // Fechar modal após 2 segundos
-      setTimeout(() => {
-        onClose();
-      }, 2000);
+      // Fechar modal
+      onClose();
       
     } catch (error) {
+      hideLoading();
+      if (progressInterval) clearInterval(progressInterval);
+      // Detectar 404 (Template não encontrado) e mostrar mensagem específica
+      const status = (error && typeof error === 'object' && 'response' in error) ? (error as any).response?.status : undefined;
+      const msg = error instanceof Error ? error.message : 'Erro desconhecido na exportação';
+
+      if (status === 404 || (typeof msg === 'string' && msg.includes('Template não encontrado'))) {
+        showError('Template não encontrado', 'O template selecionado não foi encontrado no servidor. Verifique se ele ainda existe ou recarregue a lista de templates.');
+      } else {
+        showError('Erro na Exportação', msg);
+      }
+
       console.error('Erro ao exportar template:', error);
     }
   };
@@ -351,15 +379,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
           </div>
         )}
         
-        {/* Sucesso */}
-        {exportSuccess && (
-          <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-            <div className="flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <p className="text-sm text-green-600">{exportSuccess}</p>
-            </div>
-          </div>
-        )}
+
         
         {/* Erro da API */}
         {error && (
@@ -375,28 +395,27 @@ const ExportModal: React.FC<ExportModalProps> = ({
             disabled={isLoading}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {exportSuccess ? 'Fechar' : 'Cancelar'}
+            Cancelar
           </button>
           
-          {!exportSuccess && (
-            <button
-              onClick={handleExport}
-              disabled={isLoading || !config.filename.trim()}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Exportando...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar {selectedFormatInfo?.label}
-                </>
-              )}
-            </button>
-          )}
+          <button
+            onClick={handleExport}
+            aria-label={`Exportar ${selectedFormatInfo?.label}`}
+            disabled={isLoading || !config.filename.trim()}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Exportando...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar {selectedFormatInfo?.label}
+              </>
+            )}
+          </button>
         </div>
       </div>
     </ResponsiveModal>

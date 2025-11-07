@@ -10,7 +10,10 @@ import {
   Copy,
   Globe,
   Lock,
-  Filter
+  Filter,
+  RefreshCw,
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 import ResponsiveModal from '../../../ResponsiveModal';
 import { EditorTemplate } from '../../../../types/editor';
@@ -75,6 +78,8 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [loadingTemplate, setLoadingTemplate] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   
   const [filters, setFilters] = useState<Filters>({
     category: '',
@@ -89,6 +94,8 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
     if (isOpen) {
       loadTemplates();
       clearError();
+      setLoadError(null);
+      setRetryCount(0);
     }
   }, [isOpen]);
   
@@ -146,15 +153,31 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
     setFilteredTemplates(filtered);
   }, [templates, searchQuery, filters]);
   
-  const loadTemplates = async () => {
+  const loadTemplates = async (showRetry = false) => {
     try {
+      setLoadError(null);
+      if (showRetry) {
+        setRetryCount(prev => prev + 1);
+      }
+      
       const response = await getTemplates({
         page: 1,
-        limit: 100
+        limit: 100,
+        sortBy: 'updatedAt',
+        sortOrder: 'desc'
       });
-      setTemplates(response.templates);
+      
+      setTemplates(response.templates || []);
+      
+      // Se não há templates, não é um erro
+      if (response.templates.length === 0 && response.total === 0) {
+        // Nenhum template encontrado - usuário novo ou sem templates
+      }
+      
     } catch (error) {
       console.error('Erro ao carregar templates:', error);
+      setLoadError('Erro ao carregar lista de templates. Verifique sua conexão.');
+      setTemplates([]); // Limpar lista em caso de erro
     }
   };
   
@@ -166,6 +189,8 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Erro ao carregar template:', error);
+      // O erro já foi tratado pelo hook useTemplateStorage
+      // Manter modal aberto para o usuário tentar novamente
     } finally {
       setLoadingTemplate(null);
     }
@@ -187,9 +212,10 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
   const handleDuplicateTemplate = async (templateId: string) => {
     try {
       await duplicateTemplate(templateId);
-      loadTemplates(); // Recarregar lista
+      await loadTemplates(); // Recarregar lista
     } catch (error) {
       console.error('Erro ao duplicar template:', error);
+      // O erro já foi tratado pelo hook useTemplateStorage
     }
   };
   
@@ -232,16 +258,28 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
           
           {/* Botão de filtros */}
           <div className="flex justify-between items-center">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
+              </button>
+              
+              <button
+                onClick={() => loadTemplates(true)}
+                disabled={isLoading}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                title="Recarregar lista"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
             
             <p className="text-sm text-gray-500">
               {filteredTemplates.length} de {templates.length} templates
+              {retryCount > 0 && ` (tentativa ${retryCount + 1})`}
             </p>
           </div>
           
@@ -322,18 +360,50 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
           )}
         </div>
         
+        {/* Erro de carregamento */}
+        {loadError && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-red-600">{loadError}</p>
+                <button
+                  onClick={() => loadTemplates(true)}
+                  disabled={isLoading}
+                  className="mt-2 text-sm text-red-700 hover:text-red-800 underline disabled:opacity-50"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Lista de templates */}
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-sm text-gray-500">Carregando templates...</p>
             </div>
           ) : filteredTemplates.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              {templates.length === 0 ? (
-                <p>Nenhum template encontrado. Crie seu primeiro template!</p>
+            <div className="text-center py-8">
+              {loadError ? (
+                <div className="text-gray-400">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-4" />
+                  <p className="text-sm">Erro ao carregar templates</p>
+                </div>
+              ) : templates.length === 0 ? (
+                <div className="text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-4" />
+                  <p className="text-sm font-medium mb-2">Nenhum template encontrado</p>
+                  <p className="text-xs">Crie seu primeiro template para começar!</p>
+                </div>
               ) : (
-                <p>Nenhum template corresponde aos filtros aplicados.</p>
+                <div className="text-gray-500">
+                  <Search className="h-12 w-12 mx-auto mb-4" />
+                  <p className="text-sm">Nenhum template corresponde aos filtros aplicados</p>
+                </div>
               )}
             </div>
           ) : (
