@@ -33,7 +33,8 @@ export const cache = (options: CacheOptions = {}) => {
       
       if (cachedData) {
         logger.debug(`Cache hit for key: ${cacheKey}`);
-        return res.json(cachedData);
+        res.json(cachedData);
+        return;
       }
 
       // Cache miss - continue to route handler
@@ -226,11 +227,8 @@ export const rateLimitWithRedis = (options: {
       });
 
       if (!result.allowed) {
-        return res.status(429).json({
-          error: 'Too Many Requests',
-          message: 'Rate limit exceeded',
-          retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000),
-        });
+        res.status(429).json({ error: 'Too Many Requests', message: 'Rate limit exceeded', retryAfter: Math.ceil((result.resetTime - Date.now()) / 1000) });
+        return;
       }
 
       next();

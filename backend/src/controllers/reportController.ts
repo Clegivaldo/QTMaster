@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { ReportGenerationService } from '../services/reportGenerationService.js';
 import path from 'path';
 import fs from 'fs';
+import { requireParam } from '../utils/requestUtils.js';
 
 const prisma = new PrismaClient();
 const reportService = new ReportGenerationService();
@@ -13,7 +14,8 @@ export class ReportController {
    */
   static async generateReport(req: Request, res: Response) {
     try {
-      const { validationId } = req.params;
+  const validationId = requireParam(req, res, 'validationId');
+  if (!validationId) return;
       const { templateId } = req.query;
 
       if (!validationId) {
@@ -146,7 +148,8 @@ export class ReportController {
    */
   static async getReport(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+  const id = requireParam(req, res, 'id');
+  if (!id) return;
 
       const report = await prisma.report.findUnique({
         where: { id: id! },
@@ -205,7 +208,8 @@ export class ReportController {
    */
   static async downloadReport(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+  const id = requireParam(req, res, 'id');
+  if (!id) return;
 
       const report = await prisma.report.findUnique({
         where: { id: id! }
@@ -257,14 +261,8 @@ export class ReportController {
    */
   static async previewReport(req: Request, res: Response) {
     try {
-      const { validationId } = req.params;
-
-      if (!validationId) {
-        return res.status(400).json({
-          success: false,
-          error: 'ID da validação é obrigatório'
-        });
-      }
+      const validationId = requireParam(req, res, 'validationId');
+      if (!validationId) return;
 
       // Gerar o PDF
       const pdfBuffer = await reportService.generateReport(validationId);
@@ -289,7 +287,8 @@ export class ReportController {
    */
   static async deleteReport(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+  const id = requireParam(req, res, 'id');
+  if (!id) return;
 
       const report = await prisma.report.findUnique({
         where: { id: id! }

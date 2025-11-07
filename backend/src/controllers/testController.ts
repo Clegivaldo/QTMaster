@@ -42,13 +42,16 @@ export class TestController {
       });
 
       if (validations.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Nenhuma validação encontrada no banco de dados para teste'
-        });
+        res.status(404).json({ success: false, error: 'Nenhuma validação encontrada no banco de dados para teste' });
+        return;
       }
 
       const validation = validations[0];
+      if (!validation) {
+        res.status(404).json({ success: false, error: 'Nenhuma validação encontrada no banco de dados para teste' });
+        return;
+      }
+
       console.log('📊 Usando validação:', validation.id);
 
       // Gerar o relatório
@@ -62,15 +65,13 @@ export class TestController {
       res.setHeader('Content-Disposition', 'inline; filename="test-report.pdf"');
       res.setHeader('Content-Length', pdfBuffer.length);
       
-      return res.send(pdfBuffer);
+  res.send(pdfBuffer);
+  return;
 
     } catch (error) {
       console.error('❌ Erro ao gerar relatório de teste:', error);
-      return res.status(500).json({
-        success: false,
-        error: 'Erro ao gerar relatório de teste',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
-      });
+      res.status(500).json({ success: false, error: 'Erro ao gerar relatório de teste', details: error instanceof Error ? error.message : 'Erro desconhecido' });
+      return;
     }
   }
 

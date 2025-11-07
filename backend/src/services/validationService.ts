@@ -83,7 +83,7 @@ export class ValidationService {
     const validReadings = totalReadings - totalOutOfRange;
     const conformityPercentage = totalReadings > 0 ? (validReadings / totalReadings) * 100 : 0;
 
-    return {
+    const result: any = {
       totalReadings,
       validReadings,
       invalidReadings: totalOutOfRange,
@@ -95,19 +95,24 @@ export class ValidationService {
         standardDeviation: tempStats.standardDeviation,
         outOfRangeCount: tempOutOfRange,
       },
-      humidity: humidityStats ? {
-        min: humidityStats.min,
-        max: humidityStats.max,
-        average: humidityStats.average,
-        standardDeviation: humidityStats.standardDeviation,
-        outOfRangeCount: humidityStats.outOfRangeCount,
-      } : undefined,
       timeRange: {
         start: startTime,
         end: endTime,
         duration: Math.round(duration * 100) / 100,
       },
     };
+
+    if (humidityStats) {
+      result.humidity = {
+        min: humidityStats.min,
+        max: humidityStats.max,
+        average: humidityStats.average,
+        standardDeviation: humidityStats.standardDeviation,
+        outOfRangeCount: humidityStats.outOfRangeCount,
+      };
+    }
+
+    return result as ValidationStatistics;
   }
 
   async getSensorDataForValidation(suitcaseId: string, startDate?: Date, endDate?: Date) {

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { ReportController } from '../controllers/reportController.js';
-import { authMiddleware } from '../middleware/authMiddleware.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 
 // Aplicar middleware de autenticação em todas as rotas
-router.use(authMiddleware);
+router.use(authenticate);
 
 // Rotas de relatórios
 router.post('/generate/:validationId', ReportController.generateReport);

@@ -133,7 +133,13 @@
   - Adicionar funcionalidades de busca e filtros
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ]* 4.2 Implementar testes para módulo de clientes
+- [x] 4.2 Implementar testes para módulo de clientes
+
+
+
+
+
+
   - Criar testes unitários para service de clientes
   - Testar componentes de formulário e listagem
   - Testar endpoints de API com supertest

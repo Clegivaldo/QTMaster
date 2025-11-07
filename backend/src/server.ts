@@ -121,6 +121,15 @@ app.use('/public', express.static('public', {
   }
 }));
 
+// Serve exported files (created by export endpoints)
+app.use('/api/exports', express.static('exports', {
+  setHeaders: (res, path) => {
+    if (path.match(/\.(pdf|html|json|png)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=60'); // short cache
+    }
+  }
+}));
+
 // Trust proxy for accurate IP addresses
 app.set('trust proxy', 1);
 

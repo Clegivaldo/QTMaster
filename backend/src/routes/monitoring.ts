@@ -64,23 +64,18 @@ router.post('/backups/restore', async (req, res) => {
     const { backupPath } = req.body;
     
     if (!backupPath) {
-      return res.status(400).json({
-        error: 'Backup path is required',
-      });
+      res.status(400).json({ error: 'Backup path is required' });
+      return;
     }
     
     const success = await BackupService.restoreBackup(backupPath);
     
     if (success) {
-      res.json({
-        success: true,
-        message: 'Database restored successfully',
-      });
+      res.json({ success: true, message: 'Database restored successfully' });
+      return;
     } else {
-      res.status(500).json({
-        success: false,
-        message: 'Failed to restore database',
-      });
+      res.status(500).json({ success: false, message: 'Failed to restore database' });
+      return;
     }
   } catch (error) {
     logger.error('Failed to restore backup:', error);
@@ -187,10 +182,8 @@ router.put('/logs/levels', (req, res) => {
     const validLevels = ['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly'];
     
     if (!level || !validLevels.includes(level)) {
-      return res.status(400).json({
-        error: 'Invalid log level',
-        validLevels,
-      });
+      res.status(400).json({ error: 'Invalid log level', validLevels });
+      return;
     }
     
     logger.level = level;

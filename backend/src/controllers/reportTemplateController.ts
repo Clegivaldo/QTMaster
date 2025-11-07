@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
 import { fastReportService } from '../services/fastReportService.js';
+import { requireParam, stripUndefined } from '../utils/requestUtils.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
@@ -129,10 +130,11 @@ export class ReportTemplateController {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Validation error',
           details: error.errors,
         });
+        return;
       }
 
       logger.error('Get templates error:', { error: error instanceof Error ? error.message : error });
@@ -144,7 +146,8 @@ export class ReportTemplateController {
 
   async getTemplate(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const template = await prisma.reportTemplate.findUnique({
         where: { id },
@@ -174,9 +177,8 @@ export class ReportTemplateController {
       });
 
       if (!template) {
-        return res.status(404).json({
-          error: 'Template not found',
-        });
+        res.status(404).json({ error: 'Template not found' });
+        return;
       }
 
       res.json({
@@ -201,9 +203,10 @@ export class ReportTemplateController {
       });
 
       if (existingTemplate) {
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Template with this name already exists',
         });
+        return;
       }
 
       // Create template
@@ -226,12 +229,11 @@ export class ReportTemplateController {
         success: true,
         data: { template },
       });
+      return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Validation error',
-          details: error.errors,
-        });
+        res.status(400).json({ error: 'Validation error', details: error.errors });
+        return;
       }
 
       logger.error('Create template error:', { error: error instanceof Error ? error.message : error, userId: req.user?.id });
@@ -243,7 +245,8 @@ export class ReportTemplateController {
 
   async updateTemplate(req: AuthenticatedRequest, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
       const validatedData = updateTemplateSchema.parse(req.body);
 
       // Check if template exists
@@ -252,9 +255,10 @@ export class ReportTemplateController {
       });
 
       if (!existingTemplate) {
-        return res.status(404).json({
+        res.status(404).json({
           error: 'Template not found',
         });
+        return;
       }
 
       // Check if new name conflicts with existing template
@@ -267,20 +271,28 @@ export class ReportTemplateController {
         });
 
         if (nameConflict) {
-          return res.status(400).json({
+          res.status(400).json({
             error: 'Template with this name already exists',
           });
+          return;
         }
+      }
+
+      // Prepare data removing undefined fields (Prisma strict typing)
+      const dataToUpdate = {
+        ...stripUndefined(validatedData) as any,
+        updatedAt: new Date(),
+      } as any;
+
+      // Ensure explicit null when description was provided as empty string
+      if (Object.prototype.hasOwnProperty.call(validatedData, 'description')) {
+        dataToUpdate.description = validatedData.description || null;
       }
 
       // Update template
       const template = await prisma.reportTemplate.update({
         where: { id },
-        data: {
-          ...validatedData,
-          description: validatedData.description || null,
-          updatedAt: new Date(),
-        },
+        data: dataToUpdate,
       });
 
       logger.info('Template updated:', {
@@ -294,28 +306,23 @@ export class ReportTemplateController {
         success: true,
         data: { template },
       });
+      return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Validation error',
-          details: error.errors,
-        });
+        res.status(400).json({ error: 'Validation error', details: error.errors });
+        return;
       }
 
-      logger.error('Update template error:', { 
-        error: error instanceof Error ? error.message : error, 
-        templateId: req.params.id, 
-        userId: req.user?.id 
-      });
-      res.status(500).json({
-        error: 'Internal server error',
-      });
+      logger.error('Update template error:', { error: error instanceof Error ? error.message : error, templateId: req.params.id, userId: req.user?.id });
+      res.status(500).json({ error: 'Internal server error' });
+      return;
     }
   }
 
   async deleteTemplate(req: AuthenticatedRequest, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       // Check if template exists
       const existingTemplate = await prisma.reportTemplate.findUnique({
@@ -330,19 +337,14 @@ export class ReportTemplateController {
       });
 
       if (!existingTemplate) {
-        return res.status(404).json({
-          error: 'Template not found',
-        });
+        res.status(404).json({ error: 'Template not found' });
+        return;
       }
 
       // Check if template has associated reports
       if (existingTemplate._count.reports > 0) {
-        return res.status(400).json({
-          error: 'Cannot delete template with associated reports',
-          details: {
-            reports: existingTemplate._count.reports,
-          },
-        });
+        res.status(400).json({ error: 'Cannot delete template with associated reports', details: { reports: existingTemplate._count.reports } });
+        return;
       }
 
       // Delete template
@@ -356,6 +358,7 @@ export class ReportTemplateController {
         success: true,
         message: 'Template deleted successfully',
       });
+      return;
     } catch (error) {
       logger.error('Delete template error:', { 
         error: error instanceof Error ? error.message : error, 
@@ -399,46 +402,39 @@ export class ReportTemplateController {
         if (err) {
           if (err instanceof multer.MulterError) {
             if (err.code === 'LIMIT_FILE_SIZE') {
-              return res.status(400).json({
+              res.status(400).json({
                 error: 'File too large. Maximum size is 10MB.',
               });
+              return;
             }
           }
-          return res.status(400).json({
-            error: err.message,
-          });
+
+          res.status(400).json({ error: err.message });
+          return;
         }
 
         if (!req.file) {
-          return res.status(400).json({
-            error: 'No template file provided',
-          });
+          res.status(400).json({ error: 'No template file provided' });
+          return;
         }
 
         try {
           const validatedData = uploadTemplateSchema.parse(req.body);
 
           // Check if template name already exists
-          const existingTemplate = await prisma.reportTemplate.findFirst({
-            where: { name: validatedData.name },
-          });
-
+          const existingTemplate = await prisma.reportTemplate.findFirst({ where: { name: validatedData.name } });
           if (existingTemplate) {
-            // Delete uploaded file if name conflicts
             await fs.unlink(req.file.path).catch(() => {});
-            return res.status(400).json({
-              error: 'Template with this name already exists',
-            });
+            res.status(400).json({ error: 'Template with this name already exists' });
+            return;
           }
 
           // Validate template file
           const isValid = await fastReportService.validateTemplate(req.file.filename);
           if (!isValid) {
-            // Delete uploaded file if invalid
             await fs.unlink(req.file.path).catch(() => {});
-            return res.status(400).json({
-              error: 'Invalid FastReport template file',
-            });
+            res.status(400).json({ error: 'Invalid FastReport template file' });
+            return;
           }
 
           // Create template record
@@ -451,37 +447,20 @@ export class ReportTemplateController {
             },
           });
 
-          logger.info('Template uploaded:', {
-            templateId: template.id,
-            name: template.name,
-            filename: req.file.filename,
-            userId: req.user?.id,
-          });
+          logger.info('Template uploaded:', { templateId: template.id, name: template.name, filename: req.file.filename, userId: req.user?.id });
 
-          res.status(201).json({
-            success: true,
-            data: { template },
-          });
+          res.status(201).json({ success: true, data: { template } });
         } catch (error) {
           // Delete uploaded file on error
-          if (req.file) {
-            await fs.unlink(req.file.path).catch(() => {});
-          }
+          if (req.file) await fs.unlink(req.file.path).catch(() => {});
 
           if (error instanceof z.ZodError) {
-            return res.status(400).json({
-              error: 'Validation error',
-              details: error.errors,
-            });
+            res.status(400).json({ error: 'Validation error', details: error.errors });
+            return;
           }
 
-          logger.error('Upload template error:', { 
-            error: error instanceof Error ? error.message : error, 
-            userId: req.user?.id 
-          });
-          res.status(500).json({
-            error: 'Internal server error',
-          });
+          logger.error('Upload template error:', { error: error instanceof Error ? error.message : error, userId: req.user?.id });
+          res.status(500).json({ error: 'Internal server error' });
         }
       });
     } catch (error) {
@@ -497,31 +476,28 @@ export class ReportTemplateController {
 
   async previewTemplate(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const template = await prisma.reportTemplate.findUnique({
         where: { id },
       });
 
       if (!template) {
-        return res.status(404).json({
-          error: 'Template not found',
-        });
+        res.status(404).json({ error: 'Template not found' });
+        return;
       }
 
       // Check if template file exists
       const isValid = await fastReportService.validateTemplate(template.templatePath);
       if (!isValid) {
-        return res.status(400).json({
-          error: 'Template file not found or invalid',
-        });
+        res.status(400).json({ error: 'Template file not found or invalid' });
+        return;
       }
 
       // For now, return template metadata
       // In a full implementation, this could generate a preview image or return template structure
-      res.json({
-        success: true,
-        data: {
+      res.json({ success: true, data: {
           template: {
             id: template.id,
             name: template.name,
@@ -537,29 +513,29 @@ export class ReportTemplateController {
           },
         },
       });
+      return;
     } catch (error) {
       logger.error('Preview template error:', { 
         error: error instanceof Error ? error.message : error, 
         templateId: req.params.id 
       });
-      res.status(500).json({
-        error: 'Internal server error',
-      });
+      res.status(500).json({ error: 'Internal server error' });
+      return;
     }
   }
 
   async getTemplateVersions(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const template = await prisma.reportTemplate.findUnique({
         where: { id },
       });
 
       if (!template) {
-        return res.status(404).json({
-          error: 'Template not found',
-        });
+        res.status(404).json({ error: 'Template not found' });
+        return;
       }
 
       // For now, return basic version info

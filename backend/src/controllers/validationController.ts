@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { validationService } from '../services/validationService.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
+import { requireParam, stripUndefined } from '../utils/requestUtils.js';
 
 // Validation schemas
 const createValidationSchema = z.object({
@@ -120,22 +121,20 @@ export class ValidationController {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Validation error',
-          details: error.errors,
-        });
+        res.status(400).json({ error: 'Validation error', details: error.errors });
+        return;
       }
 
       logger.error('Get validations error:', { error: error instanceof Error ? error.message : error });
-      res.status(500).json({
-        error: 'Internal server error',
-      });
+      res.status(500).json({ error: 'Internal server error' });
+      return;
     }
   }
 
   async getValidation(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const validation = await prisma.validation.findUnique({
         where: { id },
@@ -199,15 +198,12 @@ export class ValidationController {
       });
 
       if (!validation) {
-        return res.status(404).json({
-          error: 'Validation not found',
-        });
+        res.status(404).json({ error: 'Validation not found' });
+        return;
       }
 
-      res.json({
-        success: true,
-        data: { validation },
-      });
+      res.json({ success: true, data: { validation } });
+      return;
     } catch (error) {
       logger.error('Get validation error:', { error: error instanceof Error ? error.message : error, validationId: req.params.id });
       res.status(500).json({
@@ -218,7 +214,8 @@ export class ValidationController {
 
   async getSensorDataForValidation(req: Request, res: Response) {
     try {
-      const { suitcaseId } = req.params;
+      const suitcaseId = requireParam(req, res, 'suitcaseId');
+      if (!suitcaseId) return;
       const { startDate, endDate } = req.query;
 
       const start = startDate ? new Date(startDate as string) : undefined;
@@ -247,7 +244,8 @@ export class ValidationController {
 
   async getChartData(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const validation = await prisma.validation.findUnique({
         where: { id },
@@ -265,25 +263,22 @@ export class ValidationController {
       });
 
       if (!validation) {
-        return res.status(404).json({
-          error: 'Validation not found',
-        });
+        res.status(404).json({ error: 'Validation not found' });
+        return;
       }
 
-      const parameters = {
+      const parameters = stripUndefined({
         minTemperature: validation.minTemperature,
         maxTemperature: validation.maxTemperature,
-        minHumidity: validation.minHumidity || undefined,
-        maxHumidity: validation.maxHumidity || undefined,
-      };
+        minHumidity: validation.minHumidity ?? undefined,
+        maxHumidity: validation.maxHumidity ?? undefined,
+      }) as any;
 
       const sensorDataIds = validation.sensorData.map(sd => sd.id);
-      const chartData = await validationService.getChartData(sensorDataIds, parameters);
+  const chartData = await validationService.getChartData(sensorDataIds, parameters as any);
 
-      res.json({
-        success: true,
-        data: { chartData, parameters },
-      });
+      res.json({ success: true, data: { chartData, parameters } });
+      return;
     } catch (error) {
       logger.error('Get chart data error:', { error: error instanceof Error ? error.message : error, validationId: req.params.id });
       res.status(500).json({
@@ -302,9 +297,8 @@ export class ValidationController {
       });
 
       if (!suitcase) {
-        return res.status(404).json({
-          error: 'Suitcase not found',
-        });
+        res.status(404).json({ error: 'Suitcase not found' });
+        return;
       }
 
       // Check if client exists
@@ -313,25 +307,22 @@ export class ValidationController {
       });
 
       if (!client) {
-        return res.status(404).json({
-          error: 'Client not found',
-        });
+        res.status(404).json({ error: 'Client not found' });
+        return;
       }
 
       // Validate temperature parameters
       if (validatedData.parameters.minTemperature >= validatedData.parameters.maxTemperature) {
-        return res.status(400).json({
-          error: 'Minimum temperature must be less than maximum temperature',
-        });
+        res.status(400).json({ error: 'Minimum temperature must be less than maximum temperature' });
+        return;
       }
 
       // Validate humidity parameters if provided
       if (validatedData.parameters.minHumidity !== undefined && 
           validatedData.parameters.maxHumidity !== undefined &&
           validatedData.parameters.minHumidity >= validatedData.parameters.maxHumidity) {
-        return res.status(400).json({
-          error: 'Minimum humidity must be less than maximum humidity',
-        });
+        res.status(400).json({ error: 'Minimum humidity must be less than maximum humidity' });
+        return;
       }
 
       // Create validation
@@ -341,7 +332,7 @@ export class ValidationController {
         req.user!.id,
         validatedData.name,
         validatedData.description,
-        validatedData.parameters,
+        stripUndefined(validatedData.parameters) as any,
         validatedData.sensorDataIds
       );
 
@@ -370,28 +361,24 @@ export class ValidationController {
         },
       });
 
-      res.status(201).json({
-        success: true,
-        data: { validation: fullValidation },
-      });
+      res.status(201).json({ success: true, data: { validation: fullValidation } });
+      return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Validation error',
-          details: error.errors,
-        });
+        res.status(400).json({ error: 'Validation error', details: error.errors });
+        return;
       }
 
       logger.error('Create validation error:', { error: error instanceof Error ? error.message : error, userId: req.user?.id });
-      res.status(500).json({
-        error: 'Internal server error',
-      });
+      res.status(500).json({ error: 'Internal server error' });
+      return;
     }
   }
 
   async updateApproval(req: AuthenticatedRequest, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
       const { isApproved } = updateApprovalSchema.parse(req.body);
 
       const validation = await validationService.updateValidationApproval(
@@ -400,16 +387,12 @@ export class ValidationController {
         req.user!.id
       );
 
-      res.json({
-        success: true,
-        data: { validation },
-      });
+      res.json({ success: true, data: { validation } });
+      return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Validation error',
-          details: error.errors,
-        });
+        res.status(400).json({ error: 'Validation error', details: error.errors });
+        return;
       }
 
       logger.error('Update validation approval error:', { 
@@ -417,15 +400,15 @@ export class ValidationController {
         validationId: req.params.id, 
         userId: req.user?.id 
       });
-      res.status(500).json({
-        error: 'Internal server error',
-      });
+      res.status(500).json({ error: 'Internal server error' });
+      return;
     }
   }
 
   async deleteValidation(req: AuthenticatedRequest, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       // Check if validation exists
       const existingValidation = await prisma.validation.findUnique({
@@ -440,19 +423,14 @@ export class ValidationController {
       });
 
       if (!existingValidation) {
-        return res.status(404).json({
-          error: 'Validation not found',
-        });
+        res.status(404).json({ error: 'Validation not found' });
+        return;
       }
 
       // Check if validation has associated reports
       if (existingValidation._count.reports > 0) {
-        return res.status(400).json({
-          error: 'Cannot delete validation with associated reports',
-          details: {
-            reports: existingValidation._count.reports,
-          },
-        });
+        res.status(400).json({ error: 'Cannot delete validation with associated reports', details: { reports: existingValidation._count.reports } });
+        return;
       }
 
       // Remove validation association from sensor data
@@ -468,19 +446,16 @@ export class ValidationController {
 
       logger.info('Validation deleted:', { validationId: id, name: existingValidation.name, userId: req.user?.id });
 
-      res.json({
-        success: true,
-        message: 'Validation deleted successfully',
-      });
+      res.json({ success: true, message: 'Validation deleted successfully' });
+      return;
     } catch (error) {
       logger.error('Delete validation error:', { 
         error: error instanceof Error ? error.message : error, 
         validationId: req.params.id, 
         userId: req.user?.id 
       });
-      res.status(500).json({
-        error: 'Internal server error',
-      });
+      res.status(500).json({ error: 'Internal server error' });
+      return;
     }
   }
 }

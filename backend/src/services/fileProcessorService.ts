@@ -47,7 +47,7 @@ export class FileProcessorService {
     
     // Process files asynchronously
     this.processFilesAsync(jobId).catch(error => {
-      logger.error('File processing error:', { jobId, error: error.message });
+      logger.error('File processing error:', { jobId, error: error instanceof Error ? error.message : String(error) });
       const job = this.jobs.get(jobId);
       if (job) {
         job.status = 'failed';
@@ -197,8 +197,10 @@ export class FileProcessorService {
   }
 
   private async parseExcelFile(file: Express.Multer.File): Promise<any[][]> {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(file.buffer);
+  const workbook = new ExcelJS.Workbook();
+  // Ensure buffer is a Node Buffer (ExcelJS expects Buffer)
+  const buf = Buffer.isBuffer(file.buffer) ? file.buffer : Buffer.from(file.buffer as any);
+  await workbook.xlsx.load(buf as any);
     
     const worksheet = workbook.getWorksheet(1); // Get first worksheet
     if (!worksheet) {
@@ -276,12 +278,13 @@ export class FileProcessorService {
 
     for (let i = 0; i < dataRows.length; i++) {
       const row = dataRows[i];
+      if (!row || !Array.isArray(row)) continue;
       const rowNumber = startRow + i + 1; // 1-based row number for logging
 
       try {
         // Extract temperature (required)
-        const tempColumnIndex = this.columnLetterToIndex(config.temperatureColumn);
-        const temperature = this.parseNumber(row[tempColumnIndex]);
+  const tempColumnIndex = this.columnLetterToIndex(config.temperatureColumn);
+  const temperature = this.parseNumber(row[tempColumnIndex]);
         
         if (temperature === null) {
           continue; // Skip rows without valid temperature

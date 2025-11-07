@@ -265,8 +265,9 @@ export class ReportGenerationService {
 
       return pdfBuffer;
     } catch (error) {
-      console.error('❌ Erro na geração de PDF:', error);
-      throw new Error(`Erro na geração de PDF: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('❌ Erro na geração de PDF:', message);
+      throw new Error(`Erro na geração de PDF: ${message}`);
     } finally {
       if (browser) {
         try {

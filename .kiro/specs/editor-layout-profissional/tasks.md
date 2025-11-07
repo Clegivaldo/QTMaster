@@ -1,4 +1,6 @@
-# Implementation Plan
+# Implementation Plan - Correções e Melhorias
+
+Este plano de implementação foca na correção dos problemas identificados no editor atual e implementação das funcionalidades em falta.
 
 - [x] 1. Configurar estrutura base do editor profissional
 
@@ -454,3 +456,229 @@
   - Validar integração com sistema de autenticação
   - Testar performance com templates complexos
   - _Requirements: 1.1, 1.2, 6.1_
+
+- [x] 10. Corrigir sistema de carregamento e salvamento de templates
+
+
+  - Identificar e corrigir erros no carregamento de templates
+  - Implementar tratamento robusto de erros com retry automático
+  - Corrigir problemas na listagem de templates
+  - Adicionar validação de integridade de dados
+  - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
+
+- [x] 10.1 Diagnosticar e corrigir erros de carregamento
+
+
+  - Investigar erros atuais no sistema de carregamento
+  - Corrigir problemas de comunicação com backend
+  - Implementar fallbacks para dados corrompidos
+  - _Requirements: 11.1, 11.2_
+
+
+
+- [x] 10.2 Implementar sistema robusto de salvamento
+
+  - Corrigir falhas no salvamento de templates
+  - Adicionar validação de dados antes do salvamento
+
+  - Implementar retry automático em caso de falha
+  - _Requirements: 11.3, 11.5_
+
+- [x] 10.3 Corrigir listagem de templates
+
+  - Resolver problemas na exibição da lista de templates
+  - Implementar loading states adequados
+  - Adicionar tratamento de erro para lista vazia
+  - _Requirements: 11.1, 11.4_
+
+- [x] 11. Implementar sistema de configuração de página
+
+
+
+
+  - Criar modal de configurações de página com margens
+  - Implementar validação de limites para elementos
+  - Adicionar upload de imagem de fundo
+  - Criar sistema de múltiplas páginas
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 10.1, 10.2, 10.3, 10.4, 10.5_
+
+- [x] 11.1 Desenvolver modal de configurações de página
+
+
+  - Criar PageSettingsModal com controles de margem
+  - Implementar seletores para tamanho e orientação da página
+  - Adicionar preview das configurações em tempo real
+  - _Requirements: 9.1, 9.2_
+
+- [x] 11.2 Implementar validação de limites de elementos
+
+  - Criar hook usePositionConstraints para validação
+  - Implementar verificação em tempo real durante drag/resize
+  - Adicionar guias visuais das margens no canvas
+  - _Requirements: 9.3_
+
+- [x] 11.3 Criar sistema de upload de imagem de fundo
+
+
+  - Implementar componente BackgroundImage
+  - Adicionar controles de opacidade e repetição
+  - Garantir que imagem apareça em todas as páginas
+  - _Requirements: 9.5_
+
+- [x] 11.4 Desenvolver sistema de múltiplas páginas
+
+
+  - Criar hook usePageManagement para gerenciar páginas
+  - Implementar navegação entre páginas
+  - Adicionar controles para adicionar/remover páginas
+  - _Requirements: 10.1, 10.2, 10.3_
+
+- [ ] 12. Corrigir funcionalidade de preview e exportação
+
+
+
+
+
+
+  - Implementar preview funcional com navegação entre páginas
+  - Corrigir sistema de exportação com validação adequada
+  - Resolver erro "Template não encontrado" na exportação
+  - Adicionar loading states e feedback visual
+  - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 13.1, 13.2, 13.3, 13.4, 13.5_
+
+
+- [x] 12.1 Implementar preview funcional
+
+
+  - Criar PreviewModal com renderização correta
+  - Adicionar navegação entre páginas no preview
+  - Implementar zoom e controles de visualização
+  - _Requirements: 12.1, 12.2, 12.3, 12.4_
+
+
+- [x] 12.2 Corrigir sistema de exportação
+
+  - Resolver erro "Template não encontrado" na exportação
+  - Implementar validação de template antes da exportação
+  - Adicionar suporte robusto para PDF, PNG e HTML
+  - _Requirements: 13.1, 13.2, 13.3, 13.4_
+
+- [x] 12.3 Adicionar feedback visual para operações
+
+
+  - Implementar loading states para preview e exportação
+  - Adicionar progress indicators para operações longas
+  - Criar notificações de sucesso/erro
+  - _Requirements: 12.5, 13.5_
+
+- [ ] 13. Implementar régua e grade funcionais
+  - Criar componente GridOverlay com snap funcional
+  - Implementar RulerOverlay com diferentes unidades
+  - Adicionar controles para ativar/desativar régua e grade
+  - Implementar snap to grid com tolerância configurável
+  - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5_
+
+- [ ] 13.1 Desenvolver sistema de grade funcional
+  - Criar GridOverlay com renderização SVG
+  - Implementar useGridSnap para snap automático
+  - Adicionar configurações de tamanho e cor da grade
+  - _Requirements: 14.2, 14.3, 14.4_
+
+- [ ] 13.2 Implementar réguas funcionais
+  - Criar RulerOverlay com marcações precisas
+  - Adicionar suporte para diferentes unidades (px, mm, cm)
+  - Implementar zoom responsivo nas réguas
+  - _Requirements: 14.1, 14.5_
+
+- [ ] 13.3 Integrar controles de régua e grade na toolbar
+  - Adicionar botões funcionais na MainToolbar
+  - Implementar toggle states visuais
+  - Conectar controles com sistema de grade/régua
+  - _Requirements: 14.1, 14.2_
+
+- [ ] 14. Limpar interface e remover elementos visuais desnecessários
+  - Remover nomes e ícones dos elementos selecionados
+  - Limpar tooltips e hovers desnecessários em imagens
+  - Manter apenas alças de redimensionamento essenciais
+  - Implementar seleção visual limpa e profissional
+  - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
+
+- [ ] 14.1 Limpar componente CanvasElement
+  - Remover renderização de nomes sobre elementos
+  - Eliminar ícones decorativos das alças
+  - Manter apenas funcionalidade essencial de seleção
+  - _Requirements: 15.1, 15.2, 15.3_
+
+- [ ] 14.2 Corrigir SelectionHandles
+  - Implementar alças limpas sem decorações
+  - Remover labels e tooltips desnecessários
+  - Manter apenas feedback visual essencial
+  - _Requirements: 15.1, 15.3_
+
+- [ ] 14.3 Remover tooltips de imagens
+  - Eliminar hover com nome do arquivo em imagens
+  - Manter funcionalidade sem poluição visual
+  - Implementar seleção limpa para elementos de imagem
+  - _Requirements: 15.4_
+
+- [ ] 15. Corrigir sistema de notificações e tratamento de erros
+  - Implementar ErrorNotification com posicionamento correto
+  - Corrigir barra "Template não encontrado" que sobrepõe elementos
+  - Criar sistema centralizado de tratamento de erros
+  - Adicionar notificações não-intrusivas
+  - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5_
+
+- [ ] 15.1 Implementar sistema de notificações correto
+  - Criar ErrorNotification com posicionamento fixo
+  - Implementar z-index adequado para não sobrepor interface
+  - Adicionar controles para fechar notificações
+  - _Requirements: 16.1, 16.2, 16.3_
+
+- [ ] 15.2 Desenvolver hook useErrorHandler centralizado
+  - Criar sistema unificado de tratamento de erros
+  - Implementar categorização de erros (recuperáveis/críticos)
+  - Adicionar logging e monitoramento de erros
+  - _Requirements: 16.4, 16.5_
+
+- [ ] 15.3 Corrigir posicionamento de mensagens de erro
+  - Resolver problema da barra flutuante
+  - Implementar container fixo para mensagens
+  - Garantir que mensagens não interfiram na usabilidade
+  - _Requirements: 16.2, 16.5_
+
+- [ ] 16. Testes e validação das correções
+  - Criar testes para todas as funcionalidades corrigidas
+  - Validar fluxos completos de uso
+  - Testar cenários de erro e recuperação
+  - Verificar performance com templates grandes
+  - _Requirements: Todos os requirements_
+
+- [ ] 16.1 Testar sistema de configuração de página
+  - Validar configuração de margens e limites
+  - Testar upload e aplicação de imagem de fundo
+  - Verificar funcionamento com múltiplas páginas
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 10.1, 10.2, 10.3, 10.4, 10.5_
+
+- [ ] 16.2 Testar operações de template
+  - Validar carregamento, salvamento e listagem
+  - Testar preview e exportação em diferentes formatos
+  - Verificar tratamento de erros e recovery
+  - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 12.1, 12.2, 12.3, 12.4, 12.5, 13.1, 13.2, 13.3, 13.4, 13.5_
+
+- [ ] 16.3 Testar régua, grade e interface limpa
+  - Validar funcionamento de régua e grade
+  - Testar snap to grid e precisão de posicionamento
+  - Verificar interface sem elementos visuais desnecessários
+  - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 15.1, 15.2, 15.3, 15.4, 15.5_
+
+- [ ]* 16.4 Testes de performance e stress
+  - Testar com templates de 40+ páginas
+  - Validar performance com muitos elementos
+  - Verificar uso de memória e responsividade
+  - _Requirements: 10.1, 10.2, 10.3_
+
+- [ ]* 16.5 Testes de integração completos
+  - Testar fluxo completo de criação de laudo
+  - Validar integração com sistema existente
+  - Verificar compatibilidade com diferentes navegadores
+  - _Requirements: Todos os requirements_

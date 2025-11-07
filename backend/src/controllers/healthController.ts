@@ -4,6 +4,7 @@ import { logger } from '../utils/logger.js';
 import { performanceService } from '../services/performanceService.js';
 import { redisService } from '../services/redisService.js';
 import os from 'os';
+import fs from 'fs';
 import { performance } from 'perf_hooks';
 
 const prisma = new PrismaClient();
@@ -85,12 +86,10 @@ const checkDatabaseHealth = async (): Promise<{ status: 'connected' | 'disconnec
 
 const checkFileSystemHealth = () => {
   try {
-    const fs = require('fs');
-    
     const logsDirectory = fs.existsSync('logs');
     const uploadsDirectory = fs.existsSync('uploads');
     const tempDirectory = fs.existsSync('temp');
-    
+
     return {
       status: 'accessible' as const,
       logsDirectory,

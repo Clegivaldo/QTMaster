@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 
 const prisma = new PrismaClient();
+import { requireParam } from '../utils/requestUtils.js';
 
 // Configuração do multer para upload de avatar
 const storage = multer.diskStorage({
@@ -46,17 +47,13 @@ export class UserController {
       const userId = req.user?.id;
       
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'Usuário não autenticado'
-        });
+        res.status(401).json({ success: false, error: 'Usuário não autenticado' });
+        return;
       }
 
       if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          error: 'Nenhum arquivo enviado'
-        });
+        res.status(400).json({ success: false, error: 'Nenhum arquivo enviado' });
+        return;
       }
 
       // Buscar usuário atual para remover avatar antigo
@@ -90,19 +87,12 @@ export class UserController {
         }
       });
 
-      res.json({
-        success: true,
-        data: {
-          user: updatedUser,
-          avatarUrl: `uploads/avatars/${req.file.filename}`
-        }
-      });
+      res.json({ success: true, data: { user: updatedUser, avatarUrl: `uploads/avatars/${req.file.filename}` } });
+      return;
     } catch (error) {
       console.error('Erro no upload de avatar:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Erro interno do servidor'
-      });
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+      return;
     }
   }
 
@@ -111,10 +101,8 @@ export class UserController {
       const userId = req.user?.id;
       
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'Usuário não autenticado'
-        });
+        res.status(401).json({ success: false, error: 'Usuário não autenticado' });
+        return;
       }
 
       const user = await prisma.user.findUnique({
@@ -131,10 +119,8 @@ export class UserController {
       });
 
       if (!user) {
-        return res.status(404).json({
-          success: false,
-          error: 'Usuário não encontrado'
-        });
+        res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+        return;
       }
 
       // Adicionar URL completa do avatar se existir
@@ -143,16 +129,12 @@ export class UserController {
         avatarUrl: user.avatar ? `uploads/avatars/${path.basename(user.avatar)}` : null
       };
 
-      res.json({
-        success: true,
-        data: { user: userWithAvatarUrl }
-      });
+      res.json({ success: true, data: { user: userWithAvatarUrl } });
+      return;
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Erro interno do servidor'
-      });
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+      return;
     }
   }
 
@@ -162,10 +144,8 @@ export class UserController {
       const { name, phone, department, bio } = req.body;
       
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'Usuário não autenticado'
-        });
+        res.status(401).json({ success: false, error: 'Usuário não autenticado' });
+        return;
       }
 
       const updatedUser = await prisma.user.update({
@@ -185,30 +165,25 @@ export class UserController {
         }
       });
 
-      res.json({
-        success: true,
-        data: { user: updatedUser }
-      });
+      res.json({ success: true, data: { user: updatedUser } });
+      return;
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Erro interno do servidor'
-      });
+      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+      return;
     }
   }
 
   static async serveAvatar(req: Request, res: Response) {
     try {
-      const { filename } = req.params;
+      const filename = requireParam(req, res, 'filename');
+      if (!filename) return;
       const avatarPath = path.join(process.cwd(), 'uploads', 'avatars', filename);
 
       // Verificar se o arquivo existe
       if (!fs.existsSync(avatarPath)) {
-        return res.status(404).json({
-          success: false,
-          error: 'Avatar não encontrado'
-        });
+        res.status(404).json({ success: false, error: 'Avatar não encontrado' });
+        return;
       }
 
       // Definir headers apropriados
@@ -219,6 +194,7 @@ export class UserController {
       
       // Enviar o arquivo
       res.sendFile(avatarPath);
+      return;
     } catch (error) {
       console.error('Erro ao servir avatar:', error);
       res.status(500).json({

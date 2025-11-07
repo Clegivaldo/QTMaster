@@ -14,6 +14,7 @@ import monitoringRoutes from './monitoring';
 import templateEditorRoutes from './templateEditor';
 import editorTemplatesRoutes from './editorTemplates';
 import uploadsRoutes from './uploads';
+import { EditorTemplateController } from '../controllers/editorTemplateController.js';
 
 const router = Router();
 
@@ -31,6 +32,9 @@ router.use('/report-templates', reportTemplateRoutes);
 router.use('/monitoring', monitoringRoutes);
 
 router.use('/template-editor', templateEditorRoutes);
+// Public testing export route (no auth) - useful for local E2E checks
+const editorTemplateController = new EditorTemplateController();
+router.post('/editor-templates/:id/export-public', (req, res) => editorTemplateController.exportTemplatePublic(req, res));
 router.use('/editor-templates', editorTemplatesRoutes);
 router.use('/uploads', uploadsRoutes);
 

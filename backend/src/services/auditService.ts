@@ -11,9 +11,9 @@ export interface AuditEvent {
   userEmail?: string | null;
   ip?: string | null;
   userAgent?: string | null;
-  oldValues?: Record<string, any>;
-  newValues?: Record<string, any>;
-  metadata?: Record<string, any>;
+  oldValues?: Record<string, any> | null;
+  newValues?: Record<string, any> | null;
+  metadata?: Record<string, any> | null;
   success: boolean;
   errorMessage?: string | null;
 }
@@ -78,14 +78,14 @@ export class AuditService {
     await this.logEvent({
       action,
       resource,
-      resourceId,
-      userId,
-      userEmail,
-      ip,
-      userAgent,
-      oldValues,
-      newValues,
-      metadata,
+      resourceId: resourceId ?? null,
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      ip: ip ?? null,
+      userAgent: userAgent ?? null,
+  oldValues: oldValues ?? null,
+  newValues: newValues ?? null,
+  metadata: metadata ?? null,
       success: true,
     });
   }
@@ -104,12 +104,12 @@ export class AuditService {
     await this.logEvent({
       action,
       resource,
-      resourceId,
-      userId,
-      userEmail,
-      ip,
-      userAgent,
-      metadata,
+      resourceId: resourceId ?? null,
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      ip: ip ?? null,
+      userAgent: userAgent ?? null,
+  metadata: metadata ?? null,
       success: false,
       errorMessage,
     });
@@ -120,12 +120,12 @@ export class AuditService {
     await this.logEvent({
       action: 'USER_LOGIN',
       resource: 'authentication',
-      userId,
-      userEmail,
-      ip,
-      userAgent,
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      ip: ip ?? null,
+      userAgent: userAgent ?? null,
       success,
-      errorMessage,
+      errorMessage: errorMessage ?? null,
     });
   }
   
@@ -133,10 +133,10 @@ export class AuditService {
     await this.logEvent({
       action: 'USER_LOGOUT',
       resource: 'authentication',
-      userId,
-      userEmail,
-      ip,
-      userAgent,
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      ip: ip ?? null,
+      userAgent: userAgent ?? null,
       success: true,
     });
   }
@@ -153,12 +153,12 @@ export class AuditService {
     await this.logEvent({
       action: 'CREATE',
       resource,
-      resourceId,
-      userId,
-      userEmail,
-      ip,
-      userAgent,
-      newValues,
+      resourceId: resourceId ?? null,
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      ip: ip ?? null,
+      userAgent: userAgent ?? null,
+  newValues: newValues ?? null,
       success: true,
     });
   }
@@ -176,13 +176,13 @@ export class AuditService {
     await this.logEvent({
       action: 'UPDATE',
       resource,
-      resourceId,
-      userId,
-      userEmail,
-      ip,
-      userAgent,
-      oldValues,
-      newValues,
+      resourceId: resourceId ?? null,
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      ip: ip ?? null,
+      userAgent: userAgent ?? null,
+  oldValues: oldValues ?? null,
+  newValues: newValues ?? null,
       success: true,
     });
   }
@@ -199,12 +199,12 @@ export class AuditService {
     await this.logEvent({
       action: 'DELETE',
       resource,
-      resourceId,
-      userId,
-      userEmail,
-      ip,
-      userAgent,
-      oldValues,
+      resourceId: resourceId ?? null,
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      ip: ip ?? null,
+      userAgent: userAgent ?? null,
+  oldValues: oldValues ?? null,
       success: true,
     });
   }
@@ -222,16 +222,16 @@ export class AuditService {
     await this.logEvent({
       action: 'FILE_UPLOAD',
       resource: 'file',
-      userId,
-      userEmail,
-      ip,
-      userAgent,
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      ip: ip ?? null,
+      userAgent: userAgent ?? null,
       metadata: {
         fileName,
         fileSize,
       },
       success,
-      errorMessage,
+      errorMessage: errorMessage ?? null,
     });
   }
   
@@ -248,16 +248,16 @@ export class AuditService {
     await this.logEvent({
       action: 'REPORT_GENERATION',
       resource: 'report',
-      resourceId: reportId,
-      userId,
-      userEmail,
-      ip,
-      userAgent,
+      resourceId: reportId ?? null,
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      ip: ip ?? null,
+      userAgent: userAgent ?? null,
       metadata: {
         templateId,
       },
       success,
-      errorMessage,
+      errorMessage: errorMessage ?? null,
     });
   }
   
@@ -272,11 +272,11 @@ export class AuditService {
     await this.logEvent({
       action: 'VALIDATION_APPROVAL',
       resource: 'validation',
-      resourceId: validationId,
-      userId,
-      userEmail,
-      ip,
-      userAgent,
+      resourceId: validationId ?? null,
+      userId: userId ?? null,
+      userEmail: userEmail ?? null,
+      ip: ip ?? null,
+      userAgent: userAgent ?? null,
       metadata: {
         approved,
       },

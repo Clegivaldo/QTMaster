@@ -4,6 +4,7 @@ import multer from 'multer';
 import { fileProcessorService } from '../services/fileProcessorService.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
+import { requireParam } from '../utils/requestUtils.js';
 
 // Multer configuration for file uploads
 const storage = multer.memoryStorage();
@@ -40,15 +41,13 @@ export class FileController {
       const files = req.files as Express.Multer.File[];
 
       if (!files || files.length === 0) {
-        return res.status(400).json({
-          error: 'No files uploaded',
-        });
+        res.status(400).json({ error: 'No files uploaded' });
+        return;
       }
 
       if (files.length > 120) {
-        return res.status(400).json({
-          error: 'Too many files. Maximum 120 files allowed',
-        });
+        res.status(400).json({ error: 'Too many files. Maximum 120 files allowed' });
+        return;
       }
 
       // Validate file types
@@ -56,9 +55,8 @@ export class FileController {
       for (const file of files) {
         const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
         if (!allowedExtensions.includes(fileExtension)) {
-          return res.status(400).json({
-            error: `Invalid file type: ${file.originalname}. Allowed types: ${allowedExtensions.join(', ')}`,
-          });
+          res.status(400).json({ error: `Invalid file type: ${file.originalname}. Allowed types: ${allowedExtensions.join(', ')}` });
+          return;
         }
       }
 
@@ -80,15 +78,13 @@ export class FileController {
       });
 
       if (!suitcase) {
-        return res.status(404).json({
-          error: 'Suitcase not found',
-        });
+        res.status(404).json({ error: 'Suitcase not found' });
+        return;
       }
 
       if (suitcase.sensors.length === 0) {
-        return res.status(400).json({
-          error: 'Suitcase has no sensors configured',
-        });
+        res.status(400).json({ error: 'Suitcase has no sensors configured' });
+        return;
       }
 
       // Start file processing job
@@ -114,25 +110,22 @@ export class FileController {
           message: 'Files uploaded and processing started',
         },
       });
+      return;
 
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Validation error',
-          details: error.errors,
-        });
+        res.status(400).json({ error: 'Validation error', details: error.errors });
+        return;
       }
 
       if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({
-            error: 'File too large. Maximum size is 10MB per file',
-          });
+          res.status(400).json({ error: 'File too large. Maximum size is 10MB per file' });
+          return;
         }
         if (error.code === 'LIMIT_FILE_COUNT') {
-          return res.status(400).json({
-            error: 'Too many files. Maximum 120 files allowed',
-          });
+          res.status(400).json({ error: 'Too many files. Maximum 120 files allowed' });
+          return;
         }
       }
 
@@ -149,14 +142,14 @@ export class FileController {
 
   async getProcessingStatus(req: Request, res: Response) {
     try {
-      const { jobId } = req.params;
+  const jobId = requireParam(req, res, 'jobId');
+  if (!jobId) return;
 
       const job = await fileProcessorService.getJobStatus(jobId);
 
       if (!job) {
-        return res.status(404).json({
-          error: 'Job not found',
-        });
+        res.status(404).json({ error: 'Job not found' });
+        return;
       }
 
       // Calculate progress
@@ -187,6 +180,7 @@ export class FileController {
           completedAt: job.completedAt,
         },
       });
+      return;
 
     } catch (error) {
       logger.error('Get processing status error:', {
@@ -194,9 +188,8 @@ export class FileController {
         jobId: req.params.jobId,
       });
 
-      res.status(500).json({
-        error: 'Internal server error',
-      });
+      res.status(500).json({ error: 'Internal server error' });
+      return;
     }
   }
 

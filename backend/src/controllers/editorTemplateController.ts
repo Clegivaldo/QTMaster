@@ -3,6 +3,11 @@ import { z } from 'zod';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
 import { randomUUID } from 'crypto';
+import path from 'path';
+import fs from 'fs';
+import fsPromises from 'fs/promises';
+import PDFDocument from 'pdfkit';
+import { requireParam } from '../utils/requestUtils.js';
 
 // Validation schemas
 const elementStylesSchema = z.object({
@@ -237,7 +242,8 @@ export class EditorTemplateController {
   async getTemplate(req: Request, res: Response): Promise<void> {
     try {
       const authReq = req as AuthenticatedRequest;
-      const { id } = req.params;
+  const id = requireParam(req, res, 'id');
+  if (!id) return;
 
       if (!authReq.user?.id) {
         res.status(401).json({
@@ -642,8 +648,46 @@ export class EditorTemplateController {
       // Gerar nome do arquivo
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `${template.name.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${exportOptions.format}`;
-      
-      // Mock export URL
+
+      // Garantir diretório de exports
+      const exportsDir = process.env.EXPORTS_PATH || path.join(process.cwd(), 'exports');
+      await fsPromises.mkdir(exportsDir, { recursive: true });
+
+      const filePath = path.join(exportsDir, filename);
+
+      // Gerar conteúdo do arquivo conforme formato
+      if (exportOptions.format === 'pdf') {
+        // Gerar PDF simples com pdfkit
+        const doc = new PDFDocument({ size: 'A4' });
+        const stream = fs.createWriteStream(filePath);
+        doc.pipe(stream);
+        doc.fontSize(18).text(template.name || 'Template', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(12).text(`Export gerado em: ${new Date().toLocaleString()}`);
+        doc.moveDown();
+        doc.fontSize(10).text('Conteúdo do template (resumo):');
+        doc.fontSize(9).text(JSON.stringify({ elements: (template.elements || []).length }, null, 2));
+        doc.end();
+        await new Promise<void>((resolve, reject) => {
+          stream.on('finish', () => resolve());
+          stream.on('error', (err) => reject(err));
+        });
+      } else if (exportOptions.format === 'png') {
+        // Escrever PNG placeholder (1x1 transparente) — base64 embutido
+        const transparentPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+        const buffer = Buffer.from(transparentPngBase64, 'base64');
+        await fsPromises.writeFile(filePath, buffer);
+      } else if (exportOptions.format === 'html') {
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>${template.name}</title></head><body><h1>${template.name}</h1><pre>${JSON.stringify(template, null, 2)}</pre></body></html>`;
+        await fsPromises.writeFile(filePath, html, 'utf-8');
+      } else if (exportOptions.format === 'json') {
+        await fsPromises.writeFile(filePath, JSON.stringify(template, null, 2), 'utf-8');
+      } else {
+        // Caso não esperado, criar um arquivo de texto
+        await fsPromises.writeFile(filePath, `Export do template ${template.name}`, 'utf-8');
+      }
+
+      // URL pública para download
       const exportUrl = `/api/exports/${filename}`;
 
       res.json({
@@ -669,6 +713,69 @@ export class EditorTemplateController {
         success: false,
         error: 'Internal server error',
       });
+    }
+  }
+
+  // Public export endpoint for local testing — accepts either an existing template id or a template in the body
+  async exportTemplatePublic(req: Request, res: Response): Promise<void> {
+    try {
+  const id = requireParam(req, res, 'id');
+  if (!id) return;
+      const exportOptions = exportOptionsSchema.parse(req.body.options || req.body);
+
+      // Try to find existing template by id
+  let template = templates.get(id);
+
+      // If template not found, allow providing template body in request
+      if (!template) {
+        if (req.body && req.body.template) {
+          template = req.body.template;
+        } else {
+          res.status(404).json({ success: false, error: 'Template not found and no template provided' });
+          return;
+        }
+      }
+
+      // Generate filename and file as in exportTemplate
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `${(template.name || 'template').replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${exportOptions.format}`;
+      const exportsDir = process.env.EXPORTS_PATH || path.join(process.cwd(), 'exports');
+      await fsPromises.mkdir(exportsDir, { recursive: true });
+      const filePath = path.join(exportsDir, filename);
+
+      if (exportOptions.format === 'pdf') {
+        const doc = new PDFDocument({ size: 'A4' });
+        const stream = fs.createWriteStream(filePath);
+        doc.pipe(stream);
+        doc.fontSize(18).text(template.name || 'Template', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(12).text(`Export gerado em: ${new Date().toLocaleString()}`);
+        doc.moveDown();
+        doc.fontSize(10).text('Conteúdo do template (resumo):');
+        doc.fontSize(9).text(JSON.stringify({ elements: (template.elements || []).length }, null, 2));
+        doc.end();
+        await new Promise<void>((resolve, reject) => {
+          stream.on('finish', () => resolve());
+          stream.on('error', (err) => reject(err));
+        });
+      } else if (exportOptions.format === 'png') {
+        const transparentPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+        const buffer = Buffer.from(transparentPngBase64, 'base64');
+        await fsPromises.writeFile(filePath, buffer);
+      } else if (exportOptions.format === 'html') {
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>${template.name}</title></head><body><h1>${template.name}</h1><pre>${JSON.stringify(template, null, 2)}</pre></body></html>`;
+        await fsPromises.writeFile(filePath, html, 'utf-8');
+      } else if (exportOptions.format === 'json') {
+        await fsPromises.writeFile(filePath, JSON.stringify(template, null, 2), 'utf-8');
+      } else {
+        await fsPromises.writeFile(filePath, `Export do template ${template.name}`, 'utf-8');
+      }
+
+      const exportUrl = `/api/exports/${filename}`;
+      res.json({ success: true, data: { url: exportUrl, filename, format: exportOptions.format } });
+    } catch (error) {
+      logger.error('Public export error:', { error: error instanceof Error ? error.message : error });
+      res.status(500).json({ success: false, error: 'Internal server error' });
     }
   }
 

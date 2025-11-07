@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
+import { requireParam, stripUndefined } from '../utils/requestUtils.js';
 import { redisService, CACHE_KEYS, CACHE_TTL } from '../services/redisService.js';
 
 // Validation schemas
@@ -93,14 +94,8 @@ export class ClientController {
 
   async getClient(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-
-      if (!id) {
-        res.status(400).json({
-          error: 'ID do cliente é obrigatório',
-        });
-        return;
-      }
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const client = await prisma.client.findUnique({
         where: { id },
@@ -208,15 +203,9 @@ export class ClientController {
 
   async updateClient(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
       const validatedData = updateClientSchema.parse(req.body);
-
-      if (!id) {
-        res.status(400).json({
-          error: 'ID do cliente é obrigatório',
-        });
-        return;
-      }
 
       // Check if client exists
       const existingClient = await prisma.client.findUnique({
@@ -294,14 +283,8 @@ export class ClientController {
 
   async deleteClient(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-
-      if (!id) {
-        res.status(400).json({
-          error: 'ID do cliente é obrigatório',
-        });
-        return;
-      }
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       // Check if client exists
       const existingClient = await prisma.client.findUnique({

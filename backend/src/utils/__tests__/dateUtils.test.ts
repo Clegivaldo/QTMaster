@@ -2,7 +2,8 @@ import { describe, it, expect } from '@jest/globals';
 
 // Simple date utility functions for testing
 export const formatDate = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+  // use slice to avoid index possibly being undefined when using split
+  return date.toISOString().slice(0, 10);
 };
 
 export const addDays = (date: Date, days: number): Date => {

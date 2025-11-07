@@ -287,7 +287,7 @@ class PerformanceService {
   exportMetrics(): {
     timestamp: string;
     metrics: PerformanceMetric[];
-    summary: ReturnType<typeof this.getStats>;
+    summary: ReturnType<PerformanceService['getStats']>;
   } {
     return {
       timestamp: new Date().toISOString(),

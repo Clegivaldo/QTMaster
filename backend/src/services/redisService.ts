@@ -4,8 +4,20 @@ import { logger } from '../utils/logger.js';
 class RedisService {
   private client: RedisClientType | null = null;
   private isConnected = false;
+  private skipped = false;
 
   async connect(): Promise<void> {
+    // Allow skipping Redis in local/dev/test environments by setting SKIP_REDIS to
+    // common truthy values ('true','1','yes') or when running tests (NODE_ENV=test).
+    const skipEnv = String(process.env.SKIP_REDIS || '').toLowerCase();
+    if (skipEnv === 'true' || skipEnv === '1' || skipEnv === 'yes' || process.env.NODE_ENV === 'test') {
+      logger.info('Redis: connection skipped (SKIP_REDIS or NODE_ENV=test)');
+      this.isConnected = false;
+      this.client = null;
+      this.skipped = true;
+      return;
+    }
+
     try {
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
       
@@ -45,15 +57,26 @@ class RedisService {
   }
 
   async disconnect(): Promise<void> {
+    // Only attempt to disconnect if a client exists and we didn't skip Redis
     if (this.client) {
-      await this.client.disconnect();
+      try {
+        await this.client.disconnect();
+      } catch (err) {
+        logger.warn('Redis: Error during disconnect', err);
+      }
       this.isConnected = false;
+      this.client = null;
       logger.info('Redis: Disconnected');
     }
   }
 
   isReady(): boolean {
-    return this.isConnected && this.client !== null;
+    return !this.skipped && this.isConnected && this.client !== null;
+  }
+
+  // Expose whether Redis was intentionally skipped (useful for tests/environments)
+  isSkipped(): boolean {
+    return this.skipped;
   }
 
   // Session management

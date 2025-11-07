@@ -111,3 +111,99 @@ Este documento especifica os requisitos para um editor de layout profissional in
 3. WHEN o usuário pressiona Ctrl+Y, THE Editor_Layout SHALL refazer a ação desfeita
 4. THE Editor_Layout SHALL incluir botões visuais para desfazer/refazer na barra de ferramentas
 5. WHEN não há ações para desfazer ou refazer, THE Editor_Layout SHALL desabilitar os respectivos controles
+
+### Requirement 9
+
+**User Story:** Como usuário configurando páginas, eu quero definir margens e configurações de página, para que eu possa controlar o layout e garantir que elementos não ultrapassem os limites da página.
+
+#### Acceptance Criteria
+
+1. THE Editor_Layout SHALL fornecer configurações de margem da página (superior, inferior, esquerda, direita)
+2. WHEN o usuário define margens, THE Editor_Layout SHALL exibir guias visuais das margens no Canvas_Edicao
+3. WHEN o usuário move um elemento, THE Editor_Layout SHALL impedir que o elemento ultrapasse as margens definidas
+4. THE Editor_Layout SHALL permitir configurar tamanho da página (A4, A3, Letter, Custom)
+5. THE Editor_Layout SHALL permitir upload de imagem de fundo que se repita em todas as páginas
+
+### Requirement 10
+
+**User Story:** Como usuário criando laudos extensos, eu quero adicionar múltiplas páginas ao template, para que eu possa criar documentos com 40, 50 ou mais páginas conforme necessário.
+
+#### Acceptance Criteria
+
+1. THE Editor_Layout SHALL permitir adicionar novas páginas ao template
+2. WHEN o usuário adiciona uma página, THE Editor_Layout SHALL criar uma nova página com as mesmas configurações da anterior
+3. THE Editor_Layout SHALL exibir navegação entre páginas na interface
+4. WHEN há imagem de fundo configurada, THE Editor_Layout SHALL aplicar a mesma imagem em todas as páginas
+5. THE Editor_Layout SHALL permitir remover páginas do template
+
+### Requirement 11
+
+**User Story:** Como usuário do sistema, eu quero que o carregamento e salvamento de templates funcione corretamente, para que eu possa gerenciar meus templates sem erros.
+
+#### Acceptance Criteria
+
+1. WHEN o usuário clica em "Carregar Template", THE Editor_Layout SHALL exibir lista de templates sem erros
+2. WHEN o usuário seleciona um template, THE Editor_Layout SHALL carregar todos os elementos corretamente
+3. WHEN o usuário clica em "Salvar Template", THE Editor_Layout SHALL persistir o template sem falhas
+4. IF ocorrer erro no carregamento, THE Editor_Layout SHALL exibir mensagem de erro clara
+5. IF ocorrer erro no salvamento, THE Editor_Layout SHALL exibir mensagem de erro e permitir nova tentativa
+
+### Requirement 12
+
+**User Story:** Como usuário visualizando templates, eu quero que o botão preview funcione corretamente, para que eu possa ver como o template ficará no documento final.
+
+#### Acceptance Criteria
+
+1. WHEN o usuário clica no botão "Preview", THE Editor_Layout SHALL abrir visualização do template
+2. THE Editor_Layout SHALL renderizar o preview com todos os elementos na posição correta
+3. THE Editor_Layout SHALL exibir o preview em tamanho real da página
+4. WHEN o template tem múltiplas páginas, THE Editor_Layout SHALL permitir navegar entre páginas no preview
+5. THE Editor_Layout SHALL permitir fechar o preview e retornar ao editor
+
+### Requirement 13
+
+**User Story:** Como usuário exportando templates, eu quero que a exportação funcione sem erros, para que eu possa gerar documentos finais em diferentes formatos.
+
+#### Acceptance Criteria
+
+1. WHEN o usuário clica em "Exportar", THE Editor_Layout SHALL abrir modal de exportação
+2. WHEN o usuário seleciona formato PDF, THE Editor_Layout SHALL gerar arquivo PDF corretamente
+3. WHEN o usuário seleciona formato PNG, THE Editor_Layout SHALL gerar imagem PNG de alta qualidade
+4. IF o template não existe ou está corrompido, THE Editor_Layout SHALL exibir erro específico
+5. THE Editor_Layout SHALL permitir download do arquivo exportado
+
+### Requirement 14
+
+**User Story:** Como usuário utilizando ferramentas de auxílio, eu quero que régua e grade funcionem corretamente, para que eu possa posicionar elementos com precisão.
+
+#### Acceptance Criteria
+
+1. WHEN o usuário clica no botão "Régua", THE Editor_Layout SHALL exibir réguas horizontal e vertical no Canvas_Edicao
+2. WHEN o usuário clica no botão "Grade", THE Editor_Layout SHALL exibir grade de pontos ou linhas no Canvas_Edicao
+3. THE Editor_Layout SHALL permitir configurar espaçamento da grade
+4. WHEN a grade está ativa, THE Editor_Layout SHALL permitir snap de elementos à grade
+5. THE Editor_Layout SHALL permitir ocultar régua e grade independentemente
+
+### Requirement 15
+
+**User Story:** Como usuário editando elementos, eu quero uma interface limpa sem elementos visuais desnecessários, para que eu possa focar no conteúdo do template.
+
+#### Acceptance Criteria
+
+1. WHEN um elemento está selecionado, THE Editor_Layout SHALL exibir apenas as alças de redimensionamento
+2. THE Editor_Layout SHALL NOT exibir nomes de elementos sobre os elementos selecionados
+3. THE Editor_Layout SHALL NOT exibir ícones decorativos ao redor das alças de redimensionamento
+4. WHEN uma imagem está selecionada, THE Editor_Layout SHALL NOT exibir tooltip com nome do arquivo
+5. THE Editor_Layout SHALL manter interface visual limpa e profissional
+
+### Requirement 16
+
+**User Story:** Como usuário do sistema, eu quero que mensagens de erro sejam exibidas corretamente, para que eu possa entender e resolver problemas rapidamente.
+
+#### Acceptance Criteria
+
+1. WHEN ocorre erro "Template não encontrado", THE Editor_Layout SHALL exibir mensagem em posição fixa
+2. THE Editor_Layout SHALL NOT permitir que mensagens de erro sobreponham elementos da interface
+3. WHEN há mensagem de erro ativa, THE Editor_Layout SHALL permitir fechar a mensagem
+4. THE Editor_Layout SHALL exibir mensagens de erro com estilo consistente do sistema
+5. THE Editor_Layout SHALL posicionar mensagens de erro no topo da interface sem interferir na usabilidade

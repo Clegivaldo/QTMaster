@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { logger } from '../utils/logger.js';
 import { ReportStatus } from '@prisma/client';
 import { fastReportService, ReportData } from './fastReportService.js';
+import { stripUndefined } from '../utils/requestUtils.js';
 import path from 'path';
 
 export interface ReportStatistics {
@@ -212,7 +213,7 @@ export class ReportService {
   async getReportsByClient(clientId: string, limit?: number) {
     const reports = await prisma.report.findMany({
       where: { clientId },
-      take: limit,
+      ...(limit !== undefined ? { take: limit } : {}),
       include: {
         validation: {
           select: {
@@ -243,7 +244,7 @@ export class ReportService {
   async getReportsByStatus(status: ReportStatus, limit?: number) {
     const reports = await prisma.report.findMany({
       where: { status },
-      take: limit,
+      ...(limit !== undefined ? { take: limit } : {}),
       include: {
         client: {
           select: {
@@ -401,10 +402,31 @@ export class ReportService {
     const charts = await this.generateCharts(report.validation.sensorData, report.validation);
 
     // Prepare report data for FastReport
+    // Normalize nullable DB fields to undefined where FastReport types expect optional fields
+    const clientNormalized = stripUndefined({
+      ...report.client,
+      email: report.client.email ?? undefined,
+      phone: report.client.phone ?? undefined,
+      address: report.client.address ?? undefined,
+      cnpj: report.client.cnpj ?? undefined,
+    }) as ReportData['client'];
+
+    const validationNormalized = stripUndefined({
+      ...report.validation,
+      description: report.validation.description ?? undefined,
+      minHumidity: report.validation.minHumidity ?? undefined,
+      maxHumidity: report.validation.maxHumidity ?? undefined,
+    }) as ReportData['validation'];
+
+    const sensorDataNormalized = report.validation.sensorData.map((sd: any) => stripUndefined({
+      ...sd,
+      humidity: sd.humidity ?? undefined,
+    }) as ReportData['sensorData'][number]);
+
     const reportData: ReportData = {
-      client: report.client,
-      validation: report.validation,
-      sensorData: report.validation.sensorData,
+      client: clientNormalized,
+      validation: validationNormalized,
+      sensorData: sensorDataNormalized,
       statistics,
       charts,
     };
@@ -473,10 +495,30 @@ export class ReportService {
     const charts = await this.generateCharts(report.validation.sensorData, report.validation);
 
     // Prepare report data for FastReport
+    const clientNormalized = stripUndefined({
+      ...report.client,
+      email: report.client.email ?? undefined,
+      phone: report.client.phone ?? undefined,
+      address: report.client.address ?? undefined,
+      cnpj: report.client.cnpj ?? undefined,
+    }) as ReportData['client'];
+
+    const validationNormalized = stripUndefined({
+      ...report.validation,
+      description: report.validation.description ?? undefined,
+      minHumidity: report.validation.minHumidity ?? undefined,
+      maxHumidity: report.validation.maxHumidity ?? undefined,
+    }) as ReportData['validation'];
+
+    const sensorDataNormalized = report.validation.sensorData.map((sd: any) => stripUndefined({
+      ...sd,
+      humidity: sd.humidity ?? undefined,
+    }) as ReportData['sensorData'][number]);
+
     const reportData: ReportData = {
-      client: report.client,
-      validation: report.validation,
-      sensorData: report.validation.sensorData,
+      client: clientNormalized,
+      validation: validationNormalized,
+      sensorData: sensorDataNormalized,
       statistics,
       charts,
     };

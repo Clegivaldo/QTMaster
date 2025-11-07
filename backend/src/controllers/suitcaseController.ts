@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
+import { requireParam, stripUndefined } from '../utils/requestUtils.js';
 
 // Validation schemas
 const createSuitcaseSchema = z.object({
@@ -93,10 +94,8 @@ export class SuitcaseController {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Validation error',
-          details: error.errors,
-        });
+        res.status(400).json({ error: 'Validation error', details: error.errors });
+        return;
       }
 
       logger.error('Get suitcases error:', { error: error instanceof Error ? error.message : error });
@@ -108,7 +107,8 @@ export class SuitcaseController {
 
   async getSuitcase(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const suitcase = await prisma.suitcase.findUnique({
         where: { id },
@@ -159,15 +159,12 @@ export class SuitcaseController {
       });
 
       if (!suitcase) {
-        return res.status(404).json({
-          error: 'Maleta não encontrada',
-        });
+        res.status(404).json({ error: 'Maleta não encontrada' });
+        return;
       }
 
-      res.json({
-        success: true,
-        data: { suitcase },
-      });
+      res.json({ success: true, data: { suitcase } });
+      return;
     } catch (error) {
       logger.error('Get suitcase error:', { error: error instanceof Error ? error.message : error, suitcaseId: req.params.id });
       res.status(500).json({
@@ -192,9 +189,8 @@ export class SuitcaseController {
       });
 
       if (existingSuitcase) {
-        return res.status(400).json({
-          error: 'Nome da maleta já está em uso',
-        });
+        res.status(400).json({ error: 'Nome da maleta já está em uso' });
+        return;
       }
 
       // Validate sensors exist and are not duplicated
@@ -203,9 +199,8 @@ export class SuitcaseController {
         const uniqueSensorIds = [...new Set(sensorIds)];
         
         if (sensorIds.length !== uniqueSensorIds.length) {
-          return res.status(400).json({
-            error: 'Sensores duplicados não são permitidos na mesma maleta',
-          });
+          res.status(400).json({ error: 'Sensores duplicados não são permitidos na mesma maleta' });
+          return;
         }
 
         // Check if all sensors exist
@@ -215,9 +210,8 @@ export class SuitcaseController {
         });
 
         if (existingSensors.length !== uniqueSensorIds.length) {
-          return res.status(400).json({
-            error: 'Um ou mais sensores não foram encontrados',
-          });
+          res.status(400).json({ error: 'Um ou mais sensores não foram encontrados' });
+          return;
         }
       }
 
@@ -265,16 +259,12 @@ export class SuitcaseController {
 
       logger.info('Suitcase created:', { suitcaseId: result?.id, name: result?.name, sensorsCount: validatedData.sensors?.length || 0, userId: req.user?.id });
 
-      res.status(201).json({
-        success: true,
-        data: { suitcase: result },
-      });
+      res.status(201).json({ success: true, data: { suitcase: result } });
+      return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Validation error',
-          details: error.errors,
-        });
+        res.status(400).json({ error: 'Validation error', details: error.errors });
+        return;
       }
 
       logger.error('Create suitcase error:', { error: error instanceof Error ? error.message : error, userId: req.user?.id });
@@ -286,7 +276,8 @@ export class SuitcaseController {
 
   async updateSuitcase(req: AuthenticatedRequest, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
       const validatedData = updateSuitcaseSchema.parse(req.body);
 
       // Check if suitcase exists
@@ -295,9 +286,8 @@ export class SuitcaseController {
       });
 
       if (!existingSuitcase) {
-        return res.status(404).json({
-          error: 'Maleta não encontrada',
-        });
+        res.status(404).json({ error: 'Maleta não encontrada' });
+        return;
       }
 
       // Check if name already exists (if provided and different from current)
@@ -310,9 +300,8 @@ export class SuitcaseController {
         });
 
         if (nameExists) {
-          return res.status(400).json({
-            error: 'Nome da maleta já está em uso',
-          });
+          res.status(400).json({ error: 'Nome da maleta já está em uso' });
+          return;
         }
       }
 
@@ -322,9 +311,8 @@ export class SuitcaseController {
         const uniqueSensorIds = [...new Set(sensorIds)];
         
         if (sensorIds.length !== uniqueSensorIds.length) {
-          return res.status(400).json({
-            error: 'Sensores duplicados não são permitidos na mesma maleta',
-          });
+          res.status(400).json({ error: 'Sensores duplicados não são permitidos na mesma maleta' });
+          return;
         }
 
         // Check if all sensors exist
@@ -334,10 +322,9 @@ export class SuitcaseController {
             select: { id: true },
           });
 
-          if (existingSensors.length !== uniqueSensorIds.length) {
-            return res.status(400).json({
-              error: 'Um ou mais sensores não foram encontrados',
-            });
+            if (existingSensors.length !== uniqueSensorIds.length) {
+            res.status(400).json({ error: 'Um ou mais sensores não foram encontrados' });
+            return;
           }
         }
       }
@@ -345,11 +332,10 @@ export class SuitcaseController {
       // Update suitcase with sensors in a transaction
       const result = await prisma.$transaction(async (tx) => {
         // Update basic suitcase data
-        const suitcaseData: any = {};
-        if (validatedData.name) suitcaseData.name = validatedData.name;
-        if (validatedData.description !== undefined) {
-          suitcaseData.description = validatedData.description || null;
-        }
+        const suitcaseData: any = stripUndefined({
+          name: validatedData.name,
+          description: validatedData.description !== undefined ? (validatedData.description || null) : undefined,
+        });
 
         const suitcase = await tx.suitcase.update({
           where: { id },
@@ -402,28 +388,24 @@ export class SuitcaseController {
 
       logger.info('Suitcase updated:', { suitcaseId: result?.id, name: result?.name, sensorsCount: validatedData.sensors?.length, userId: req.user?.id });
 
-      res.json({
-        success: true,
-        data: { suitcase: result },
-      });
+      res.json({ success: true, data: { suitcase: result } });
+      return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: 'Validation error',
-          details: error.errors,
-        });
+        res.status(400).json({ error: 'Validation error', details: error.errors });
+        return;
       }
 
       logger.error('Update suitcase error:', { error: error instanceof Error ? error.message : error, suitcaseId: req.params.id, userId: req.user?.id });
-      res.status(500).json({
-        error: 'Internal server error',
-      });
+      res.status(500).json({ error: 'Internal server error' });
+      return;
     }
   }
 
   async deleteSuitcase(req: AuthenticatedRequest, res: Response) {
     try {
-      const { id } = req.params;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       // Check if suitcase exists
       const existingSuitcase = await prisma.suitcase.findUnique({
@@ -438,19 +420,14 @@ export class SuitcaseController {
       });
 
       if (!existingSuitcase) {
-        return res.status(404).json({
-          error: 'Maleta não encontrada',
-        });
+        res.status(404).json({ error: 'Maleta não encontrada' });
+        return;
       }
 
       // Check if suitcase has associated validations
       if (existingSuitcase._count.validations > 0) {
-        return res.status(400).json({
-          error: 'Não é possível excluir maleta com validações associadas',
-          details: {
-            validations: existingSuitcase._count.validations,
-          },
-        });
+        res.status(400).json({ error: 'Não é possível excluir maleta com validações associadas', details: { validations: existingSuitcase._count.validations } });
+        return;
       }
 
       // Delete suitcase and associated sensors in a transaction
@@ -468,10 +445,8 @@ export class SuitcaseController {
 
       logger.info('Suitcase deleted:', { suitcaseId: id, name: existingSuitcase.name, userId: req.user?.id });
 
-      res.json({
-        success: true,
-        message: 'Maleta excluída com sucesso',
-      });
+      res.json({ success: true, message: 'Maleta excluída com sucesso' });
+      return;
     } catch (error) {
       logger.error('Delete suitcase error:', { error: error instanceof Error ? error.message : error, suitcaseId: req.params.id, userId: req.user?.id });
       res.status(500).json({
