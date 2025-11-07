@@ -272,6 +272,8 @@ export interface CanvasProps {
   pageSettings?: any; // Configurações da página (tamanho, orientação, etc.)
   backgroundImage?: any; // Imagem de fundo da página
   onAddElement?: (type: ElementType, position?: Position) => void;
+  onPanChange?: (offset: Position) => void;
+  onWheel?: (e: WheelEvent) => void;
   showRuler?: boolean;
 }
 
@@ -287,6 +289,10 @@ export interface PropertiesPanelProps {
   onUpdateContent: (elementId: string, content: any) => void;
   onGroupElements?: () => void;
   onUngroupElements?: () => void;
+  onBringToFront?: (elementId: string) => void;
+  onSendToBack?: (elementId: string) => void;
+  onBringForward?: (elementId: string) => void;
+  onSendBackward?: (elementId: string) => void;
   canGroup?: boolean;
   canUngroup?: boolean;
   isVisible: boolean;

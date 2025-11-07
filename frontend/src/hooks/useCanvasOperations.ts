@@ -38,6 +38,7 @@ interface UseCanvasOperationsReturn {
   panBy: (delta: Position) => void;
   centerCanvas: () => void;
   resetView: () => void;
+  setContainerSize: (size: Size) => void;
   
   // Conversões de coordenadas
   screenToCanvas: (screenPos: Position) => Position;
@@ -65,6 +66,8 @@ export const useCanvasOperations = (
   // Estado do canvas
   const [zoom, setZoomState] = useState<number>(initialZoom);
   const [panOffset, setPanOffsetState] = useState<Position>(initialPan);
+  // Allow container size to be updated dynamically (ResizeObserver in parent)
+  const [containerSizeState, setContainerSizeState] = useState<Size>(containerSize);
   
   // Refs para evitar stale closures
   const zoomRef = useRef(zoom);
@@ -113,10 +116,10 @@ export const useCanvasOperations = (
     const scaledHeight = canvasSize.height * zoomLevel;
     
     // Calcular limites para manter pelo menos parte do canvas visível
-    const minX = Math.min(0, containerSize.width - scaledWidth);
-    const maxX = Math.max(0, containerSize.width - scaledWidth);
-    const minY = Math.min(0, containerSize.height - scaledHeight);
-    const maxY = Math.max(0, containerSize.height - scaledHeight);
+  const minX = Math.min(0, containerSizeState.width - scaledWidth);
+  const maxX = Math.max(0, containerSizeState.width - scaledWidth);
+  const minY = Math.min(0, containerSizeState.height - scaledHeight);
+  const maxY = Math.max(0, containerSizeState.height - scaledHeight);
     
     return {
       x: Math.max(minX, Math.min(maxX, newPan.x)),
@@ -138,8 +141,8 @@ export const useCanvasOperations = (
       setPanOffsetState(clampPan(newPan, clampedZoom));
     } else {
       // Zoom mantendo o centro atual
-      const centerX = containerSize.width / 2;
-      const centerY = containerSize.height / 2;
+  const centerX = containerSizeState.width / 2;
+  const centerY = containerSizeState.height / 2;
       const zoomRatio = clampedZoom / zoom;
       
       const newPan = {
@@ -150,7 +153,7 @@ export const useCanvasOperations = (
     }
     
     setZoomState(clampedZoom);
-  }, [zoom, panOffset, containerSize, clampZoom, clampPan]);
+  }, [zoom, panOffset, containerSizeState, clampZoom, clampPan]);
 
   // Zoom in para o próximo nível
   const zoomIn = useCallback(() => {
@@ -166,8 +169,8 @@ export const useCanvasOperations = (
 
   // Zoom para ajustar o canvas na tela
   const zoomToFit = useCallback(() => {
-    const scaleX = containerSize.width / canvasSize.width;
-    const scaleY = containerSize.height / canvasSize.height;
+  const scaleX = containerSizeState.width / canvasSize.width;
+  const scaleY = containerSizeState.height / canvasSize.height;
     const fitZoom = Math.min(scaleX, scaleY) * 0.9; // 90% para deixar margem
     
     const clampedZoom = clampZoom(fitZoom);
@@ -178,10 +181,10 @@ export const useCanvasOperations = (
     const scaledHeight = canvasSize.height * clampedZoom;
     
     setPanOffsetState({
-      x: (containerSize.width - scaledWidth) / 2,
-      y: (containerSize.height - scaledHeight) / 2
+      x: (containerSizeState.width - scaledWidth) / 2,
+      y: (containerSizeState.height - scaledHeight) / 2
     });
-  }, [containerSize, canvasSize, clampZoom]);
+  }, [containerSizeState, canvasSize, clampZoom]);
 
   // Zoom para tamanho real (100%)
   const zoomToActualSize = useCallback(() => {
@@ -215,10 +218,10 @@ export const useCanvasOperations = (
     const scaledHeight = canvasSize.height * zoom;
     
     setPanOffsetState({
-      x: (containerSize.width - scaledWidth) / 2,
-      y: (containerSize.height - scaledHeight) / 2
+      x: (containerSizeState.width - scaledWidth) / 2,
+      y: (containerSizeState.height - scaledHeight) / 2
     });
-  }, [canvasSize, zoom, containerSize]);
+  }, [canvasSize, zoom, containerSizeState]);
 
   // Reset para estado inicial
   const resetView = useCallback(() => {
@@ -246,8 +249,8 @@ export const useCanvasOperations = (
   const getVisibleArea = useCallback(() => {
     const topLeft = screenToCanvas({ x: 0, y: 0 });
     const bottomRight = screenToCanvas({ 
-      x: containerSize.width, 
-      y: containerSize.height 
+      x: containerSizeState.width, 
+      y: containerSizeState.height 
     });
     
     return {
@@ -256,18 +259,23 @@ export const useCanvasOperations = (
       width: Math.min(canvasSize.width, bottomRight.x) - Math.max(0, topLeft.x),
       height: Math.min(canvasSize.height, bottomRight.y) - Math.max(0, topLeft.y)
     };
-  }, [screenToCanvas, containerSize, canvasSize]);
+  }, [screenToCanvas, containerSizeState, canvasSize]);
 
   // Verificar se um ponto está visível
   const isPointVisible = useCallback((point: Position): boolean => {
     const screenPos = canvasToScreen(point);
     return (
       screenPos.x >= 0 && 
-      screenPos.x <= containerSize.width &&
+      screenPos.x <= containerSizeState.width &&
       screenPos.y >= 0 && 
-      screenPos.y <= containerSize.height
+      screenPos.y <= containerSizeState.height
     );
-  }, [canvasToScreen, containerSize]);
+  }, [canvasToScreen, containerSizeState]);
+
+  // Expose method to update container size (parent can call via ResizeObserver)
+  const setContainerSize = useCallback((size: Size) => {
+    setContainerSizeState(size);
+  }, []);
 
   // Handler para wheel (zoom com mouse)
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -339,6 +347,8 @@ export const useCanvasOperations = (
     panBy,
     centerCanvas,
     resetView,
+  // Container size helper
+  setContainerSize,
     
     // Conversões de coordenadas
     screenToCanvas,

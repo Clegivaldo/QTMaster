@@ -86,6 +86,9 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
 
   // Handler para início do drag
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Avoid starting a drag on a double click (detail > 1)
+    if (e.detail > 1) return;
+
     if (!isSelected) {
       onSelect?.(element.id, e.ctrlKey || e.metaKey);
     }
@@ -163,17 +166,25 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       case 'heading':
         return (
           <div
-            contentEditable={isSelected}
-            suppressContentEditableWarning
-            onBlur={(e) => {
-              if (e.target.textContent !== element.content) {
-                onEdit?.(element.id, e.target.textContent || '');
-              }
-            }}
             className="w-full h-full outline-none overflow-hidden"
             style={{ 
               wordWrap: 'break-word',
               whiteSpace: 'pre-wrap'
+            }}
+            onDoubleClick={(e) => {
+              // enable editing on double click
+              const el = e.currentTarget as HTMLDivElement;
+              el.contentEditable = 'true';
+              el.focus();
+            }}
+            contentEditable={false}
+            suppressContentEditableWarning
+            onBlur={(e) => {
+              const el = e.currentTarget as HTMLDivElement;
+              el.contentEditable = 'false';
+              if (el.textContent !== element.content) {
+                onEdit?.(element.id, el.textContent || '');
+              }
             }}
           >
             {typeof element.content === 'string' ? element.content : 'Texto'}

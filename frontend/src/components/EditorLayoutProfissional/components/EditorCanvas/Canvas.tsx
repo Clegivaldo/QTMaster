@@ -20,7 +20,9 @@ const Canvas: React.FC<CanvasProps> = ({
   pageSettings,
   backgroundImage,
   onAddElement,
-  showRuler = false
+  showRuler = false,
+  onPanChange,
+  onWheel
 }) => {
   // showRuler optionally passed from parent
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -118,8 +120,8 @@ const Canvas: React.FC<CanvasProps> = ({
       setIsDragging(false);
       // Aplicar o offset final se houver movimento
       if (dragOffset.x !== 0 || dragOffset.y !== 0) {
-        // Se houver callback para pan, usar aqui
-        // onPanChange?.(dragOffset);
+        // Persist pan change to parent (panOffset is controlled by parent)
+        onPanChange?.({ x: panOffset.x + dragOffset.x, y: panOffset.y + dragOffset.y });
       }
       setDragOffset({ x: 0, y: 0 });
     }
@@ -228,12 +230,12 @@ const Canvas: React.FC<CanvasProps> = ({
           <defs>
             <pattern id="grid" width={scaledGridSize} height={scaledGridSize} patternUnits="userSpaceOnUse">
               <path 
-                d={`M ${scaledGridSize} 0 L 0 0 0 ${scaledGridSize}`} 
-                fill="none" 
-                stroke="#e5e7eb" 
-                strokeWidth="0.5" 
-                opacity="0.3"
-              />
+                  d={`M ${scaledGridSize} 0 L 0 0 0 ${scaledGridSize}`} 
+                  fill="none" 
+                  stroke="#cbd5e1" 
+                  strokeWidth="1" 
+                  opacity="0.65"
+                />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -242,22 +244,21 @@ const Canvas: React.FC<CanvasProps> = ({
     );
   };
 
-  // Handler para wheel (zoom)
-  const handleWheel = useCallback(() => {
-    // Implementar zoom com wheel se necessário
-    // Removemos preventDefault para evitar warning do navegador sobre listeners passivos
-    // Por enquanto, deixamos o zoom ser controlado pelos controles
-  }, []);
+    // Wheel delegated to parent hook (non-passive listener is handled there)
+    const handleLocalWheel = useCallback((e: React.WheelEvent) => {
+      // delegate native WheelEvent to parent handler if provided
+      onWheel?.(e.nativeEvent);
+    }, [onWheel]);
 
   return (
     <div 
       ref={containerRef}
-      className="w-full h-full overflow-hidden bg-gray-100 relative"
-      style={{ cursor: isDragging ? 'grabbing' : 'default' }}
-      onWheel={handleWheel}
+      className="w-full h-full bg-gray-100 relative"
+      style={{ cursor: isDragging ? 'grabbing' : 'default', overflow: 'auto' }}
+      onWheel={handleLocalWheel}
     >
       {/* Canvas principal */}
-      <div className="w-full h-full flex items-center justify-center">
+      <div className="w-full h-full relative">
         <div
           ref={canvasRef}
           className="shadow-xl border border-gray-300 relative overflow-hidden"

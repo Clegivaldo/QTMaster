@@ -86,6 +86,30 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
     editor.template.backgroundImage
   );
 
+  // Ref para a área do canvas para medir seu tamanho e informar o hook
+  const canvasAreaRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Atualizar container size do hook de canvas ao redimensionar a área
+  useEffect(() => {
+    const el = canvasAreaRef.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver(() => {
+      const rect = el.getBoundingClientRect();
+      canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
+      // center canvas to keep consistent visual alignment
+      canvas.centerCanvas();
+    });
+
+    ro.observe(el);
+    // trigger initial measurement
+    const rect = el.getBoundingClientRect();
+    canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
+    canvas.centerCanvas();
+
+    return () => ro.disconnect();
+  }, [canvas]);
+
   // Calcular tamanho da página baseado nas configurações
 
   // Handlers para ações principais
@@ -490,7 +514,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
           )}
 
           {/* Área central - Canvas (70% da largura quando ambas sidebars visíveis) */}
-          <div className="bg-gray-100 relative overflow-auto editor-canvas-area">
+          <div ref={canvasAreaRef} className="bg-gray-100 relative overflow-auto editor-canvas-area">
             <div className="relative w-full h-full">
               {/* Grid and ruler are rendered inside the Canvas to keep them aligned to the page */}
               <Canvas
@@ -498,6 +522,8 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 selectedElementIds={editor.selectedElementIds}
                 zoom={canvas.zoom}
                 panOffset={canvas.panOffset}
+                onPanChange={canvas.setPanOffset}
+                onWheel={canvas.handleWheel}
                 onAddElement={editor.addElement}
                 showRuler={showRuler}
                 onElementSelect={editor.selectElement}
@@ -568,6 +594,8 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 onUpdateContent={editor.updateElementContent}
                 onGroupElements={editor.groupSelectedElements}
                 onUngroupElements={editor.ungroupSelectedElements}
+                onBringToFront={editor.bringToFront}
+                onSendToBack={editor.sendToBack}
                 canGroup={editor.canGroupSelection()}
                 canUngroup={editor.canUngroupSelection()}
                 isVisible={showPropertiesPanel}

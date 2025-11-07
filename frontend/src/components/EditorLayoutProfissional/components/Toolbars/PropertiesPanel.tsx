@@ -27,6 +27,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   onUpdateContent,
   onGroupElements,
   onUngroupElements,
+  onBringToFront,
+  onSendToBack,
   canGroup = false,
   canUngroup = false,
   isVisible,
@@ -812,7 +814,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    // onBringToFront
+                    onBringToFront?.(selectedElements[0].id);
                   }}
                   className="flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
                 >
@@ -822,7 +824,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 
                 <button
                   onClick={() => {
-                    // onSendToBack
+                    onSendToBack?.(selectedElements[0].id);
                   }}
                   className="flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
                 >
