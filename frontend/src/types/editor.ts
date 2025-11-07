@@ -132,6 +132,7 @@ export interface TemplateElement {
   zIndex: number;
   groupId?: string;
   metadata?: Record<string, any>;
+  pageId?: string; // optional: id of the page this element belongs to
 }
 
 // Interfaces específicas para diferentes tipos de elementos
@@ -198,9 +199,12 @@ export interface EditorTemplate {
   category: string;
   
   // Content
+  // Maintain a flat elements array for backward compatibility. Elements should include
+  // a `pageId` when associated with a specific page. The canonical per-page metadata
+  // is stored in `pages`.
   elements: TemplateElement[];
+  pages: Page[];
   globalStyles: GlobalStyles;
-  pageSettings: PageSettings;
   
   // Metadata
   createdAt: Date;
@@ -213,6 +217,23 @@ export interface EditorTemplate {
   tags: string[];
   thumbnail?: string;
   backgroundImage?: BackgroundImageSettings | null;
+}
+
+// Page and region types for multi-page support
+export interface Region {
+  height: number; // in mm
+  replicateAcrossPages?: boolean;
+  elements: TemplateElement[]; // elements that belong to header/footer region
+}
+
+export interface Page {
+  id: string;
+  name?: string;
+  elements: TemplateElement[];
+  pageSettings: PageSettings;
+  backgroundImage?: BackgroundImageSettings | null;
+  header?: Region | null;
+  footer?: Region | null;
 }
 
 // Estado do editor

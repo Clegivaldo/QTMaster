@@ -49,41 +49,82 @@ export const validateTemplate = (
   }
 
   // Validar elementos
-  if (!template.elements) {
-    template.elements = [];
-    warnings.push('Template não possui elementos - array vazio foi criado');
-  } else if (!Array.isArray(template.elements)) {
-    errors.push('Elementos do template devem ser um array');
-  } else {
-    // Validar quantidade de elementos
-    if (template.elements.length === 0 && requireElements) {
-      errors.push('Template deve conter pelo menos um elemento');
-    }
-    
-    if (template.elements.length > maxElements) {
-      errors.push(`Template possui muitos elementos (${template.elements.length}). Máximo permitido: ${maxElements}`);
-    }
+  // Support both legacy flat `elements` and new per-page `pages` model.
+  let allElements: TemplateElement[] = [];
 
-    // Validar cada elemento
-    template.elements.forEach((element, index) => {
-      const elementErrors = validateElement(element, index);
-      errors.push(...elementErrors);
+  if (template.pages && Array.isArray(template.pages) && template.pages.length > 0) {
+    // Validate pages and collect elements from pages
+    template.pages.forEach((page, pageIndex) => {
+      if (!page || !Array.isArray(page.elements)) {
+        // allow empty pages but normalize later
+        return;
+      }
+
+      // Validate quantity per page
+      if (page.elements.length > maxElements) {
+        errors.push(`Página ${pageIndex + 1} possui muitos elementos (${page.elements.length}). Máximo permitido: ${maxElements}`);
+      }
+
+      page.elements.forEach((element, idx) => {
+        const elementErrors = validateElement(element, idx);
+        errors.push(...elementErrors);
+      });
+
+      allElements = allElements.concat(page.elements);
     });
+  } else {
+    // Legacy single-page template
+    if (!template.elements) {
+      template.elements = [];
+      warnings.push('Template não possui elementos - array vazio foi criado');
+    } else if (!Array.isArray(template.elements)) {
+      errors.push('Elementos do template devem ser um array');
+    } else {
+      // Validar quantidade de elementos
+      if (template.elements.length === 0 && requireElements) {
+        errors.push('Template deve conter pelo menos um elemento');
+      }
+      
+      if (template.elements.length > maxElements) {
+        errors.push(`Template possui muitos elementos (${template.elements.length}). Máximo permitido: ${maxElements}`);
+      }
+
+      // Validar cada elemento
+      template.elements.forEach((element, index) => {
+        const elementErrors = validateElement(element, index);
+        errors.push(...elementErrors);
+      });
+
+      allElements = allElements.concat(template.elements);
+    }
   }
 
   // Validar configurações de página
-  if (!template.pageSettings) {
-    warnings.push('Configurações de página não definidas - usando padrões');
-    template.pageSettings = {
-      size: 'A4',
-      orientation: 'portrait',
-      margins: { top: 20, right: 20, bottom: 20, left: 20 },
-      backgroundColor: '#ffffff',
-      showMargins: false
-    };
+  if (template.pages && Array.isArray(template.pages) && template.pages.length > 0) {
+    template.pages.forEach((page, idx) => {
+      if (!page || !page.pageSettings) {
+        warnings.push(`Página ${idx + 1} sem configuração - usando padrões`);
+        return;
+      }
+      const pageErrors = validatePageSettings(page.pageSettings);
+      errors.push(...pageErrors);
+    });
   } else {
-    const pageErrors = validatePageSettings(template.pageSettings);
-    errors.push(...pageErrors);
+    // legacy pageSettings at root
+    const legacyPageSettings = (template as any).pageSettings;
+    if (!legacyPageSettings) {
+      warnings.push('Configurações de página não definidas - usando padrões');
+      (template as any).pageSettings = {
+        size: 'A4',
+        orientation: 'portrait',
+        margins: { top: 20, right: 20, bottom: 20, left: 20 },
+        backgroundColor: '#ffffff',
+        showMargins: false
+      };
+    } else {
+      const pageErrors = validatePageSettings(legacyPageSettings);
+      errors.push(...pageErrors);
+    }
   }
 
   // Validar estilos globais
@@ -99,9 +140,18 @@ export const validateTemplate = (
   }
 
   // Validar limites dos elementos (se solicitado)
-  if (checkElementBounds && template.pageSettings && template.elements) {
-    const boundsErrors = validateElementBounds(template.elements, template.pageSettings);
-    warnings.push(...boundsErrors);
+  if (checkElementBounds) {
+    if (template.pages && Array.isArray(template.pages) && template.pages.length > 0) {
+      template.pages.forEach((page) => {
+        if (Array.isArray(page.elements) && page.pageSettings) {
+          const boundsErrors = validateElementBounds(page.elements, page.pageSettings);
+          warnings.push(...boundsErrors);
+        }
+      });
+    } else if ((template as any).pageSettings && Array.isArray(allElements)) {
+      const boundsErrors = validateElementBounds(allElements, (template as any).pageSettings);
+      warnings.push(...boundsErrors);
+    }
   }
 
   return {
@@ -307,15 +357,32 @@ export const sanitizeTemplate = (template: EditorTemplate): EditorTemplate => {
     return sanitizedElement;
   });
 
-  // Garantir configurações de página
-  if (!sanitized.pageSettings) {
-    sanitized.pageSettings = {
-      size: 'A4',
-      orientation: 'portrait',
-      margins: { top: 20, right: 20, bottom: 20, left: 20 },
-      backgroundColor: '#ffffff',
-      showMargins: false
+  // Garantir páginas (novo modelo) ou pageSettings legado
+  if (!sanitized.pages || !Array.isArray(sanitized.pages) || sanitized.pages.length === 0) {
+    // Migrate legacy elements/pageSettings into a single default page
+    const defaultPage = {
+      id: `page_${Date.now()}`,
+      name: 'Página 1',
+      elements: Array.isArray(sanitized.elements) ? sanitized.elements : [],
+      pageSettings: (sanitized as any).pageSettings || {
+        size: 'A4',
+        orientation: 'portrait',
+        margins: { top: 20, right: 20, bottom: 20, left: 20 },
+        backgroundColor: '#ffffff',
+        showMargins: false
+      },
+      backgroundImage: sanitized.backgroundImage || null,
+      header: null,
+      footer: null
     };
+
+    sanitized.pages = [defaultPage];
+  } else {
+    // ensure each page has elements array
+    sanitized.pages = sanitized.pages.map((p) => ({
+      ...p,
+      elements: Array.isArray(p.elements) ? p.elements : []
+    }));
   }
 
   // Garantir estilos globais

@@ -305,9 +305,9 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
         template.elements = [];
       }
       
-      // Garantir que pageSettings existe
-      if (!template.pageSettings) {
-        template.pageSettings = {
+      // Garantir que pageSettings existe (legacy root pageSettings)
+      if (!(template as any).pageSettings) {
+        (template as any).pageSettings = {
           size: 'A4',
           orientation: 'portrait',
           margins: { top: 20, right: 20, bottom: 20, left: 20 },

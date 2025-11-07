@@ -103,6 +103,13 @@ interface UseTemplateEditorReturn {
   // Page settings & background image
   updatePageSettings: (settings: any) => void;
   updateBackgroundImage: (image: any) => void;
+  updatePageRegions: (header: any | null, footer: any | null) => void;
+  // Pages
+  addPage: (name?: string) => string;
+  removeCurrentPage: () => void;
+  goToPage: (index: number) => void;
+  getCurrentPageElements: () => TemplateElement[];
+  getCurrentPageId: () => string;
   
   // Agrupamento
   groupSelectedElements: () => string | null;
@@ -121,14 +128,28 @@ export const useTemplateEditor = (
   const { templateId, autoSave = false, autoSaveInterval = 30000 } = options;
   
   // Estado principal do template
+  // Initialize template with a single default page. We keep a flat `elements` array for
+  // backward compatibility, but pages array stores page metadata and ids.
+  const defaultPageId = generateId('page');
   const [template, setTemplate] = useState<EditorTemplate>(() => ({
     id: generateId('template'),
     name: 'Novo Template',
     description: '',
     category: 'default',
+    // elements remain flat; elements must include a pageId when created
     elements: [],
+    pages: [
+      {
+        id: defaultPageId,
+        name: 'Página 1',
+        elements: [],
+        pageSettings: DEFAULT_PAGE_SETTINGS,
+        backgroundImage: null,
+        header: null,
+        footer: null
+      }
+    ],
     globalStyles: DEFAULT_GLOBAL_STYLES,
-    pageSettings: DEFAULT_PAGE_SETTINGS,
     createdAt: new Date(),
     updatedAt: new Date(),
     createdBy: 'current-user', // TODO: pegar do contexto de auth
@@ -136,6 +157,9 @@ export const useTemplateEditor = (
     isPublic: false,
     tags: []
   }));
+
+  // Current page index (which page is being edited/viewed)
+  const [currentPageIndex, setCurrentPageIndex] = useState<number>(0);
   
   // Estado do editor
   const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
@@ -171,14 +195,25 @@ export const useTemplateEditor = (
   
   // Criar novo template
   const createNewTemplate = useCallback((name: string = 'Novo Template') => {
+    const defaultPageId = generateId('page');
     const newTemplate: EditorTemplate = {
       id: generateId('template'),
       name,
       description: '',
       category: 'default',
       elements: [],
+      pages: [
+        {
+          id: defaultPageId,
+          name: 'Página 1',
+          elements: [],
+          pageSettings: DEFAULT_PAGE_SETTINGS,
+          backgroundImage: null,
+          header: null,
+          footer: null
+        }
+      ],
       globalStyles: DEFAULT_GLOBAL_STYLES,
-      pageSettings: DEFAULT_PAGE_SETTINGS,
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: 'current-user',
@@ -192,10 +227,115 @@ export const useTemplateEditor = (
     undoRedo.clearHistory();
     undoRedo.addToHistory(newTemplate, 'Criar novo template');
   }, [undoRedo]);
+
+  // Pages management
+  const addPage = useCallback((name: string = `Página ${template.pages.length + 1}`) => {
+    const newPage = {
+      id: generateId('page'),
+      name,
+      elements: [],
+      pageSettings: DEFAULT_PAGE_SETTINGS,
+      backgroundImage: null,
+      header: null,
+      footer: null
+    };
+
+    updateTemplate(prev => ({
+      ...prev,
+      pages: [...prev.pages, newPage],
+      updatedAt: new Date()
+    }), 'Adicionar página');
+
+    // Go to new page: increment currentPageIndex after adding
+    setCurrentPageIndex(prevIndex => prevIndex + 1);
+
+    return newPage.id;
+  }, [template.pages, updateTemplate]);
+
+  const removeCurrentPage = useCallback(() => {
+    if (!template.pages || template.pages.length <= 1) return;
+    const removed = template.pages[currentPageIndex];
+
+    updateTemplate(prev => ({
+      ...prev,
+      pages: prev.pages.filter((p, idx) => idx !== currentPageIndex),
+      elements: prev.elements.filter(el => el.pageId !== removed.id),
+      updatedAt: new Date()
+    }), 'Remover página');
+
+    setCurrentPageIndex(Math.max(0, currentPageIndex - 1));
+  }, [template.pages, currentPageIndex, updateTemplate]);
+
+  const goToPage = useCallback((index: number) => {
+    if (!template.pages) return;
+    const idx = Math.max(0, Math.min(index, template.pages.length - 1));
+    setCurrentPageIndex(idx);
+  }, [template.pages]);
+
+  const getCurrentPage = useCallback(() => {
+    return template.pages && template.pages[currentPageIndex] ? template.pages[currentPageIndex] : template.pages[0];
+  }, [template.pages, currentPageIndex]);
+
+  const getCurrentPageElements = useCallback(() => {
+    const page = getCurrentPage();
+    if (!page) return [] as TemplateElement[];
+    return template.elements.filter(el => el.pageId === page.id);
+  }, [template.elements, getCurrentPage]);
+
+  const getCurrentPageId = useCallback(() => getCurrentPage()?.id || '' , [getCurrentPage]);
+
+  const updatePageRegions = useCallback((header: any | null, footer: any | null) => {
+    updateTemplate(prev => {
+      // If header/footer requests replication across pages, apply to all pages
+      const applyToAllHeader = header && header.replicateAcrossPages;
+      const applyToAllFooter = footer && footer.replicateAcrossPages;
+
+      const pages = prev.pages.map((p, idx) => {
+        if (applyToAllHeader || applyToAllFooter) {
+          return {
+            ...p,
+            header: applyToAllHeader ? header : (idx === currentPageIndex ? header : p.header),
+            footer: applyToAllFooter ? footer : (idx === currentPageIndex ? footer : p.footer)
+          };
+        }
+
+        // Default: only update current page
+        return idx === currentPageIndex ? { ...p, header, footer } : p;
+      });
+
+      // Optionally, replicate header/footer elements into page.elements if required at model level
+      // (We keep header/footer as regions; rendering will include region.elements)
+
+      return { ...prev, pages, updatedAt: new Date() };
+    }, 'Atualizar header/footer');
+  }, [currentPageIndex, updateTemplate]);
   
   // Carregar template
   const loadTemplate = useCallback((newTemplate: EditorTemplate) => {
-    setTemplate(newTemplate);
+    // Normalize older templates that may not have pages[]
+    let normalized = newTemplate as EditorTemplate;
+    if (!('pages' in newTemplate) || !newTemplate.pages || newTemplate.pages.length === 0) {
+      const pageId = generateId('page');
+      normalized = {
+        ...newTemplate,
+        pages: [
+          {
+            id: pageId,
+            name: 'Página 1',
+            elements: newTemplate.elements || [],
+            pageSettings: (newTemplate as any).pageSettings || DEFAULT_PAGE_SETTINGS,
+            backgroundImage: (newTemplate as any).backgroundImage || null,
+            header: null,
+            footer: null
+          }
+        ]
+      } as EditorTemplate;
+
+      // assign pageId to each element if missing
+      normalized.elements = (normalized.elements || []).map(el => ({ ...el, pageId: el.pageId || pageId }));
+    }
+
+    setTemplate(normalized);
     setSelectedElementIds([]);
     undoRedo.clearHistory();
     undoRedo.addToHistory(newTemplate, 'Carregar template');
@@ -216,11 +356,19 @@ export const useTemplateEditor = (
 
   // Atualizar configurações de página diretamente no template
   const updatePageSettings = useCallback((settings: any) => {
-    updateTemplate(prev => ({ ...prev, pageSettings: settings, updatedAt: new Date() }), 'Atualizar configurações da página');
+    // Update settings for the current page
+    updateTemplate(prev => {
+      const pages = prev.pages.map((p, idx) => idx === currentPageIndex ? { ...p, pageSettings: settings } : p);
+      return { ...prev, pages, updatedAt: new Date() };
+    }, 'Atualizar configurações da página');
   }, [updateTemplate]);
 
   const updateBackgroundImage = useCallback((image: any) => {
-    updateTemplate(prev => ({ ...prev, backgroundImage: image, updatedAt: new Date() }), 'Atualizar imagem de fundo');
+    // Update background image for current page
+    updateTemplate(prev => {
+      const pages = prev.pages.map((p, idx) => idx === currentPageIndex ? { ...p, backgroundImage: image } : p);
+      return { ...prev, pages, updatedAt: new Date() };
+    }, 'Atualizar imagem de fundo');
   }, [updateTemplate]);
   
   // Exportar template - integrado com useTemplateStorage
@@ -238,6 +386,11 @@ export const useTemplateEditor = (
   // Adicionar elemento
   const addElement = useCallback((type: ElementType, position?: Position): string => {
     const newElement = createDefaultElement(type, position);
+    // assign to current page if pages exist
+    const currentPage = template.pages && template.pages[currentPageIndex] ? template.pages[currentPageIndex] : template.pages[0];
+    if (currentPage) {
+      newElement.pageId = currentPage.id;
+    }
     newElement.zIndex = getNextZIndex(template.elements);
     
     updateTemplate(prev => ({
@@ -284,6 +437,9 @@ export const useTemplateEditor = (
     if (!element) return '';
     
     const clonedElement = cloneElement(element);
+    // ensure cloned element belongs to current page
+    const currentPage = template.pages && template.pages[currentPageIndex] ? template.pages[currentPageIndex] : template.pages[0];
+    if (currentPage) clonedElement.pageId = currentPage.id;
     clonedElement.zIndex = getNextZIndex(template.elements);
     
     updateTemplate(prev => ({
@@ -308,6 +464,9 @@ export const useTemplateEditor = (
         if (!element) return null;
         
         const cloned = cloneElement(element);
+        // assign to current page
+        const currentPage = prev.pages && prev.pages[currentPageIndex] ? prev.pages[currentPageIndex] : prev.pages[0];
+        if (currentPage) cloned.pageId = currentPage.id;
         cloned.zIndex = getNextZIndex([...prev.elements, ...newElements.filter(Boolean)]);
         newElementIds.push(cloned.id);
         return cloned;
@@ -326,7 +485,9 @@ export const useTemplateEditor = (
 
   // Copiar seleção para clipboard interno
   const copySelection = useCallback(() => {
-    const toCopy = template.elements.filter(el => selectedElementIds.includes(el.id));
+    // copy only elements from current page (including header/footer handled elsewhere)
+    const currentPage = template.pages && template.pages[currentPageIndex] ? template.pages[currentPageIndex] : template.pages[0];
+    const toCopy = template.elements.filter(el => selectedElementIds.includes(el.id) && (!el.pageId || el.pageId === currentPage.id));
     // store a deep copy (serialize/deserialize) to avoid refs
     clipboardRef.current = toCopy.map(el => JSON.parse(JSON.stringify(el)));
   }, [template.elements, selectedElementIds]);
@@ -342,6 +503,8 @@ export const useTemplateEditor = (
       const newElements = copied.map((el) => {
         // use cloneElement utility to assign new id and offset
         const cloned = cloneElement(el as TemplateElement);
+        const currentPage = prev.pages && prev.pages[currentPageIndex] ? prev.pages[currentPageIndex] : prev.pages[0];
+        if (currentPage) cloned.pageId = currentPage.id;
         cloned.zIndex = getNextZIndex([...prev.elements]);
         newIds.push(cloned.id);
         return cloned;
@@ -382,7 +545,10 @@ export const useTemplateEditor = (
   }, []);
   
   const selectAll = useCallback(() => {
-    setSelectedElementIds(template.elements.map(el => el.id));
+    // select only elements belonging to the current page
+    const currentPage = template.pages && template.pages[currentPageIndex] ? template.pages[currentPageIndex] : template.pages[0];
+    const ids = template.elements.filter(el => !el.pageId || el.pageId === currentPage.id).map(el => el.id);
+    setSelectedElementIds(ids);
   }, [template.elements]);
   
   const clearSelection = useCallback(() => {
@@ -794,5 +960,14 @@ export const useTemplateEditor = (
     // Utilitários
     getSelectedElements,
     getElementById
+    ,
+    // Pages
+    addPage,
+    removeCurrentPage,
+    goToPage,
+    getCurrentPageElements,
+    getCurrentPageId
+    ,
+    updatePageRegions
   };
 };

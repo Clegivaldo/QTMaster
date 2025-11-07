@@ -333,7 +333,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
   ];
 
   // Usar configurações de página do template ou passadas como prop
-  const currentPageSettings = pageSettings || template.pageSettings || {
+  const currentPageSettings = pageSettings || (template as any).pageSettings || {
     size: 'A4' as const,
     orientation: 'portrait' as const,
     margins: { top: 20, right: 20, bottom: 20, left: 20 },

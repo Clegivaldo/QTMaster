@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { X, Save, Eye, Grid, Ruler, Download, FolderOpen, Settings, Minus, Plus } from 'lucide-react';
+import { X, Save, Eye, Grid, Ruler, Download, FolderOpen, Settings, Minus, Plus, FileImage } from 'lucide-react';
 import { useTemplateEditor } from '../../hooks/useTemplateEditor';
 import { useCanvasOperations } from '../../hooks/useCanvasOperations';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
@@ -11,6 +11,7 @@ import './EditorLayout.css';
 
 // Componentes que serão implementados nas próximas tarefas
 import { Canvas } from './components/EditorCanvas';
+import GalleryModal from './components/Modals/GalleryModal';
 // Grid and Ruler are rendered inside the Canvas component for correct alignment
 import { useGridSnap } from '../../hooks/useGridSnap';
 import { ElementPalette, PropertiesPanel } from './components/Toolbars';
@@ -79,11 +80,15 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   const [showExportModal, setShowExportModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showPageSettingsModal, setShowPageSettingsModal] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
 
   // Hook para configurações de página
+  // Use page-specific settings when available (multi-page support)
+  const currentPageId = editor.getCurrentPageId ? editor.getCurrentPageId() : '';
+  const currentPageMeta = editor.template.pages?.find(p => p.id === currentPageId) || editor.template.pages?.[0] || null;
   const pageSettings = usePageSettings(
-    editor.template.pageSettings,
-    editor.template.backgroundImage
+    currentPageMeta?.pageSettings || editor.template.pages?.[0]?.pageSettings,
+    currentPageMeta?.backgroundImage || editor.template.backgroundImage
   );
 
   // Ref para a área do canvas para medir seu tamanho e informar o hook
@@ -385,6 +390,30 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
               <Settings className="h-4 w-4" />
             </button>
 
+            {/* Page controls: add/remove and navigate */}
+            <div className="flex items-center gap-1 ml-2">
+              <button
+                onClick={() => editor.addPage && editor.addPage()}
+                className="p-2 rounded text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                title="Adicionar página"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={() => editor.removeCurrentPage && editor.removeCurrentPage()}
+                className="p-2 rounded text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                title="Remover página atual"
+                disabled={editor.template.pages && editor.template.pages.length <= 1}
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+
+              <div className="text-xs text-gray-300 ml-2">
+                Página: {editor.getCurrentPageId ? (editor.getCurrentPageId() ? (editor.template.pages.findIndex(p => p.id === editor.getCurrentPageId()) + 1) : 1) : 1} / {editor.template.pages.length}
+              </div>
+            </div>
+
             <div className="w-px h-6 bg-gray-600 mx-1 md:mx-2 hidden lg:block" />
 
             {/* Controles de sidebars */}
@@ -459,6 +488,14 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             </button>
 
             <button
+              onClick={() => setShowGalleryModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 p-2 rounded-full flex items-center justify-center transition-colors"
+              title="Galeria de Imagens"
+            >
+              <FileImage className="h-4 w-4" />
+            </button>
+
+            <button
               onClick={handleSave}
               className="bg-green-600 hover:bg-green-700 p-2 rounded-full flex items-center justify-center transition-colors"
               title={`Salvar (${KEYBOARD_SHORTCUTS.SAVE})`}
@@ -515,7 +552,11 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             className="bg-gray-100 relative overflow-auto editor-canvas-area"
             onClick={(e) => {
               // If clicked on the canvas area outside the page itself, clear selection
-              if (e.target === canvasAreaRef.current) {
+              const target = e.target as Node;
+              const canvasEl = canvasAreaRef.current?.querySelector('.shadow-xl');
+
+              // If click is directly on the canvas area (background) or outside the inner canvas element, clear selection
+              if (e.target === canvasAreaRef.current || (canvasEl && !canvasEl.contains(target))) {
                 editor.clearSelection();
               }
             }}
@@ -523,7 +564,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             <div className="relative w-full h-full">
               {/* Grid and ruler are rendered inside the Canvas to keep them aligned to the page */}
               <Canvas
-                elements={editor.template.elements}
+                elements={editor.getCurrentPageElements ? editor.getCurrentPageElements() : editor.template.elements}
                 selectedElementIds={editor.selectedElementIds}
                 zoom={canvas.zoom}
                 panOffset={canvas.panOffset}
@@ -631,8 +672,8 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
           </div>
           
           <div className="flex items-center gap-2 md:gap-4">
-            <span className="hidden md:inline">Página: {editor.template.pageSettings.size}</span>
-            <span className="hidden lg:inline">Orientação: {editor.template.pageSettings.orientation}</span>
+            <span className="hidden md:inline">Página: {currentPageMeta?.pageSettings?.size || editor.template.pages?.[0]?.pageSettings?.size}</span>
+            <span className="hidden lg:inline">Orientação: {currentPageMeta?.pageSettings?.orientation || editor.template.pages?.[0]?.pageSettings?.orientation}</span>
           </div>
         </div>
       </div>
@@ -669,6 +710,24 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
         onUpdateBackgroundImage={(image) => {
           pageSettings.updateBackgroundImage(image);
           editor.updateBackgroundImage(image);
+        }}
+        onUpdateHeaderFooter={(header, footer) => {
+          editor.updatePageRegions && editor.updatePageRegions(header, footer);
+        }}
+      />
+
+      <GalleryModal
+        isOpen={showGalleryModal}
+        onClose={() => setShowGalleryModal(false)}
+        onSelectImage={(img: { src: string; alt: string; originalSize: any }) => {
+          // Insert image element and set its content
+          const id = editor.addElement('image', { x: 20, y: 20 });
+          editor.updateElementContent(id, {
+            src: img.src,
+            alt: img.alt,
+            originalSize: img.originalSize
+          });
+          setShowGalleryModal(false);
         }}
       />
 

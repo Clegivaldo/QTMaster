@@ -254,7 +254,7 @@ const Canvas: React.FC<CanvasProps> = ({
     <div 
       ref={containerRef}
       className="w-full h-full bg-gray-100 relative"
-      style={{ cursor: isDragging ? 'grabbing' : 'default', overflow: 'auto' }}
+      style={{ overflow: 'auto' }}
       onWheel={handleLocalWheel}
     >
       {/* Canvas principal */}
@@ -267,7 +267,7 @@ const Canvas: React.FC<CanvasProps> = ({
             height: canvasHeight,
             transform: `translate(${panOffset.x + dragOffset.x}px, ${panOffset.y + dragOffset.y}px)`,
             transformOrigin: 'center center',
-            cursor: 'grab',
+            cursor: isDragging ? 'grabbing' : 'grab',
             backgroundColor: pageSettings?.pageSettings?.backgroundColor || '#ffffff',
             backgroundImage: backgroundImage?.url ? `url(${backgroundImage.url})` : undefined,
             backgroundSize: backgroundImage ? 'cover' : undefined,

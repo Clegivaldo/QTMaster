@@ -35,6 +35,7 @@ interface PageSettingsModalProps {
   backgroundImage?: BackgroundImageSettings | null;
   onUpdatePageSettings: (settings: PageSettings) => void;
   onUpdateBackgroundImage: (image: BackgroundImageSettings | null) => void;
+  onUpdateHeaderFooter?: (header: any | null, footer: any | null) => void;
 }
 
 const PAGE_SIZES = [
@@ -67,9 +68,12 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
   backgroundImage,
   onUpdatePageSettings,
   onUpdateBackgroundImage
+  , onUpdateHeaderFooter
 }) => {
   const [localSettings, setLocalSettings] = useState<PageSettings>(pageSettings);
   const [localBackgroundImage, setLocalBackgroundImage] = useState<BackgroundImageSettings | null>(backgroundImage || null);
+  const [localHeader, setLocalHeader] = useState<any | null>(null);
+  const [localFooter, setLocalFooter] = useState<any | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
 
@@ -78,6 +82,8 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
     if (isOpen) {
       setLocalSettings(pageSettings);
       setLocalBackgroundImage(backgroundImage || null);
+      setLocalHeader(null);
+      setLocalFooter(null);
       setUploadingImage(false);
       setShowPreview(true);
     }
@@ -191,6 +197,9 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
       onUpdateBackgroundImage(localBackgroundImage);
     } else {
       onUpdateBackgroundImage(null);
+    }
+    if (onUpdateHeaderFooter) {
+      onUpdateHeaderFooter(localHeader, localFooter);
     }
     onClose();
   };
@@ -374,6 +383,40 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
                 <span className="ml-2 text-sm text-gray-700">Mostrar guias de margem</span>
               </label>
             </div>
+
+              {/* Header/Footer region */}
+              <div className="mt-4 border-t pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Cabeçalho / Rodapé</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="flex items-center text-xs">
+                      <input type="checkbox" className="mr-2" checked={!!localHeader} onChange={(e) => setLocalHeader(e.target.checked ? { height: 20, replicateAcrossPages: true, elements: [] } : null)} />
+                      <span>Cabeçalho habilitado</span>
+                    </label>
+                    {localHeader && (
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-600">Altura (mm)</label>
+                        <input type="number" min={0} max={200} value={localHeader.height} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, height: Math.max(0, Math.min(200, parseInt(e.target.value) || 0)) }))} className="w-full px-2 py-1 border border-gray-300 rounded" />
+                        <label className="flex items-center mt-2 text-xs"><input type="checkbox" className="mr-2" checked={!!localHeader.replicateAcrossPages} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, replicateAcrossPages: e.target.checked }))} /> <span>Replicar em todas as páginas</span></label>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="flex items-center text-xs">
+                      <input type="checkbox" className="mr-2" checked={!!localFooter} onChange={(e) => setLocalFooter(e.target.checked ? { height: 20, replicateAcrossPages: true, elements: [] } : null)} />
+                      <span>Rodapé habilitado</span>
+                    </label>
+                    {localFooter && (
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-600">Altura (mm)</label>
+                        <input type="number" min={0} max={200} value={localFooter.height} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, height: Math.max(0, Math.min(200, parseInt(e.target.value) || 0)) }))} className="w-full px-2 py-1 border border-gray-300 rounded" />
+                        <label className="flex items-center mt-2 text-xs"><input type="checkbox" className="mr-2" checked={!!localFooter.replicateAcrossPages} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, replicateAcrossPages: e.target.checked }))} /> <span>Replicar em todas as páginas</span></label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
 
             {/* Cor de fundo */}
             <div>

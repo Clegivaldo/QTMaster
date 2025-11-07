@@ -44,6 +44,10 @@ export const useUndoRedo = (
   
   // Current position in history (-1 means no history)
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
+
+  // Refs to keep latest values for callback-based updates
+  const historyRef = useRef<HistoryEntry[]>([]);
+  const currentIndexRef = useRef<number>(-1);
   
   // Debounce timer ref
   const debounceTimerRef = useRef<number>();
@@ -74,71 +78,63 @@ export const useUndoRedo = (
       timestamp: Date.now(),
       action
     };
-    
-    setHistory(prev => {
-      // Remove any entries after current index (when undoing and then making new changes)
-      const newHistory = prev.slice(0, currentIndex + 1);
-      
-      // Add new entry
-      newHistory.push(entry);
-      
-      // Limit history size
-      if (newHistory.length > maxHistorySize) {
-        newHistory.shift();
-        return newHistory;
-      }
-      
-      return newHistory;
-    });
-    
-    setCurrentIndex(prev => {
-      const newIndex = Math.min(prev + 1, maxHistorySize - 1);
-      return newIndex;
-    });
+    // Update refs and state atomically
+    const prev = historyRef.current;
+    const prevIndex = currentIndexRef.current;
+
+    // Cut history after current index to support branching after undo
+    const base = prev.slice(0, prevIndex + 1);
+    base.push(entry);
+
+    // Trim to max size
+    const trimmed = base.length > maxHistorySize ? base.slice(base.length - maxHistorySize) : base;
+
+    historyRef.current = trimmed;
+    const newIndex = trimmed.length - 1;
+    currentIndexRef.current = newIndex;
+
+    setHistory(trimmed);
+    setCurrentIndex(newIndex);
     
     lastActionRef.current = action || '';
   }, [currentIndex, maxHistorySize]);
   
   // Undo - go back in history
   const undo = useCallback((): EditorTemplate | null => {
-    if (currentIndex <= 0) {
+    if (currentIndexRef.current <= 0) {
       return null;
     }
-    
-    const previousIndex = currentIndex - 1;
-    const previousEntry = history[previousIndex];
-    
-    if (!previousEntry) {
-      return null;
-    }
-    
+
+    const previousIndex = currentIndexRef.current - 1;
+    const previousEntry = historyRef.current[previousIndex];
+    if (!previousEntry) return null;
+
+    currentIndexRef.current = previousIndex;
     setCurrentIndex(previousIndex);
     return JSON.parse(JSON.stringify(previousEntry.template)); // Deep clone
   }, [currentIndex, history]);
   
   // Redo - go forward in history
   const redo = useCallback((): EditorTemplate | null => {
-    if (currentIndex >= history.length - 1) {
-      return null;
-    }
-    
-    const nextIndex = currentIndex + 1;
-    const nextEntry = history[nextIndex];
-    
-    if (!nextEntry) {
-      return null;
-    }
-    
+    if (currentIndexRef.current >= historyRef.current.length - 1) return null;
+
+    const nextIndex = currentIndexRef.current + 1;
+    const nextEntry = historyRef.current[nextIndex];
+    if (!nextEntry) return null;
+
+    currentIndexRef.current = nextIndex;
     setCurrentIndex(nextIndex);
-    return JSON.parse(JSON.stringify(nextEntry.template)); // Deep clone
+    return JSON.parse(JSON.stringify(nextEntry.template));
   }, [currentIndex, history]);
   
   // Clear all history
   const clearHistory = useCallback(() => {
+    historyRef.current = [];
+    currentIndexRef.current = -1;
     setHistory([]);
     setCurrentIndex(-1);
     lastActionRef.current = '';
-    
+
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
