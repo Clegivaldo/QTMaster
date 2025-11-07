@@ -61,6 +61,8 @@ interface UseTemplateEditorReturn {
   removeSelectedElements: () => void;
   duplicateElement: (elementId: string) => string;
   duplicateSelectedElements: () => void;
+  copySelection: () => void;
+  pasteClipboard: () => void;
   
   // Seleção
   selectElement: (elementId: string, multiSelect?: boolean) => void;
@@ -147,6 +149,9 @@ export const useTemplateEditor = (
     maxHistorySize: MAX_HISTORY_SIZE,
     debounceMs: 300 // Debounce para evitar muitas entradas no histórico
   });
+  
+  // Clipboard para copy/paste interno do editor
+  const clipboardRef = useRef<TemplateElement[] | null>(null);
   
   // Refs para auto-save
   const autoSaveTimeoutRef = useRef<number>();
@@ -318,9 +323,49 @@ export const useTemplateEditor = (
     // Selecionar os novos elementos
     setSelectedElementIds(newElementIds);
   }, [selectedElementIds, updateTemplate]);
+
+  // Copiar seleção para clipboard interno
+  const copySelection = useCallback(() => {
+    const toCopy = template.elements.filter(el => selectedElementIds.includes(el.id));
+    // store a deep copy (serialize/deserialize) to avoid refs
+    clipboardRef.current = toCopy.map(el => JSON.parse(JSON.stringify(el)));
+  }, [template.elements, selectedElementIds]);
+
+  // Colar os elementos do clipboard, gerando novos ids e offset
+  const pasteClipboard = useCallback(() => {
+    const copied = clipboardRef.current;
+    if (!copied || copied.length === 0) return;
+
+    const newIds: string[] = [];
+
+    updateTemplate(prev => {
+      const newElements = copied.map((el) => {
+        // use cloneElement utility to assign new id and offset
+        const cloned = cloneElement(el as TemplateElement);
+        cloned.zIndex = getNextZIndex([...prev.elements]);
+        newIds.push(cloned.id);
+        return cloned;
+      });
+
+      return {
+        ...prev,
+        elements: [...prev.elements, ...newElements],
+        updatedAt: new Date()
+      };
+    }, `Colar ${copied.length} elemento${copied.length > 1 ? 's' : ''}`);
+
+    // Selecionar os novos elementos
+    setSelectedElementIds(newIds);
+  }, [updateTemplate]);
   
   // Seleção de elementos
   const selectElement = useCallback((elementId: string, multiSelect: boolean = false) => {
+    // Empty id means clear selection
+    if (!elementId) {
+      setSelectedElementIds([]);
+      return;
+    }
+
     if (multiSelect) {
       setSelectedElementIds(prev => 
         prev.includes(elementId) 
@@ -696,6 +741,9 @@ export const useTemplateEditor = (
     removeSelectedElements,
     duplicateElement,
     duplicateSelectedElements,
+  // Clipboard
+  copySelection,
+  pasteClipboard,
     
     // Seleção
     selectElement,

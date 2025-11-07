@@ -154,9 +154,9 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
     onZoomIn: canvas.zoomIn,
     onZoomOut: canvas.zoomOut,
     onZoomFit: canvas.zoomToFit,
-    // TODO: Implementar copy/paste/cut
-    onCopy: () => {},
-    onPaste: () => {},
+  // TODO: Implementar copy/paste/cut
+  onCopy: editor.copySelection,
+    onPaste: editor.pasteClipboard,
     onCut: () => {}
   }, { enabled: isOpen });
 
@@ -324,14 +324,6 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
               title="Mostrar/ocultar grade (clicar alterna snap)"
             >
               <Grid className="h-4 w-4" />
-            </button>
-
-            <button
-              onClick={handleSave}
-              className="bg-green-600 hover:bg-green-700 p-2 rounded-full flex items-center justify-center transition-colors"
-              title="Salvar template"
-            >
-              <Save className="h-4 w-4" />
             </button>
 
             <button
@@ -518,7 +510,16 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
           )}
 
           {/* Área central - Canvas (70% da largura quando ambas sidebars visíveis) */}
-          <div ref={canvasAreaRef} className="bg-gray-100 relative overflow-auto editor-canvas-area">
+          <div
+            ref={canvasAreaRef}
+            className="bg-gray-100 relative overflow-auto editor-canvas-area"
+            onClick={(e) => {
+              // If clicked on the canvas area outside the page itself, clear selection
+              if (e.target === canvasAreaRef.current) {
+                editor.clearSelection();
+              }
+            }}
+          >
             <div className="relative w-full h-full">
               {/* Grid and ruler are rendered inside the Canvas to keep them aligned to the page */}
               <Canvas
