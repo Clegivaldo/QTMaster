@@ -327,6 +327,14 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             </button>
 
             <button
+              onClick={handleSave}
+              className="bg-green-600 hover:bg-green-700 p-2 rounded-full flex items-center justify-center transition-colors"
+              title="Salvar template"
+            >
+              <Save className="h-4 w-4" />
+            </button>
+
+            <button
               onClick={() => setShowRuler(s => {
                 try { localStorage.setItem('editor.showRuler', String(!s)); } catch {}
                 return !s;
@@ -452,38 +460,34 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
           <div className="flex items-center gap-1 md:gap-2">
             <button
               onClick={handleLoad}
-              className="bg-blue-600 hover:bg-blue-700 px-2 md:px-4 py-2 rounded flex items-center gap-1 md:gap-2 transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 p-2 rounded-full flex items-center justify-center transition-colors"
               title={`Carregar Template (Ctrl+O)`}
             >
               <FolderOpen className="h-4 w-4" />
-              <span className="hidden md:inline">Carregar</span>
             </button>
 
             <button
               onClick={handleSave}
-              className="bg-green-600 hover:bg-green-700 px-2 md:px-4 py-2 rounded flex items-center gap-1 md:gap-2 transition-colors"
+              className="bg-green-600 hover:bg-green-700 p-2 rounded-full flex items-center justify-center transition-colors"
               title={`Salvar (${KEYBOARD_SHORTCUTS.SAVE})`}
             >
               <Save className="h-4 w-4" />
-              <span className="hidden md:inline">Salvar</span>
             </button>
 
             <button
               onClick={handlePreview}
-              className="bg-indigo-600 hover:bg-indigo-700 px-2 md:px-4 py-2 rounded flex items-center gap-1 md:gap-2 transition-colors hidden sm:flex"
+              className="bg-indigo-600 hover:bg-indigo-700 p-2 rounded-full flex items-center justify-center transition-colors hidden sm:flex"
               title="Visualizar template"
             >
               <Eye className="h-4 w-4" />
-              <span className="hidden lg:inline">Preview</span>
             </button>
 
             <button
               onClick={handleExport}
-              className="bg-purple-600 hover:bg-purple-700 px-2 md:px-4 py-2 rounded flex items-center gap-1 md:gap-2 transition-colors"
+              className="bg-purple-600 hover:bg-purple-700 p-2 rounded-full flex items-center justify-center transition-colors"
               title="Exportar template"
             >
               <Download className="h-4 w-4" />
-              <span className="hidden md:inline">Exportar</span>
             </button>
 
             <button
@@ -576,6 +580,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 }}
                 onElementEdit={editor.updateElementContent}
                 showGrid={showGrid} // we manage grid overlay separately
+                gridSize={gridSize}
                 snapToGrid={snapToGrid ? snap : undefined}
                 pageSettings={pageSettings}
                 backgroundImage={pageSettings.backgroundImage}

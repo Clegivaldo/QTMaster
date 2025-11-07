@@ -49,6 +49,11 @@
   min-width: 0; /* Permite que o canvas shrink */
 }
 
+/* Garantir pequeno espaçamento do canvas em relação à barra superior para evitar sobreposição visual */
+.editor-canvas-area {
+  padding-top: 8px;
+}
+
 .editor-sidebar-right {
   grid-area: sidebar-right;
   min-width: 200px;

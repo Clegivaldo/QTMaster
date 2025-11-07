@@ -497,15 +497,24 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
       };
       
       const operation = async () => {
-        // Se template tem ID, usar endpoint específico
+        // Se template tem ID, tentar endpoint específico primeiro
         if (sanitizedTemplate.id && !sanitizedTemplate.id.startsWith('temp_')) {
-          return await apiService.api.post(`/editor-templates/${sanitizedTemplate.id}/export`, exportData.options);
+          try {
+            return await apiService.api.post(`/editor-templates/${sanitizedTemplate.id}/export`, exportData.options);
+          } catch (err) {
+            // If 404 (template not found / removed), fall back to generic export with template body
+            const status = (err && typeof err === 'object' && 'response' in err) ? (err as any).response?.status : undefined;
+            if (status === 404) {
+              return await apiService.api.post('/editor-templates/export', exportData);
+            }
+            throw err;
+          }
         } else {
           // Para templates temporários, usar endpoint genérico
           return await apiService.api.post('/editor-templates/export', exportData);
         }
       };
-      
+
       const response = await retryWithBackoff(operation, 1); // Menos retries para export
       const data = response.data.data;
       

@@ -70,12 +70,13 @@ const PreviewPage: React.FC<PreviewPageProps> = ({
   const pageHeight = mmToPx(pageSize.height);
 
   const renderElement = (element: TemplateElement) => {
+    // Elements are stored in pixels in the editor; use pixel values and apply zoom.
     const elementStyle: React.CSSProperties = {
       position: 'absolute',
-      left: mmToPx(element.position.x),
-      top: mmToPx(element.position.y),
-      width: mmToPx(element.size.width),
-      height: mmToPx(element.size.height),
+      left: (element.position.x || 0) * zoom,
+      top: (element.position.y || 0) * zoom,
+      width: (element.size.width || 0) * zoom,
+      height: (element.size.height || 0) * zoom,
       zIndex: element.zIndex || 1,
       opacity: element.styles.opacity || 1,
       transform: element.styles.rotation ? `rotate(${element.styles.rotation}deg)` : undefined
