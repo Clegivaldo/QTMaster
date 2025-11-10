@@ -249,7 +249,10 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
       const operation = async () => {
         let response;
         
-        if (template.id && !template.id.startsWith('temp_')) {
+        // Verificar se é um template novo (tem padrão template-TIMESTAMP) ou persistido
+        const isNewTemplate = template.id && template.id.startsWith('template-') && !template.createdBy;
+        
+        if (!isNewTemplate && template.id) {
           // Template existente - atualizar
           response = await apiService.api.put(`/editor-templates/${template.id}`, templateData);
         } else {

@@ -27,6 +27,7 @@ import {
   canElementBeGrouped
 } from '../types/editor-utils';
 import { useUndoRedo } from './useUndoRedo';
+import { useTemplateStorage } from './useTemplateStorage';
 
 interface UseTemplateEditorOptions {
   templateId?: string;
@@ -873,12 +874,23 @@ export const useTemplateEditor = (
   }, [template, autoSave, autoSaveInterval, saveTemplate]);
   
   // Carregar template inicial se templateId for fornecido
+  const { loadTemplate: loadTemplateFromStorage } = useTemplateStorage();
+  
   useEffect(() => {
-    if (templateId) {
-      // TODO: Carregar template da API
+    if (templateId && templateId.trim() !== '') {
       console.log('Carregando template:', templateId);
+      
+      loadTemplateFromStorage(templateId)
+        .then((loadedTemplate) => {
+          console.log('Template carregado com sucesso:', loadedTemplate);
+          loadTemplate(loadedTemplate);
+        })
+        .catch((error) => {
+          console.error('Erro ao carregar template:', error);
+          // Manter template vazio para não ficar travado
+        });
     }
-  }, [templateId]);
+  }, [templateId, loadTemplateFromStorage, loadTemplate]);
   
   return {
     // Estado atual
