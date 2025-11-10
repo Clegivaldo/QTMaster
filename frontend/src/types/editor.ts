@@ -296,6 +296,12 @@ export interface CanvasProps {
   onPanChange?: (offset: Position) => void;
   onWheel?: (e: WheelEvent) => void;
   showRuler?: boolean;
+  // Optional page regions (header/footer) to render inside the canvas
+  pageRegions?: {
+    header?: any | null;
+    footer?: any | null;
+    pageNumberInfo?: { current: number; total: number };
+  };
 }
 
 export interface ElementPaletteProps {

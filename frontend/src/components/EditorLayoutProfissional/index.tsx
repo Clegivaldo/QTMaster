@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { X, Save, Eye, Grid, Ruler, Download, FolderOpen, Settings, Minus, Plus, FileImage } from 'lucide-react';
+import { X, Save, Eye, Grid, Ruler, Download, FolderOpen, Settings, Minus, Plus, FileImage, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTemplateEditor } from '../../hooks/useTemplateEditor';
 import { useCanvasOperations } from '../../hooks/useCanvasOperations';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
@@ -90,6 +90,10 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
     currentPageMeta?.pageSettings || editor.template.pages?.[0]?.pageSettings,
     currentPageMeta?.backgroundImage || editor.template.backgroundImage
   );
+
+  const pageIndex = editor.template.pages.findIndex(p => p.id === currentPageId);
+  const currentPageIndex = pageIndex >= 0 ? pageIndex : 0;
+  const totalPages = editor.template.pages.length;
 
   // Ref para a área do canvas para medir seu tamanho e informar o hook
   const canvasAreaRef = React.useRef<HTMLDivElement | null>(null);
@@ -393,6 +397,15 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             {/* Page controls: add/remove and navigate */}
             <div className="flex items-center gap-1 ml-2">
               <button
+                onClick={() => editor.goToPage && editor.goToPage(Math.max(0, currentPageIndex - 1))}
+                className="p-2 rounded text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                title="Página anterior"
+                disabled={currentPageIndex <= 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <button
                 onClick={() => editor.addPage && editor.addPage()}
                 className="p-2 rounded text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
                 title="Adicionar página"
@@ -410,8 +423,17 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
               </button>
 
               <div className="text-xs text-gray-300 ml-2">
-                Página: {editor.getCurrentPageId ? (editor.getCurrentPageId() ? (editor.template.pages.findIndex(p => p.id === editor.getCurrentPageId()) + 1) : 1) : 1} / {editor.template.pages.length}
+                Página: {currentPageIndex + 1} / {totalPages}
               </div>
+
+              <button
+                onClick={() => editor.goToPage && editor.goToPage(Math.min(totalPages - 1, currentPageIndex + 1))}
+                className="p-2 rounded text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                title="Próxima página"
+                disabled={currentPageIndex >= totalPages - 1}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
 
             <div className="w-px h-6 bg-gray-600 mx-1 md:mx-2 hidden lg:block" />
@@ -626,6 +648,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 snapToGrid={snapToGrid ? snap : undefined}
                 pageSettings={pageSettings}
                 backgroundImage={pageSettings.backgroundImage}
+                pageRegions={{ header: currentPageMeta?.header, footer: currentPageMeta?.footer, pageNumberInfo: { current: currentPageIndex + 1, total: totalPages } }}
               />
             </div>
           </div>

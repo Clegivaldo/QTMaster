@@ -258,7 +258,7 @@ export const useTemplateEditor = (
 
     updateTemplate(prev => ({
       ...prev,
-      pages: prev.pages.filter((p, idx) => idx !== currentPageIndex),
+  pages: prev.pages.filter((_p, idx) => idx !== currentPageIndex),
       elements: prev.elements.filter(el => el.pageId !== removed.id),
       updatedAt: new Date()
     }), 'Remover página');

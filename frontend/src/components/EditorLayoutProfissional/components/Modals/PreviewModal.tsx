@@ -59,7 +59,8 @@ const PreviewPage: React.FC<PreviewPageProps> = ({
       return pageSettings.customSize;
     }
     
-    const sizeInfo = pageSettings.size !== 'Custom' ? sizes[pageSettings.size] : sizes.A4;
+  const sizeKey = pageSettings.size as keyof typeof sizes;
+  const sizeInfo = pageSettings.size !== 'Custom' ? (sizes[sizeKey] ?? sizes.A4) : sizes.A4;
     return pageSettings.orientation === 'landscape' 
       ? { width: sizeInfo.height, height: sizeInfo.width }
       : sizeInfo;
@@ -377,7 +378,8 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
       return currentPageSettings.customSize;
     }
     
-    const sizeInfo = currentPageSettings.size !== 'Custom' ? sizes[currentPageSettings.size] : sizes.A4;
+  const currentSizeKey = currentPageSettings.size as keyof typeof sizes;
+  const sizeInfo = currentPageSettings.size !== 'Custom' ? (sizes[currentSizeKey] ?? sizes.A4) : sizes.A4;
     return currentPageSettings.orientation === 'landscape' 
       ? { width: sizeInfo.height, height: sizeInfo.width }
       : sizeInfo;

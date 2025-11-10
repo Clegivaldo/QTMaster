@@ -23,6 +23,7 @@ const Canvas: React.FC<CanvasProps> = ({
   showRuler = false,
   onPanChange,
   onWheel
+  , pageRegions
 }) => {
   // showRuler optionally passed from parent
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -250,6 +251,20 @@ const Canvas: React.FC<CanvasProps> = ({
       onWheel?.(e.nativeEvent);
     }, [onWheel]);
 
+    // Add a native wheel listener with passive:false to ensure preventDefault works when needed
+    React.useEffect(() => {
+      const container = containerRef.current;
+      if (!container || !onWheel) return;
+
+      const nativeHandler = (ev: WheelEvent) => {
+        // delegate to provided handler
+        onWheel(ev);
+      };
+
+      container.addEventListener('wheel', nativeHandler, { passive: false });
+      return () => container.removeEventListener('wheel', nativeHandler as EventListener);
+    }, [onWheel]);
+
   return (
     <div 
       ref={containerRef}
@@ -298,6 +313,48 @@ const Canvas: React.FC<CanvasProps> = ({
           {/* Margens da página */}
           {renderMargins()}
 
+          {/* Header region (if any) */}
+          {pageRegions?.header && (
+            (() => {
+              try {
+                const header = pageRegions.header;
+                const headerHeightPx = mmToPx(header.height) * zoom;
+                return (
+                  <div
+                    className="absolute left-0 right-0"
+                    style={{
+                      top: 0,
+                      height: headerHeightPx,
+                      pointerEvents: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {Array.isArray(header.elements) && header.elements.map((el: any, idx: number) => {
+                      if (!el) return null;
+                      if (el.type === 'text') {
+                        return <div key={el.id || idx} className="text-xs text-gray-700" style={{ pointerEvents: 'none' }}>{el.content}</div>;
+                      }
+                      if (el.type === 'pageNumber') {
+                        const info = pageRegions.pageNumberInfo;
+                        const text = el.content ? String(el.content).replace('{n}', String(info?.current || '')) .replace('{total}', String(info?.total || '')) : (info ? `${info.current} / ${info.total}` : '');
+                        return <div key={el.id || idx} className="text-xs text-gray-700">{text}</div>;
+                      }
+                      if (el.type === 'image') {
+                        const src = el.src || el.url || (el.content && (el.content.src || el.content.url));
+                        return src ? <img key={el.id || idx} src={src} alt={el.alt || ''} style={{ maxHeight: headerHeightPx * 0.9 }} /> : null;
+                      }
+                      return null;
+                    })}
+                  </div>
+                );
+              } catch (err) {
+                return null;
+              }
+            })()
+          )}
+
           {/* Elementos do template */}
           <div className="absolute inset-0">
             {sortedElements.map((element) => (
@@ -314,6 +371,48 @@ const Canvas: React.FC<CanvasProps> = ({
               />
             ))}
           </div>
+
+          {/* Footer region (if any) */}
+          {pageRegions?.footer && (
+            (() => {
+              try {
+                const footer = pageRegions.footer;
+                const footerHeightPx = mmToPx(footer.height) * zoom;
+                return (
+                  <div
+                    className="absolute left-0 right-0"
+                    style={{
+                      bottom: 0,
+                      height: footerHeightPx,
+                      pointerEvents: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {Array.isArray(footer.elements) && footer.elements.map((el: any, idx: number) => {
+                      if (!el) return null;
+                      if (el.type === 'text') {
+                        return <div key={el.id || idx} className="text-xs text-gray-700" style={{ pointerEvents: 'none' }}>{el.content}</div>;
+                      }
+                      if (el.type === 'pageNumber') {
+                        const info = pageRegions.pageNumberInfo;
+                        const text = el.content ? String(el.content).replace('{n}', String(info?.current || '')) .replace('{total}', String(info?.total || '')) : (info ? `${info.current} / ${info.total}` : '');
+                        return <div key={el.id || idx} className="text-xs text-gray-700">{text}</div>;
+                      }
+                      if (el.type === 'image') {
+                        const src = el.src || el.url || (el.content && (el.content.src || el.content.url));
+                        return src ? <img key={el.id || idx} src={src} alt={el.alt || ''} style={{ maxHeight: footerHeightPx * 0.9 }} /> : null;
+                      }
+                      return null;
+                    })}
+                  </div>
+                );
+              } catch (err) {
+                return null;
+              }
+            })()
+          )}
 
           {/* Overlay para elementos vazios */}
           {elements.length === 0 && (

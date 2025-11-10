@@ -398,6 +398,47 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
                         <label className="block text-xs text-gray-600">Altura (mm)</label>
                         <input type="number" min={0} max={200} value={localHeader.height} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, height: Math.max(0, Math.min(200, parseInt(e.target.value) || 0)) }))} className="w-full px-2 py-1 border border-gray-300 rounded" />
                         <label className="flex items-center mt-2 text-xs"><input type="checkbox" className="mr-2" checked={!!localHeader.replicateAcrossPages} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, replicateAcrossPages: e.target.checked }))} /> <span>Replicar em todas as páginas</span></label>
+                        
+                        {/* Header elements editor (simple) */}
+                        <div className="mt-3">
+                          <div className="flex gap-2">
+                            <button type="button" className="px-2 py-1 bg-blue-600 text-white rounded text-xs" onClick={() => setLocalHeader((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `h-${Math.random().toString(36).slice(2,8)}`, type: 'text', content: 'Cabeçalho' }] }))}>Adicionar Texto</button>
+                            <button type="button" className="px-2 py-1 bg-gray-700 text-white rounded text-xs" onClick={() => setLocalHeader((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `hpn-${Math.random().toString(36).slice(2,8)}`, type: 'pageNumber', content: 'Página {n} de {total}' }] }))}>Adicionar Número de Página</button>
+                            <label className="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-xs cursor-pointer">
+                              Adicionar Imagem
+                              <input type="file" accept="image/*" onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const url = URL.createObjectURL(file);
+                                setLocalHeader((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `hi-${Math.random().toString(36).slice(2,8)}`, type: 'image', src: url, alt: file.name }] }));
+                                // reset input
+                                (e.target as HTMLInputElement).value = '';
+                              }} className="hidden" />
+                            </label>
+                          </div>
+
+                          {Array.isArray(localHeader.elements) && localHeader.elements.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {localHeader.elements.map((el: any, idx: number) => (
+                                <div key={el.id || idx} className="flex items-center gap-2">
+                                  {el.type === 'text' && (
+                                    <input type="text" value={el.content} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, content: e.target.value } : it) }))} className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm" />
+                                  )}
+                                  {el.type === 'pageNumber' && (
+                                    <input type="text" value={el.content} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, content: e.target.value } : it) }))} className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm" />
+                                  )}
+                                  {el.type === 'image' && (
+                                    <div className="flex items-center gap-2">
+                                      <img src={el.src} alt={el.alt || ''} className="h-8 object-contain" />
+                                      <input type="text" value={el.alt || ''} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, alt: e.target.value } : it) }))} className="px-2 py-1 border border-gray-300 rounded text-sm" />
+                                    </div>
+                                  )}
+                                  <button type="button" className="px-2 py-1 text-red-600" onClick={() => setLocalHeader((prev: any) => ({ ...prev, elements: prev.elements.filter((it: any) => it.id !== el.id) }))}>Remover</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -412,6 +453,46 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
                         <label className="block text-xs text-gray-600">Altura (mm)</label>
                         <input type="number" min={0} max={200} value={localFooter.height} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, height: Math.max(0, Math.min(200, parseInt(e.target.value) || 0)) }))} className="w-full px-2 py-1 border border-gray-300 rounded" />
                         <label className="flex items-center mt-2 text-xs"><input type="checkbox" className="mr-2" checked={!!localFooter.replicateAcrossPages} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, replicateAcrossPages: e.target.checked }))} /> <span>Replicar em todas as páginas</span></label>
+                        
+                        {/* Footer elements editor (simple) */}
+                        <div className="mt-3">
+                          <div className="flex gap-2">
+                            <button type="button" className="px-2 py-1 bg-blue-600 text-white rounded text-xs" onClick={() => setLocalFooter((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `f-${Math.random().toString(36).slice(2,8)}`, type: 'text', content: 'Rodapé' }] }))}>Adicionar Texto</button>
+                            <button type="button" className="px-2 py-1 bg-gray-700 text-white rounded text-xs" onClick={() => setLocalFooter((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `fpn-${Math.random().toString(36).slice(2,8)}`, type: 'pageNumber', content: 'Página {n} de {total}' }] }))}>Adicionar Número de Página</button>
+                            <label className="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-xs cursor-pointer">
+                              Adicionar Imagem
+                              <input type="file" accept="image/*" onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const url = URL.createObjectURL(file);
+                                setLocalFooter((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `fi-${Math.random().toString(36).slice(2,8)}`, type: 'image', src: url, alt: file.name }] }));
+                                (e.target as HTMLInputElement).value = '';
+                              }} className="hidden" />
+                            </label>
+                          </div>
+
+                          {Array.isArray(localFooter.elements) && localFooter.elements.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {localFooter.elements.map((el: any, idx: number) => (
+                                <div key={el.id || idx} className="flex items-center gap-2">
+                                  {el.type === 'text' && (
+                                    <input type="text" value={el.content} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, content: e.target.value } : it) }))} className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm" />
+                                  )}
+                                  {el.type === 'pageNumber' && (
+                                    <input type="text" value={el.content} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, content: e.target.value } : it) }))} className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm" />
+                                  )}
+                                  {el.type === 'image' && (
+                                    <div className="flex items-center gap-2">
+                                      <img src={el.src} alt={el.alt || ''} className="h-8 object-contain" />
+                                      <input type="text" value={el.alt || ''} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, alt: e.target.value } : it) }))} className="px-2 py-1 border border-gray-300 rounded text-sm" />
+                                    </div>
+                                  )}
+                                  <button type="button" className="px-2 py-1 text-red-600" onClick={() => setLocalFooter((prev: any) => ({ ...prev, elements: prev.elements.filter((it: any) => it.id !== el.id) }))}>Remover</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

@@ -153,10 +153,9 @@ const ImageElement: React.FC<ImageElementProps> = ({
             className={`
               w-full h-full flex flex-col items-center justify-center
               border-2 border-dashed border-gray-300 rounded-lg
-              hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer
+              hover:border-blue-400 hover:bg-blue-50 transition-all
               ${isUploading ? 'bg-blue-50 border-blue-400' : 'bg-gray-50'}
             `}
-            onClick={handleUploadClick}
           >
             {isUploading ? (
               <div className="text-center">

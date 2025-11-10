@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { useResponsive } from '@/hooks/useResponsive';
 import clsx from 'clsx';
 
@@ -82,7 +83,7 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
     isMobile ? 'flex items-end' : 'flex items-center justify-center p-4'
   );
 
-  return (
+  const modalMarkup = (
     <div className={containerClasses}>
       {/* Overlay */}
       <div 
@@ -121,6 +122,13 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
       </div>
     </div>
   );
+
+  // Render modal into document.body to avoid clipping when used inside transformed parents
+  if (typeof document !== 'undefined') {
+    return createPortal(modalMarkup, document.body);
+  }
+
+  return modalMarkup;
 };
 
 export default ResponsiveModal;

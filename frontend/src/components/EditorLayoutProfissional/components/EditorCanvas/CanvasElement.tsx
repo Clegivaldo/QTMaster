@@ -80,18 +80,17 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
 
   // Handler para clique no elemento
   const handleElementClick = useCallback((e: React.MouseEvent) => {
+    // prevent bubbling but selection is handled on mouseDown to avoid double-invokes
     e.stopPropagation();
-    onSelect?.(element.id, e.ctrlKey || e.metaKey);
   }, [element.id, onSelect]);
 
   // Handler para início do drag
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Always perform selection on mouse down (single click), honoring multi-select (Ctrl/Cmd)
+    onSelect?.(element.id, e.ctrlKey || e.metaKey);
+
     // Avoid starting a drag on a double click (detail > 1)
     if (e.detail > 1) return;
-
-    if (!isSelected) {
-      onSelect?.(element.id, e.ctrlKey || e.metaKey);
-    }
 
     setIsDragging(true);
     setDragStart({

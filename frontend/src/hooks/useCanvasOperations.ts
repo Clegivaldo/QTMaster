@@ -279,8 +279,13 @@ export const useCanvasOperations = (
 
   // Handler para wheel (zoom com mouse)
   const handleWheel = useCallback((e: WheelEvent) => {
+    // Only perform zoom when Ctrl/Cmd is pressed. Otherwise allow default scrolling/panning behavior.
+    if (!(e.ctrlKey || e.metaKey)) {
+      return;
+    }
+
     e.preventDefault();
-    
+
     const zoomFactor = 1.1;
     const rect = (e.target as Element).getBoundingClientRect();
     const centerPoint = {

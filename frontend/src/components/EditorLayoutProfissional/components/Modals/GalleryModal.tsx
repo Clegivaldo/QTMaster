@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ResponsiveModal from '../../../ResponsiveModal';
 import { apiService } from '../../../../services/api';
 import useImageUpload from '../../../../hooks/useImageUpload';
+import { Trash2 } from 'lucide-react';
 
 interface GalleryImage {
   id: string;
@@ -55,7 +56,7 @@ const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, onSelectIm
   };
 
   return (
-    <ResponsiveModal isOpen={isOpen} onClose={onClose} title="Galeria de Imagens" size="lg">
+    <ResponsiveModal isOpen={isOpen} onClose={onClose} title="Galeria de Imagens" size="xl">
       <div className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm text-gray-600">Escolha uma imagem da galeria ou faça upload de uma nova.</div>
@@ -77,8 +78,8 @@ const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, onSelectIm
 
         {loading ? (
           <div>Carregando...</div>
-        ) : (
-          <div className="grid grid-cols-3 gap-3">
+          ) : (
+          <div className="grid grid-cols-4 gap-4">
             {images.map(img => (
               <div key={img.id} className="relative border rounded overflow-hidden cursor-pointer">
                 <button
@@ -95,13 +96,11 @@ const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, onSelectIm
                   }}
                   title="Deletar imagem"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 6h18M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <Trash2 className="h-4 w-4 text-red-600" />
                 </button>
 
                 <div onClick={() => onSelectImage({ src: `${apiService.baseURL}/${img.path}`, alt: img.name, originalSize: img.dimensions || { width: 200, height: 200 } })}>
-                  <img src={`${apiService.baseURL}/${img.path}`} alt={img.name} className="w-full h-32 object-cover" />
+                  <img src={`${apiService.baseURL}/${img.path}`} alt={img.name} className="w-full h-64 object-cover" />
                   <div className="p-2 text-xs text-gray-700">{img.name}</div>
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Upload, Search, Grid, List, Trash2, Eye } from 'lucide-react';
 import { ImageData } from '../../../../types/editor';
 import useImageUpload from '../../../../hooks/useImageUpload';
@@ -20,26 +21,21 @@ interface GalleryImage {
   thumbnail?: string;
 }
 
-const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
-  isOpen,
-  onClose,
-  onSelectImage
-}) => {
+const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({ isOpen, onClose, onSelectImage }) => {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  
+
   const { uploadImage, isUploading, uploadProgress } = useImageUpload();
 
-  // Carregar imagens da galeria
   const loadImages = useCallback(async () => {
     setLoading(true);
     try {
       const response = await apiService.api.get('/uploads/images/gallery');
-      if (response.data.success) {
-        setImages(response.data.data);
+      if (response.data?.success) {
+        setImages(response.data.data || []);
       }
     } catch (error) {
       console.error('Erro ao carregar galeria:', error);
@@ -48,66 +44,66 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
     }
   }, []);
 
-  // Carregar imagens quando modal abrir
   useEffect(() => {
-    if (isOpen) {
-      loadImages();
-    }
+    if (isOpen) loadImages();
   }, [isOpen, loadImages]);
 
-  // Filtrar imagens por termo de busca
-  const filteredImages = images.filter(image =>
+  const filteredImages = images.filter((image) =>
     image.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handler para upload de nova imagem
-  const handleFileUpload = useCallback(async (file: File) => {
-    try {
-      const imageData = await uploadImage(file);
-      await loadImages(); // Recarregar galeria
+  const handleFileUpload = useCallback(
+    async (file: File) => {
+      try {
+        const imageData = await uploadImage(file);
+        await loadImages();
+        onSelectImage(imageData);
+        onClose();
+      } catch (error: any) {
+        alert(error?.message || 'Erro ao fazer upload da imagem.');
+      }
+    },
+    [uploadImage, loadImages, onSelectImage, onClose]
+  );
+
+  const handleSelectImage = useCallback(
+    (image: GalleryImage) => {
+      const imageData: ImageData = {
+        src: `${apiService.baseURL}/${image.path}`,
+        alt: image.name,
+        originalSize: image.dimensions,
+        aspectRatio: image.dimensions.width / image.dimensions.height,
+      };
       onSelectImage(imageData);
       onClose();
-    } catch (error: any) {
-      alert(error.message || 'Erro ao fazer upload da imagem.');
-    }
-  }, [uploadImage, loadImages, onSelectImage, onClose]);
+    },
+    [onSelectImage, onClose]
+  );
 
-  // Handler para seleção de imagem da galeria
-  const handleSelectImage = useCallback((image: GalleryImage) => {
-    const imageData: ImageData = {
-      src: `${apiService.baseURL}/${image.path}`,
-      alt: image.name,
-      originalSize: image.dimensions,
-      aspectRatio: image.dimensions.width / image.dimensions.height
-    };
-    onSelectImage(imageData);
-    onClose();
-  }, [onSelectImage, onClose]);
+  const handleDeleteImage = useCallback(
+    async (imageId: string) => {
+      // eslint-disable-next-line no-restricted-globals
+      if (!confirm('Tem certeza que deseja deletar esta imagem?')) return;
+      try {
+        await apiService.api.delete(`/uploads/images/${imageId}`);
+        await loadImages();
+      } catch (error) {
+        console.error('Erro ao deletar imagem:', error);
+        alert('Erro ao deletar imagem.');
+      }
+    },
+    [loadImages]
+  );
 
-  // Handler para deletar imagem
-  const handleDeleteImage = useCallback(async (imageId: string) => {
-    if (!confirm('Tem certeza que deseja deletar esta imagem?')) {
-      return;
-    }
-
-    try {
-      await apiService.api.delete(`/uploads/images/${imageId}`);
-      await loadImages(); // Recarregar galeria
-    } catch (error) {
-      console.error('Erro ao deletar imagem:', error);
-      alert('Erro ao deletar imagem.');
-    }
-  }, [loadImages]);
-
-  // Handler para drag and drop
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const files = Array.from(e.dataTransfer.files);
-    const imageFile = files.find(file => file.type.startsWith('image/'));
-    if (imageFile) {
-      handleFileUpload(imageFile);
-    }
-  }, [handleFileUpload]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      const files = Array.from(e.dataTransfer.files || []);
+      const imageFile = files.find((file) => file.type.startsWith('image/'));
+      if (imageFile) handleFileUpload(imageFile);
+    },
+    [handleFileUpload]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -115,23 +111,19 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modal = (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">Galeria de Imagens</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Toolbar */}
         <div className="flex items-center gap-4 p-4 border-b bg-gray-50">
-          {/* Upload */}
           <label className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer transition-colors">
             <Upload className="h-4 w-4" />
             <span>Upload</span>
@@ -146,7 +138,6 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
             />
           </label>
 
-          {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
@@ -158,7 +149,6 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
             />
           </div>
 
-          {/* View Mode */}
           <div className="flex border border-gray-300 rounded-lg overflow-hidden">
             <button
               onClick={() => setViewMode('grid')}
@@ -176,11 +166,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
         </div>
 
         {/* Content */}
-        <div 
-          className="flex-1 overflow-auto p-4"
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-        >
+        <div className="p-4 flex-1 overflow-auto" onDrop={handleDrop} onDragOver={handleDragOver}>
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -191,10 +177,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
                 <div className="text-sm text-gray-600">Fazendo upload...</div>
                 <div className="w-48 bg-gray-200 rounded-full h-2 mt-2 mx-auto">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
+                  <div className="bg-blue-500 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                 </div>
               </div>
             </div>
@@ -216,14 +199,9 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
                   onDoubleClick={() => handleSelectImage(image)}
                 >
                   <div className="aspect-square">
-                    <img
-                      src={image.thumbnail || `${apiService.baseURL}/${image.path}`}
-                      alt={image.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={image.thumbnail || `${apiService.baseURL}/${image.path}`} alt={image.name} className="w-full h-full object-cover" />
                   </div>
-                  
-                  {/* Overlay */}
+
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
                     <div className="opacity-0 group-hover:opacity-100 flex gap-2">
                       <button
@@ -249,12 +227,9 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Info */}
                   <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
                     <div className="truncate font-medium">{image.name}</div>
-                    <div className="text-gray-300">
-                      {image.dimensions.width} × {image.dimensions.height}
-                    </div>
+                    <div className="text-gray-300">{image.dimensions.width} × {image.dimensions.height}</div>
                   </div>
                 </div>
               ))}
@@ -270,16 +245,10 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
                   onClick={() => setSelectedImageId(image.id)}
                   onDoubleClick={() => handleSelectImage(image)}
                 >
-                  <img
-                    src={image.thumbnail || `${apiService.baseURL}/${image.path}`}
-                    alt={image.name}
-                    className="w-12 h-12 object-cover rounded"
-                  />
+                  <img src={image.thumbnail || `${apiService.baseURL}/${image.path}`} alt={image.name} className="w-12 h-12 object-cover rounded" />
                   <div className="flex-1">
                     <div className="font-medium">{image.name}</div>
-                    <div className="text-sm text-gray-500">
-                      {image.dimensions.width} × {image.dimensions.height} • {Math.round(image.size / 1024)}KB
-                    </div>
+                    <div className="text-sm text-gray-500">{image.dimensions.width} × {image.dimensions.height} • {Math.round(image.size / 1024)}KB</div>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -311,23 +280,14 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
 
         {/* Footer */}
         <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-          <div className="text-sm text-gray-600">
-            {filteredImages.length} imagem(ns) encontrada(s)
-          </div>
+          <div className="text-sm text-gray-600">{filteredImages.length} imagem(ns) encontrada(s)</div>
           <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
+            <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
             {selectedImageId && (
               <button
                 onClick={() => {
-                  const selectedImage = images.find(img => img.id === selectedImageId);
-                  if (selectedImage) {
-                    handleSelectImage(selectedImage);
-                  }
+                  const selectedImage = images.find((img) => img.id === selectedImageId);
+                  if (selectedImage) handleSelectImage(selectedImage);
                 }}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
               >
@@ -339,6 +299,9 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') return createPortal(modal, document.body);
+  return modal;
 };
 
 export default ImageGalleryModal;
