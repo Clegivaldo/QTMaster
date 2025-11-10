@@ -197,12 +197,14 @@ model EditorTemplate {
   category      String   @default("default")
   elements      Json     // Array of template elements
   globalStyles  Json     // Global styling configuration
-  pageSettings  Json     // Page configuration (size, margins, etc.)
+  pages         Json?    // Array of pages (optional)
+  pageSettings  Json?    // Page configuration (size, margins, etc.)
   tags          String[] // Array of tags for categorization
   thumbnail     String?  // Optional thumbnail image URL
   isPublic      Boolean  @default(false)
   createdBy     String   // User ID who created the template
   version       Int      @default(1)
+  revision      Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

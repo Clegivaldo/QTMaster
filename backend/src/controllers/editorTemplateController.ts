@@ -8,6 +8,7 @@ import fs from 'fs';
 import fsPromises from 'fs/promises';
 import PDFDocument from 'pdfkit';
 import { requireParam } from '../utils/requestUtils.js';
+import { prisma } from '../lib/prisma.js';
 
 // Validation schemas
 const elementStylesSchema = z.object({
@@ -53,7 +54,7 @@ const elementStylesSchema = z.object({
 
 const templateElementSchema = z.object({
   id: z.string(),
-  type: z.enum(['text', 'heading', 'image', 'table', 'chart', 'line', 'rectangle', 'circle', 'signature', 'barcode', 'qrcode']),
+  type: z.string(), // Allow any element type
   content: z.any(),
   position: z.object({
     x: z.number(),
@@ -63,42 +64,23 @@ const templateElementSchema = z.object({
     width: z.number(),
     height: z.number()
   }),
-  styles: elementStylesSchema,
-  locked: z.boolean().default(false),
-  visible: z.boolean().default(true),
-  zIndex: z.number(),
+  styles: z.any().optional(), // Allow any styles
+  locked: z.boolean().optional(),
+  visible: z.boolean().optional(),
+  zIndex: z.number().optional(),
   groupId: z.string().optional(),
-  metadata: z.record(z.any()).optional()
-});
+  metadata: z.record(z.any()).optional(),
+  pageId: z.string().optional() // Allow pageId for multi-page support
+}).passthrough(); // Allow additional unknown properties
 
 const createTemplateSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(255, 'Nome muito longo'),
-  description: z.string().max(500, 'Descrição muito longa').optional(),
+  description: z.string().max(500, 'Descrição muito longa').nullable().optional(),
   category: z.string().default('default'),
-  elements: z.array(templateElementSchema),
-  globalStyles: z.object({
-    fontFamily: z.string(),
-    fontSize: z.number(),
-    color: z.string(),
-    backgroundColor: z.string(),
-    lineHeight: z.number()
-  }),
-  pageSettings: z.object({
-    size: z.enum(['A4', 'A3', 'Letter', 'Legal', 'Custom']),
-    orientation: z.enum(['portrait', 'landscape']),
-    margins: z.object({
-      top: z.number(),
-      right: z.number(),
-      bottom: z.number(),
-      left: z.number()
-    }),
-    backgroundColor: z.string(),
-    showMargins: z.boolean(),
-    customSize: z.object({
-      width: z.number(),
-      height: z.number()
-    }).optional()
-  }).optional(), // CORRIGIDO: Agora opcional para compatibilidade com frontend
+  elements: z.array(z.any()).optional().default([]),
+  globalStyles: z.any().optional().default({}), // Flexível para aceitar qualquer estrutura
+  pages: z.any().optional(),
+  pageSettings: z.any().optional(), // Flexível para aceitar qualquer estrutura
   tags: z.array(z.string()).default([]),
   isPublic: z.boolean().default(false)
 });
@@ -125,8 +107,7 @@ const exportOptionsSchema = z.object({
   includeMetadata: z.boolean().optional().default(true)
 });
 
-// In-memory storage for development (replace with database later)
-const templates: Map<string, any> = new Map();
+// In-memory storage removed - now using Prisma for persistent database storage
 
 export class EditorTemplateController {
   
@@ -143,62 +124,54 @@ export class EditorTemplateController {
         return;
       }
       
-      // Filter templates based on criteria
-      let filteredTemplates = Array.from(templates.values()).filter(template => {
-        // Access control
-        if (!template.isPublic && template.createdBy !== authReq.user?.id) {
-          return false;
-        }
-        
-        // Category filter
-        if (category && template.category !== category) {
-          return false;
-        }
-        
-        // Tags filter
-        if (tags.length > 0 && !tags.every(tag => template.tags.includes(tag))) {
-          return false;
-        }
-        
-        // Public filter
-        if (isPublic !== undefined && template.isPublic !== isPublic) {
-          return false;
-        }
-        
-        // Created by filter
-        if (createdBy && template.createdBy !== createdBy) {
-          return false;
-        }
-        
-        return true;
+      // Build Prisma where condition
+      const whereCondition: any = {
+        OR: [
+          { isPublic: true },
+          { createdBy: authReq.user.id }
+        ]
+      };
+      
+      if (category) {
+        whereCondition.category = category;
+      }
+      
+      if (tags.length > 0) {
+        whereCondition.tags = {
+          hasSome: tags
+        };
+      }
+      
+      if (isPublic !== undefined) {
+        whereCondition.isPublic = isPublic;
+      }
+      
+      if (createdBy) {
+        whereCondition.createdBy = createdBy;
+      }
+      
+      // Get total count
+      const total = await prisma.editorTemplate.count({
+        where: whereCondition
       });
       
-      // Sort templates
-      filteredTemplates.sort((a, b) => {
-        let aValue = a[sortBy];
-        let bValue = b[sortBy];
-        
-        if (sortBy === 'name') {
-          aValue = aValue.toLowerCase();
-          bValue = bValue.toLowerCase();
-        } else {
-          aValue = new Date(aValue).getTime();
-          bValue = new Date(bValue).getTime();
-        }
-        
-        return sortOrder === 'asc' ? (aValue > bValue ? 1 : -1) : (aValue < bValue ? 1 : -1);
-      });
-      
-      // Paginate
+      // Get paginated templates
       const skip = (page - 1) * limit;
-      const paginatedTemplates = filteredTemplates.slice(skip, skip + limit);
-      const total = filteredTemplates.length;
+      const templates = await prisma.editorTemplate.findMany({
+        where: whereCondition,
+        skip,
+        take: limit,
+        orderBy: {
+          [sortBy]: sortOrder
+        }
+      });
+      
       const totalPages = Math.ceil(total / limit);
 
       res.json({
         success: true,
         data: {
-          templates: paginatedTemplates.map(template => ({
+          templates: templates.map((template: any) => ({
             id: template.id,
             name: template.name,
             description: template.description,
@@ -242,8 +215,7 @@ export class EditorTemplateController {
   async getTemplate(req: Request, res: Response): Promise<void> {
     try {
       const authReq = req as AuthenticatedRequest;
-  const id = requireParam(req, res, 'id');
-  if (!id) return;
+      const { id } = req.params;
 
       if (!authReq.user?.id) {
         res.status(401).json({
@@ -261,7 +233,9 @@ export class EditorTemplateController {
         return;
       }
 
-      const template = templates.get(id);
+      const template = await prisma.editorTemplate.findUnique({
+        where: { id }
+      });
 
       if (!template) {
         res.status(404).json({
@@ -308,21 +282,50 @@ export class EditorTemplateController {
         return;
       }
 
-      const template = {
-        ...templateData,
+      // Create template in database
+      const createPayload: any = {
         id: randomUUID(),
+        name: templateData.name,
+        description: templateData.description || null,
+        category: templateData.category,
+        elements: (templateData.elements || []) as any,
+        globalStyles: (templateData.globalStyles || {}) as any,
+        pageSettings: (templateData.pageSettings ? templateData.pageSettings : undefined) as any,
+        tags: templateData.tags,
+        isPublic: templateData.isPublic,
         createdBy: authReq.user.id,
         version: 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        revision: 0
       };
 
-      templates.set(template.id, template);
+      // Handle pages separately as it's a JSON field
+      if (templateData.pages) {
+        createPayload.pages = templateData.pages as any;
+      }
+
+      const template = await prisma.editorTemplate.create({
+        data: createPayload
+      });
 
       res.status(201).json({
         success: true,
         data: {
-          template,
+          template: {
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            category: template.category,
+            elements: template.elements as any,
+            globalStyles: template.globalStyles as any,
+            pageSettings: template.pageSettings as any,
+            tags: template.tags,
+            isPublic: template.isPublic,
+            createdBy: template.createdBy,
+            version: template.version,
+            revision: (template as any).revision ?? 0,
+            createdAt: template.createdAt,
+            updatedAt: template.updatedAt
+          },
         },
       });
     } catch (error) {
@@ -347,9 +350,19 @@ export class EditorTemplateController {
     try {
       const authReq = req as AuthenticatedRequest;
       const { id } = req.params;
+      
+      // Log detalhado para debug
+      console.log('=== UPDATE TEMPLATE DEBUG ===');
+      console.log('Template ID:', id);
+      console.log('User ID:', authReq.user?.id);
+      console.log('User:', authReq.user);
+      console.log('Request body:', JSON.stringify(req.body).substring(0, 200));
+      
       const updateData = updateTemplateSchema.parse(req.body);
+      console.log('✅ Schema validation passed');
 
       if (!authReq.user?.id) {
+        console.log('❌ User not authenticated');
         res.status(401).json({
           success: false,
           error: 'Usuário não autenticado',
@@ -365,7 +378,10 @@ export class EditorTemplateController {
         return;
       }
 
-      const existingTemplate = templates.get(id);
+      // Get existing template
+      const existingTemplate = await prisma.editorTemplate.findUnique({
+        where: { id }
+      });
 
       if (!existingTemplate) {
         res.status(404).json({
@@ -383,23 +399,62 @@ export class EditorTemplateController {
         return;
       }
 
-      const template = {
-        ...existingTemplate,
-        ...updateData,
-        version: existingTemplate.version + 1,
-        updatedAt: new Date().toISOString(),
+      // Update template in database
+      const updatePayload: any = {
+        name: updateData.name || existingTemplate.name,
+        description: updateData.description !== undefined ? updateData.description : existingTemplate.description,
+        category: updateData.category || existingTemplate.category,
+        elements: updateData.elements !== undefined ? updateData.elements : existingTemplate.elements,
+        globalStyles: updateData.globalStyles !== undefined ? updateData.globalStyles : existingTemplate.globalStyles,
+        pageSettings: updateData.pageSettings !== undefined ? (updateData.pageSettings as any) : (existingTemplate.pageSettings as any),
+        tags: updateData.tags || existingTemplate.tags,
+        isPublic: updateData.isPublic !== undefined ? updateData.isPublic : existingTemplate.isPublic,
+        // Allow client to override version if provided; otherwise increment
+        version: (updateData as any).version !== undefined ? (updateData as any).version : existingTemplate.version + 1,
+        revision: (updateData as any).revision !== undefined ? (updateData as any).revision : ((existingTemplate as any).revision ?? 0)
       };
 
-      templates.set(id, template);
+      // Handle pages separately as it's a JSON field
+      if (updateData.pages !== undefined) {
+        updatePayload.pages = updateData.pages as any;
+      } else if ((existingTemplate as any).pages) {
+        updatePayload.pages = (existingTemplate as any).pages;
+      }
+
+      const template = await prisma.editorTemplate.update({
+        where: { id },
+        data: updatePayload
+      });
 
       res.json({
         success: true,
         data: {
-          template,
+          template: {
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            category: template.category,
+            elements: template.elements as any,
+            globalStyles: template.globalStyles as any,
+            pageSettings: template.pageSettings as any,
+            pages: (template as any).pages,
+            tags: template.tags,
+            isPublic: template.isPublic,
+            createdBy: template.createdBy,
+            version: template.version,
+            revision: (template as any).revision ?? 0,
+            createdAt: template.createdAt,
+            updatedAt: template.updatedAt
+          },
         },
       });
     } catch (error) {
+      console.log('❌ UPDATE TEMPLATE ERROR:');
+      console.log('Error type:', error?.constructor?.name);
+      console.log('Error:', error);
+      
       if (error instanceof z.ZodError) {
+        console.log('❌ Zod validation error:', JSON.stringify(error.errors, null, 2));
         res.status(400).json({
           success: false,
           error: 'Validation error',
@@ -437,7 +492,9 @@ export class EditorTemplateController {
         return;
       }
 
-      const existingTemplate = templates.get(id);
+      const existingTemplate = await prisma.editorTemplate.findUnique({
+        where: { id }
+      });
 
       if (!existingTemplate) {
         res.status(404).json({
@@ -455,7 +512,9 @@ export class EditorTemplateController {
         return;
       }
 
-      templates.delete(id);
+      await prisma.editorTemplate.delete({
+        where: { id }
+      });
 
       res.json({
         success: true,
@@ -492,7 +551,9 @@ export class EditorTemplateController {
         return;
       }
 
-      const originalTemplate = templates.get(id);
+      const originalTemplate = await prisma.editorTemplate.findUnique({
+        where: { id }
+      });
 
       if (!originalTemplate) {
         res.status(404).json({
@@ -511,18 +572,28 @@ export class EditorTemplateController {
         return;
       }
 
-      const duplicatedTemplate = {
-        ...originalTemplate,
+      const duplicatePayload: any = {
         id: randomUUID(),
         name: name || `${originalTemplate.name} (Cópia)`,
+        description: originalTemplate.description,
+        category: originalTemplate.category,
+        elements: (originalTemplate.elements || []) as any,
+        globalStyles: (originalTemplate.globalStyles || {}) as any,
+        pageSettings: (originalTemplate.pageSettings || null) as any,
+        tags: originalTemplate.tags,
         isPublic: false,
         createdBy: authReq.user.id,
-        version: 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        version: 1
       };
 
-      templates.set(duplicatedTemplate.id, duplicatedTemplate);
+      // Handle pages separately as it's a JSON field
+      if ((originalTemplate as any).pages) {
+        duplicatePayload.pages = (originalTemplate as any).pages;
+      }
+
+      const duplicatedTemplate = await prisma.editorTemplate.create({
+        data: duplicatePayload
+      });
 
       res.status(201).json({
         success: true,
@@ -561,38 +632,44 @@ export class EditorTemplateController {
       }
 
       const query = q.toLowerCase();
-      const searchResults = Array.from(templates.values())
-        .filter(template => {
-          // Access control
-          if (!template.isPublic && template.createdBy !== authReq.user?.id) {
-            return false;
-          }
-          
-          // Search in name, description, and tags
-          return (
-            template.name.toLowerCase().includes(query) ||
-            template.description?.toLowerCase().includes(query) ||
-            template.tags.some((tag: string) => tag.toLowerCase().includes(query))
-          );
-        })
-        .slice(0, 20) // Limit results
-        .map(template => ({
-          id: template.id,
-          name: template.name,
-          description: template.description,
-          category: template.category,
-          tags: template.tags,
-          thumbnail: template.thumbnail,
-          createdAt: template.createdAt,
-          updatedAt: template.updatedAt,
-          createdBy: template.createdBy,
-          isPublic: template.isPublic
-        }));
+      
+      // Search in database
+      const searchResults = await prisma.editorTemplate.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { isPublic: true },
+                { createdBy: authReq.user.id }
+              ]
+            },
+            {
+              OR: [
+                { name: { contains: query, mode: 'insensitive' } },
+                { description: { contains: query, mode: 'insensitive' } },
+                { tags: { hasSome: [query] } }
+              ]
+            }
+          ]
+        },
+        take: 20
+      });
 
       res.json({
         success: true,
         data: {
-          templates: searchResults,
+          templates: searchResults.map((template: any) => ({
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            category: template.category,
+            tags: template.tags,
+            thumbnail: template.thumbnail,
+            createdAt: template.createdAt,
+            updatedAt: template.updatedAt,
+            createdBy: template.createdBy,
+            isPublic: template.isPublic
+          })),
         },
       });
     } catch (error) {
@@ -626,7 +703,9 @@ export class EditorTemplateController {
         return;
       }
 
-      const template = templates.get(id);
+      const template = await prisma.editorTemplate.findUnique({
+        where: { id }
+      });
 
       if (!template) {
         res.status(404).json({
@@ -649,55 +728,105 @@ export class EditorTemplateController {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `${template.name.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${exportOptions.format}`;
 
-      // Garantir diretório de exports
-      const exportsDir = process.env.EXPORTS_PATH || path.join(process.cwd(), 'exports');
-      await fsPromises.mkdir(exportsDir, { recursive: true });
-
-      const filePath = path.join(exportsDir, filename);
-
-      // Gerar conteúdo do arquivo conforme formato
+      // Gerar conteúdo do arquivo conforme formato e retornar diretamente ao cliente
       if (exportOptions.format === 'pdf') {
-        // Gerar PDF simples com pdfkit
+        // Gerar PDF simples com pdfkit e enviar diretamente como blob
         const doc = new PDFDocument({ size: 'A4' });
-        const stream = fs.createWriteStream(filePath);
-        doc.pipe(stream);
+        
+        // Coletar dados do PDF em um buffer
+        const chunks: Buffer[] = [];
+        doc.on('data', (chunk) => {
+          chunks.push(chunk);
+        });
+        
+        doc.on('end', () => {
+          const pdfBuffer = Buffer.concat(chunks);
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+          res.setHeader('Content-Length', pdfBuffer.length);
+          res.send(pdfBuffer);
+        });
+        
+        doc.on('error', (err) => {
+          logger.error('PDF generation error:', err);
+          res.status(500).json({
+            success: false,
+            error: 'Erro ao gerar PDF',
+          });
+        });
+        
+        // Conteúdo do PDF
         doc.fontSize(18).text(template.name || 'Template', { align: 'center' });
         doc.moveDown();
-        doc.fontSize(12).text(`Export gerado em: ${new Date().toLocaleString()}`);
+        doc.fontSize(12).text(`Export gerado em: ${new Date().toLocaleString('pt-BR')}`);
         doc.moveDown();
-        doc.fontSize(10).text('Conteúdo do template (resumo):');
-        doc.fontSize(9).text(JSON.stringify({ elements: (template.elements || []).length }, null, 2));
+        
+        // Renderizar elementos do template
+        const elements = (template.elements as any[]) || [];
+        
+        if (elements.length > 0) {
+          doc.fontSize(14).text('Elementos do Template:', { underline: true });
+          doc.moveDown();
+          
+          // Mostrar contagem de elementos
+          doc.fontSize(11).text(`Total de elementos: ${elements.length}`);
+          doc.moveDown();
+          
+          doc.fontSize(9).text('Detalhes dos elementos:');
+          doc.moveDown();
+          
+          // Mostrar detalhes resumidos de cada elemento (máximo 10 para não ficar muito grande)
+          elements.slice(0, 10).forEach((el: any, idx: number) => {
+            const elType = el.type || 'unknown';
+            const elContent = el.content ? (typeof el.content === 'string' ? el.content : JSON.stringify(el.content).substring(0, 50)) : '(sem conteúdo)';
+            doc.fontSize(8).text(`${idx + 1}. [${elType}] ${elContent}`);
+          });
+          
+          if (elements.length > 10) {
+            doc.fontSize(8).text(`... e mais ${elements.length - 10} elemento${elements.length - 10 !== 1 ? 's' : ''}`);
+          }
+        } else {
+          doc.fontSize(11).text('(Nenhum elemento no template)');
+        }
+        
+        // Informações adicionais
+        doc.moveDown(2);
+        doc.fontSize(9).text('Metadados:', { underline: true });
+        doc.fontSize(8).text(`Categoria: ${template.category || 'N/A'}`);
+        doc.fontSize(8).text(`Versão: ${template.version || 1}`);
+        doc.fontSize(8).text(`Criado em: ${new Date(template.createdAt).toLocaleString('pt-BR')}`);
+        doc.fontSize(8).text(`Público: ${template.isPublic ? 'Sim' : 'Não'}`);
+        
+        if (template.tags && (template.tags as any[]).length > 0) {
+          doc.fontSize(8).text(`Tags: ${(template.tags as any[]).join(', ')}`);
+        }
+        
         doc.end();
-        await new Promise<void>((resolve, reject) => {
-          stream.on('finish', () => resolve());
-          stream.on('error', (err) => reject(err));
-        });
       } else if (exportOptions.format === 'png') {
-        // Escrever PNG placeholder (1x1 transparente) — base64 embutido
+        // Retornar PNG placeholder (1x1 transparente)
         const transparentPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
         const buffer = Buffer.from(transparentPngBase64, 'base64');
-        await fsPromises.writeFile(filePath, buffer);
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.setHeader('Content-Length', buffer.length);
+        res.send(buffer);
       } else if (exportOptions.format === 'html') {
         const html = `<!doctype html><html><head><meta charset="utf-8"><title>${template.name}</title></head><body><h1>${template.name}</h1><pre>${JSON.stringify(template, null, 2)}</pre></body></html>`;
-        await fsPromises.writeFile(filePath, html, 'utf-8');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.send(html);
       } else if (exportOptions.format === 'json') {
-        await fsPromises.writeFile(filePath, JSON.stringify(template, null, 2), 'utf-8');
+        const jsonData = JSON.stringify(template, null, 2);
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(jsonData);
       } else {
         // Caso não esperado, criar um arquivo de texto
-        await fsPromises.writeFile(filePath, `Export do template ${template.name}`, 'utf-8');
+        const textData = `Export do template ${template.name}`;
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(textData);
       }
-
-      // URL pública para download
-      const exportUrl = `/api/exports/${filename}`;
-
-      res.json({
-        success: true,
-        data: {
-          url: exportUrl,
-          filename,
-          format: exportOptions.format,
-        },
-      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({
@@ -719,12 +848,14 @@ export class EditorTemplateController {
   // Public export endpoint for local testing — accepts either an existing template id or a template in the body
   async exportTemplatePublic(req: Request, res: Response): Promise<void> {
     try {
-  const id = requireParam(req, res, 'id');
-  if (!id) return;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
       const exportOptions = exportOptionsSchema.parse(req.body.options || req.body);
 
       // Try to find existing template by id
-  let template = templates.get(id);
+      let template = await prisma.editorTemplate.findUnique({
+        where: { id }
+      });
 
       // If template not found, allow providing template body in request
       if (!template) {
@@ -737,6 +868,11 @@ export class EditorTemplateController {
       }
 
       // Generate filename and file as in exportTemplate
+      if (!template) {
+        res.status(400).json({ success: false, error: 'Template is required' });
+        return;
+      }
+      
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `${(template.name || 'template').replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${exportOptions.format}`;
       const exportsDir = process.env.EXPORTS_PATH || path.join(process.cwd(), 'exports');
@@ -752,7 +888,8 @@ export class EditorTemplateController {
         doc.fontSize(12).text(`Export gerado em: ${new Date().toLocaleString()}`);
         doc.moveDown();
         doc.fontSize(10).text('Conteúdo do template (resumo):');
-        doc.fontSize(9).text(JSON.stringify({ elements: (template.elements || []).length }, null, 2));
+        const elements = template.elements as any[];
+        doc.fontSize(9).text(JSON.stringify({ elements: (elements || []).length }, null, 2));
         doc.end();
         await new Promise<void>((resolve, reject) => {
           stream.on('finish', () => resolve());

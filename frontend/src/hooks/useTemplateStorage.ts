@@ -16,6 +16,8 @@ interface SaveTemplateData {
   category?: string;
   tags?: string[];
   isPublic?: boolean;
+  version?: number;
+  revision?: number;
 }
 
 interface TemplateListItem {
@@ -140,6 +142,12 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
     throw lastError;
   }, []);
 
+  // Map to dedupe concurrent loadTemplate requests
+  const inFlightLoadsRef = ({} as Record<string, Promise<any> | undefined>);
+  // Simple in-memory cache with TTL to avoid repeated GETs
+  const cacheTtlMs = 5000; // 5 seconds
+  const cachedTemplatesRef = ({} as Record<string, { data: any; expiresAt: number }>);
+
   const handleError = useCallback((error: unknown, type: TemplateStorageError['type'] = 'SERVER_ERROR') => {
     console.error('Template storage error:', error);
     
@@ -245,6 +253,14 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
         isPublic: metadata?.isPublic ?? sanitizedTemplate.isPublic ?? false,
         updatedAt: new Date().toISOString()
       };
+
+      // Allow client to optionally control version/revision via metadata
+      if (metadata?.version !== undefined) {
+        (templateData as any).version = metadata.version;
+      }
+      if (metadata?.revision !== undefined) {
+        (templateData as any).revision = metadata.revision;
+      }
       
       const operation = async () => {
         let response;
@@ -309,10 +325,58 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
         throw new Error('ID do template é obrigatório');
       }
       
+      // Return cached template if present and not expired
+      const cached = cachedTemplatesRef[templateId];
+      if (cached && cached.expiresAt > Date.now()) {
+        const t = cached.data;
+        if (!t.elements || !Array.isArray(t.elements)) t.elements = [];
+        if (!(t as any).pageSettings) (t as any).pageSettings = {
+          size: 'A4', orientation: 'portrait', margins: { top: 20, right: 20, bottom: 20, left: 20 }, backgroundColor: '#ffffff', showMargins: true
+        };
+        if (!t.globalStyles) t.globalStyles = { fontFamily: 'Arial', fontSize: 12, color: '#000000', backgroundColor: '#ffffff', lineHeight: 1.4 };
+        return {
+          ...t,
+          createdAt: new Date(t.createdAt),
+          updatedAt: new Date(t.updatedAt)
+        };
+      }
+
+      // Dedupe concurrent requests for the same templateId
+      if (inFlightLoadsRef[templateId]) {
+        const resp = await inFlightLoadsRef[templateId];
+        const template = resp.data.data.template;
+        // convert dates and normalize as below
+        if (!template.elements || !Array.isArray(template.elements)) template.elements = [];
+        if (!(template as any).pageSettings) (template as any).pageSettings = {
+          size: 'A4', orientation: 'portrait', margins: { top: 20, right: 20, bottom: 20, left: 20 }, backgroundColor: '#ffffff', showMargins: true
+        };
+        if (!template.globalStyles) template.globalStyles = { fontFamily: 'Arial', fontSize: 12, color: '#000000', backgroundColor: '#ffffff', lineHeight: 1.4 };
+        // cache the result
+        cachedTemplatesRef[templateId] = { data: template, expiresAt: Date.now() + cacheTtlMs };
+        return {
+          ...template,
+          createdAt: new Date(template.createdAt),
+          updatedAt: new Date(template.updatedAt)
+        };
+      }
+
       const operation = async () => {
-        return await apiService.api.get(`/editor-templates/${templateId}`);
+        const p = apiService.api.get(`/editor-templates/${templateId}`);
+        inFlightLoadsRef[templateId] = p;
+        try {
+          const r = await p;
+          // store in cache
+          try {
+            const tpl = r.data?.data?.template;
+            if (tpl) cachedTemplatesRef[templateId] = { data: tpl, expiresAt: Date.now() + cacheTtlMs };
+          } catch {}
+          return r;
+        } finally {
+          // cleanup
+          delete inFlightLoadsRef[templateId];
+        }
       };
-      
+
       const response = await retryWithBackoff(operation, 2);
       const template = response.data.data.template;
       
@@ -346,6 +410,29 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
           backgroundColor: '#ffffff',
           lineHeight: 1.4
         };
+      }
+
+      // Garantir que pages existe e contém ao menos uma página (legacy compatibility)
+      if (!template.pages || !Array.isArray(template.pages) || template.pages.length === 0) {
+        const defaultPageSettings = (template as any).pageSettings || {
+          size: 'A4',
+          orientation: 'portrait',
+          margins: { top: 20, right: 20, bottom: 20, left: 20 },
+          backgroundColor: '#ffffff',
+          showMargins: true
+        };
+
+        template.pages = [
+          {
+            id: 'page-1',
+            name: 'Página 1',
+            elements: template.elements || [],
+            pageSettings: defaultPageSettings,
+            backgroundImage: null,
+            header: null,
+            footer: null
+          }
+        ];
       }
       
       // Converter datas de string para Date

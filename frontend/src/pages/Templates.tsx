@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FileText, Eye, Download, Palette } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FileText, Eye, Palette, Copy, Trash2 } from 'lucide-react';
 import { apiService } from '../services/api';
+import ConfirmationModal from '../components/Modals/ConfirmationModal';
+import TemplatePreviewModal from '../components/Modals/TemplatePreviewModal';
 
 interface Template {
+  id?: string;
   name: string;
-  filename: string;
+  filename?: string;
   type: string;
   lastModified: string;
   size: number;
@@ -15,56 +18,83 @@ const Templates: React.FC = () => {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Estados para modais de confirmação
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; template: Template | null }>({
+    isOpen: false,
+    template: null
+  });
+  const [duplicateModal, setDuplicateModal] = useState<{ isOpen: boolean; template: Template | null }>({
+    isOpen: false,
+    template: null
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  
+  // Estado para preview modal
+  const [previewModal, setPreviewModal] = useState<{ isOpen: boolean; template: any | null }>({
+    isOpen: false,
+    template: null
+  });
 
   useEffect(() => {
     loadTemplates();
   }, []);
 
+  // Reload templates when route/location changes (e.g. returning from editor)
+  const location = useLocation();
+  useEffect(() => {
+    loadTemplates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // Reload when window gains focus (user returned to app)
+  useEffect(() => {
+    const onFocus = () => loadTemplates();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const loadTemplates = async () => {
     try {
       const response = await apiService.api.get('/editor-templates');
-      // API may return different shapes depending on backend; normalize defensively
+      // API returns { success: true, data: { templates: [...], pagination: {...} } }
       const payload = response?.data;
       let items: any[] = [];
 
+      // Normalize different response formats
       if (Array.isArray(payload)) {
+        // Direct array response
         items = payload;
-      } else if (Array.isArray(payload?.data)) {
+      } else if (payload?.data && Array.isArray(payload.data)) {
+        // { data: [...] } format
         items = payload.data;
-      } else if (Array.isArray(payload?.templates)) {
+      } else if (payload?.data?.templates && Array.isArray(payload.data.templates)) {
+        // { data: { templates: [...] } } format (current backend)
+        items = payload.data.templates;
+      } else if (payload?.templates && Array.isArray(payload.templates)) {
+        // { templates: [...] } format
         items = payload.templates;
       }
 
       if (items.length > 0) {
         const templateData = items.map((template: any) => ({
-          name: template.name || template.filename?.replace('-', ' ').toUpperCase() || 'Template',
-          filename: template.filename || (template.name ? `${template.name}.hbs` : 'template.hbs'),
-          type: 'Handlebars Template',
+          id: template.id,
+          name: template.name || 'Template',
+          filename: template.name ? `${template.name}.hbs` : 'template.hbs',
+          type: 'Editor Template',
           lastModified: template.updatedAt || new Date().toLocaleDateString('pt-BR'),
           size: template.size || Math.floor(Math.random() * 50) + 10 // KB simulado
         }));
         setTemplates(templateData);
+      } else {
+        // Sem templates salvos
+        setTemplates([]);
       }
     } catch (error) {
       console.error('Erro ao carregar templates:', error);
-      // Fallback para dados mock se a API falhar
-      const mockTemplates = [
-        {
-          name: 'RELATÓRIO PADRÃO',
-          filename: 'relatorio-padrao.hbs',
-          type: 'Handlebars Template',
-          lastModified: new Date().toLocaleDateString('pt-BR'),
-          size: 25
-        },
-        {
-          name: 'RELATÓRIO AVANÇADO',
-          filename: 'relatorio-avancado.hbs',
-          type: 'Handlebars Template',
-          lastModified: new Date().toLocaleDateString('pt-BR'),
-          size: 45
-        }
-      ];
-      setTemplates(mockTemplates);
+      setTemplates([]);
     } finally {
       setLoading(false);
     }
@@ -75,70 +105,86 @@ const Templates: React.FC = () => {
     navigate(templateId ? `/editor-layout/${templateId}` : '/editor-layout');
   };
 
-  const previewTemplate = async (templateName: string) => {
+  const previewTemplate = async (template: Template) => {
     try {
-      // Usar timeout maior para geração de PDF
-      // tentar rota nova (/editor-templates) e fallback para a rota antiga (/test/templates)
-      let response;
-      try {
-        response = await apiService.api.get(`/editor-templates/${templateName}`, {
-          responseType: 'blob',
-          timeout: 30000 // 30 segundos
-        });
-      } catch (err) {
-        response = await apiService.api.get(`/test/templates/${templateName}`, {
-          responseType: 'blob',
-          timeout: 30000 // 30 segundos
-        });
+      if (!template.id) {
+        alert('Template não possui ID válido');
+        return;
       }
 
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      // Carregar dados completos do template antes de mostrar preview
+      const response = await apiService.api.get(`/editor-templates/${template.id}`);
+      const fullTemplate = response?.data?.data?.template;
+      
+      if (fullTemplate) {
+        setPreviewModal({
+          isOpen: true,
+          template: fullTemplate
+        });
+      } else {
+        alert('Erro ao carregar template');
+      }
     } catch (error: any) {
       console.error('Erro ao visualizar template:', error);
-      if (error.code === 'ECONNABORTED') {
-        alert('Timeout: A geração do PDF está demorando mais que o esperado. Tente novamente.');
-      } else {
-        alert('Erro ao visualizar template');
-      }
+      alert('Erro ao visualizar template: ' + (error?.response?.data?.error || error.message));
     }
   };
 
-  const downloadTemplate = async (templateName: string) => {
-    try {
-      // Usar timeout maior para geração de PDF
-      let response;
-      try {
-        response = await apiService.api.get(`/editor-templates/${templateName}`, {
-          responseType: 'blob',
-          timeout: 30000 // 30 segundos
-        });
-      } catch (err) {
-        response = await apiService.api.get(`/test/templates/${templateName}`, {
-          responseType: 'blob',
-          timeout: 30000 // 30 segundos
-        });
-      }
+  const deleteTemplate = async (template: Template) => {
+    if (!template.id) {
+      alert('Template não possui ID válido');
+      return;
+    }
 
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${templateName}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      alert('Template baixado com sucesso!');
+    // Abrir modal de confirmação ao invés de window.confirm
+    setDeleteModal({ isOpen: true, template });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.template?.id) return;
+    
+    setIsDeleting(true);
+    try {
+      await apiService.api.delete(`/editor-templates/${deleteModal.template.id}`);
+      setDeleteModal({ isOpen: false, template: null });
+      loadTemplates(); // Recarregar lista
     } catch (error: any) {
-      console.error('Erro ao baixar template:', error);
-      if (error.code === 'ECONNABORTED') {
-        alert('Timeout: A geração do PDF está demorando mais que o esperado. Tente novamente.');
+      console.error('Erro ao deletar template:', error);
+      alert('Erro ao deletar template: ' + (error?.response?.data?.error || error.message));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const duplicateTemplate = async (template: Template) => {
+    if (!template.id) {
+      alert('Template não possui ID válido');
+      return;
+    }
+
+    // Abrir modal de confirmação ao invés de apenas confirmar direto
+    setDuplicateModal({ isOpen: true, template });
+  };
+
+  const handleConfirmDuplicate = async () => {
+    if (!duplicateModal.template?.id) return;
+
+    setIsDuplicating(true);
+    try {
+      const response = await apiService.api.post(`/editor-templates/${duplicateModal.template.id}/duplicate`);
+      const newTemplate = response.data?.data?.template;
+      
+      if (newTemplate) {
+        setDuplicateModal({ isOpen: false, template: null });
+        loadTemplates(); // Recarregar lista
       } else {
-        alert('Erro ao baixar template');
+        alert('Erro ao duplicar template');
       }
+    } catch (error: any) {
+      console.error('Erro ao duplicar template:', error);
+      alert('Erro ao duplicar template: ' + (error?.response?.data?.error || error.message));
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
@@ -171,9 +217,9 @@ const Templates: React.FC = () => {
 
       {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {templates.map((template, index) => (
+        {templates.map((template) => (
           <div
-            key={index}
+            key={template.id || Math.random().toString(36).slice(2)}
             className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
           >
             {/* Template Icon */}
@@ -192,30 +238,34 @@ const Templates: React.FC = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-end">
               <button
-                onClick={() => previewTemplate(template.filename.replace('.hbs', ''))}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm flex items-center justify-center gap-1 transition-colors"
-                title="Visualizar"
+                onClick={() => previewTemplate(template)}
+                className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-colors shadow-sm hover:shadow-md"
+                title="Visualizar PDF"
               >
-                <Eye className="h-4 w-4" />
-                Ver
+                <Eye className="h-5 w-5" />
               </button>
               <button
-                onClick={() => downloadTemplate(template.filename.replace('.hbs', ''))}
-                className="flex-1 bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded text-sm flex items-center justify-center gap-1 transition-colors"
-                title="Baixar PDF"
+                onClick={() => openTemplateEditor(template.id)}
+                className="w-10 h-10 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center justify-center transition-colors shadow-sm hover:shadow-md"
+                title="Editar no Editor"
               >
-                <Download className="h-4 w-4" />
-                PDF
+                <Palette className="h-5 w-5" />
               </button>
               <button
-                onClick={() => openTemplateEditor(template.filename)}
-                className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded text-sm flex items-center justify-center gap-1 transition-colors"
-                title="Editar no Editor Profissional"
+                onClick={() => duplicateTemplate(template)}
+                className="w-10 h-10 rounded-full bg-purple-100 hover:bg-purple-200 text-purple-700 flex items-center justify-center transition-colors shadow-sm hover:shadow-md"
+                title="Duplicar template"
               >
-                <Palette className="h-4 w-4" />
-                Editar
+                <Copy className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => deleteTemplate(template)}
+                className="w-10 h-10 rounded-full bg-red-100 hover:bg-red-200 text-red-700 flex items-center justify-center transition-colors shadow-sm hover:shadow-md"
+                title="Deletar template"
+              >
+                <Trash2 className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -241,6 +291,39 @@ const Templates: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Modal de Confirmação para Deletar */}
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title="Deletar Template"
+        message={`Tem certeza que deseja deletar o template "${deleteModal.template?.name}"? Esta ação não pode ser desfeita.`}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, template: null })}
+        confirmText="Deletar"
+        cancelText="Cancelar"
+        isDangerous={true}
+        isLoading={isDeleting}
+      />
+
+      {/* Modal de Confirmação para Duplicar */}
+      <ConfirmationModal
+        isOpen={duplicateModal.isOpen}
+        title="Duplicar Template"
+        message={`Tem certeza que deseja criar uma cópia do template "${duplicateModal.template?.name}"?`}
+        onConfirm={handleConfirmDuplicate}
+        onCancel={() => setDuplicateModal({ isOpen: false, template: null })}
+        confirmText="Duplicar"
+        cancelText="Cancelar"
+        isDangerous={false}
+        isLoading={isDuplicating}
+      />
+
+      {/* Modal de Preview Visual */}
+      <TemplatePreviewModal
+        isOpen={previewModal.isOpen}
+        template={previewModal.template}
+        onClose={() => setPreviewModal({ isOpen: false, template: null })}
+      />
     </div>
   );
 };

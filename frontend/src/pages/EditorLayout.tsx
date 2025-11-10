@@ -5,6 +5,8 @@ import { useCanvasOperations } from '../hooks/useCanvasOperations';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { usePageSettings } from '../hooks/usePageSettings';
+import { useToast } from '../hooks/useToast';
+import { useTemplateStorage } from '../hooks/useTemplateStorage';
 import { X, Save, Eye, Grid, Ruler, Download, FolderOpen, Settings, Minus, Plus, FileImage, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { KEYBOARD_SHORTCUTS } from '../types/editor-constants';
 import { Canvas } from '../components/EditorLayoutProfissional/components/EditorCanvas';
@@ -18,12 +20,16 @@ import LoadTemplateModal from '../components/EditorLayoutProfissional/components
 import ExportModal from '../components/EditorLayoutProfissional/components/Modals/ExportModal';
 import PreviewModal from '../components/EditorLayoutProfissional/components/Modals/PreviewModal';
 import PageSettingsModal from '../components/EditorLayoutProfissional/components/Modals/PageSettingsModal';
+import ToastContainer from '../components/Toast/ToastContainer';
 import '../components/EditorLayoutProfissional/EditorLayout.css';
 
 const EditorLayout: React.FC = () => {
   const navigate = useNavigate();
   const { templateId } = useParams<{ templateId?: string }>();
   const [searchParams] = useSearchParams();
+  
+  // Hook para toast notifications
+  const { toasts, removeToast, success: showSuccessToast } = useToast();
   
   // Hook principal do editor
   const editor = useTemplateEditor({ 
@@ -87,6 +93,9 @@ const EditorLayout: React.FC = () => {
   // Ref para a área do canvas
   const canvasAreaRef = React.useRef<HTMLDivElement | null>(null);
 
+  // Ref para controlar se já mostrou toast (evitar múltiplos)
+  const lastSaveTimeRef = React.useRef<number>(0);
+
   // Atualizar container size do hook de canvas ao redimensionar a área
   useEffect(() => {
     const el = canvasAreaRef.current;
@@ -94,27 +103,58 @@ const EditorLayout: React.FC = () => {
 
     const ro = new ResizeObserver(() => {
       const rect = el.getBoundingClientRect();
-      canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
+      if (typeof canvas.setContainerSize === 'function') {
+        canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
+      }
       // Recentralizar horizontalmente quando o container redimensiona
-      setTimeout(() => canvas.centerCanvasHorizontally(), 0);
+      if (typeof (canvas as any).centerCanvasHorizontally === 'function') {
+        setTimeout(() => (canvas as any).centerCanvasHorizontally(), 0);
+      }
     });
 
     ro.observe(el);
     const rect = el.getBoundingClientRect();
-    canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
+    if (typeof canvas.setContainerSize === 'function') {
+      canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
+    }
     
     // Centralizar horizontalmente após medir a área inicial
-    setTimeout(() => canvas.centerCanvasHorizontally(), 0);
+    if (typeof (canvas as any).centerCanvasHorizontally === 'function') {
+      setTimeout(() => (canvas as any).centerCanvasHorizontally(), 0);
+    }
 
     return () => {
       ro.disconnect();
     };
   }, [canvas.setContainerSize, canvas.centerCanvasHorizontally]);
 
+  // Hook para salvar templates (persistidos vs novos)
+  const { saveTemplate } = useTemplateStorage();
+
   // Handlers para ações principais
-  const handleSave = useCallback(() => {
-    setShowSaveModal(true);
-  }, []);
+  const handleSave = useCallback(async () => {
+    try {
+      const tpl = editor.template;
+      const isNew = tpl.id && tpl.id.startsWith('template-');
+
+      if (!isNew && tpl.id) {
+        // Persisted template: save immediately and show toast
+        const saved = await saveTemplate(tpl);
+        editor.loadTemplate(saved);
+        showSuccessToast('Template salvo com sucesso!', 'Salvo', 3000);
+        // If saved template got new id, update URL
+        if (saved.id && !saved.id.startsWith('template-')) {
+          navigate(`/editor-layout/${saved.id}`, { replace: true });
+        }
+        return;
+      }
+
+      // New template: open save modal
+      setShowSaveModal(true);
+    } catch (err) {
+      console.error('Erro ao salvar template:', err);
+    }
+  }, [editor, saveTemplate, showSuccessToast, navigate]);
 
   const handleLoad = useCallback(() => {
     setShowLoadModal(true);
@@ -125,8 +165,32 @@ const EditorLayout: React.FC = () => {
   }, []);
 
   const handleSaveComplete = useCallback((savedTemplate: any) => {
+    // Evitar múltiplos toasts (apenas 1 a cada 1 segundo)
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current < 1000) {
+      console.log('Salvamento duplicado detectado, ignorando toast');
+      return;
+    }
+    lastSaveTimeRef.current = now;
+
+    // Garantir que savedTemplate tem dados completos
+    if (!savedTemplate || !savedTemplate.elements) {
+      console.warn('savedTemplate incompleto, não atualizando');
+      return;
+    }
+
+    // Atualizar o template no editor com dados completos
     editor.loadTemplate(savedTemplate);
-  }, [editor]);
+    
+    // Mostrar mensagem de sucesso
+    showSuccessToast('Template salvo com sucesso!', 'Salvo', 3000);
+    
+    // Se o template recebeu um novo ID do backend, atualizar a URL
+    if (savedTemplate.id && !savedTemplate.id.startsWith('template-')) {
+      // Agora é um template persistido, atualizar URL
+      navigate(`/editor-layout/${savedTemplate.id}`, { replace: true });
+    }
+  }, [editor, navigate, showSuccessToast]);
 
   const handleLoadComplete = useCallback((loadedTemplate: any) => {
     editor.loadTemplate(loadedTemplate);
@@ -248,7 +312,7 @@ const EditorLayout: React.FC = () => {
         <div className="flex flex-col min-w-0">
           <h1 className="text-sm md:text-lg font-semibold truncate">Editor de Layout</h1>
           <div className="text-xs text-gray-400 truncate">
-            {editor.template.name}
+            {editor.template?.name || ''}
           </div>
         </div>
 
@@ -630,6 +694,7 @@ const EditorLayout: React.FC = () => {
         onClose={() => setShowSaveModal(false)}
         template={editor.template}
         onSave={handleSaveComplete}
+        isNewTemplate={editor.template.id?.startsWith('template-') || false}
       />
 
       <LoadTemplateModal
@@ -694,6 +759,12 @@ const EditorLayout: React.FC = () => {
         errors={errors}
         onDismiss={dismissError}
         getErrorTitle={getErrorTitle}
+      />
+
+      {/* Sistema de notificações de sucesso */}
+      <ToastContainer
+        toasts={toasts}
+        onClose={removeToast}
       />
     </div>
   );

@@ -4,6 +4,8 @@ import { useTemplateEditor } from '../../hooks/useTemplateEditor';
 import { useCanvasOperations } from '../../hooks/useCanvasOperations';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
+import { useToast } from '../../hooks/useToast';
+import { useTemplateStorage } from '../../hooks/useTemplateStorage';
 import { usePageSettings } from '../../hooks/usePageSettings';
 import { EditorProps } from '../../types/editor';
 import { KEYBOARD_SHORTCUTS } from '../../types/editor-constants';
@@ -82,15 +84,18 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   // Hook para configurações de página
   // Use page-specific settings when available (multi-page support)
   const currentPageId = editor.getCurrentPageId ? editor.getCurrentPageId() : '';
-  const currentPageMeta = editor.template.pages?.find(p => p.id === currentPageId) || editor.template.pages?.[0] || null;
+  // Defensive: ensure we have a pages array to avoid runtime errors in tests or
+  // during initial load when template may not be fully hydrated.
+  const pages = editor.template?.pages ?? [];
+  const currentPageMeta = pages.find(p => p.id === currentPageId) || pages[0] || null;
   const pageSettings = usePageSettings(
-    currentPageMeta?.pageSettings || editor.template.pages?.[0]?.pageSettings,
-    currentPageMeta?.backgroundImage || editor.template.backgroundImage
+    currentPageMeta?.pageSettings || pages[0]?.pageSettings,
+    currentPageMeta?.backgroundImage || editor.template?.backgroundImage
   );
 
-  const pageIndex = editor.template.pages.findIndex(p => p.id === currentPageId);
+  const pageIndex = pages.findIndex(p => p.id === currentPageId);
   const currentPageIndex = pageIndex >= 0 ? pageIndex : 0;
-  const totalPages = editor.template.pages.length;
+  const totalPages = pages.length;
 
   // Ref para a área do canvas para medir seu tamanho e informar o hook
   const canvasAreaRef = React.useRef<HTMLDivElement | null>(null);
@@ -157,16 +162,24 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
 
     const ro = new ResizeObserver(() => {
       const rect = el.getBoundingClientRect();
-      canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
+      if (typeof canvas.setContainerSize === 'function') {
+        canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
+      }
       // center canvas to keep consistent visual alignment
-      canvas.centerCanvas();
+      if (typeof (canvas as any).centerCanvas === 'function') {
+        (canvas as any).centerCanvas();
+      }
     });
 
     ro.observe(el);
     // trigger initial measurement
     const rect = el.getBoundingClientRect();
-    canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
-    canvas.centerCanvas();
+    if (typeof canvas.setContainerSize === 'function') {
+      canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
+    }
+    if (typeof (canvas as any).centerCanvas === 'function') {
+      (canvas as any).centerCanvas();
+    }
 
     // measure editor header height initially
     const measureHeader = () => {
@@ -181,10 +194,34 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
 
   // Calcular tamanho da página baseado nas configurações
 
+  // Hook para salvar templates (persistidos vs novos)
+  const { saveTemplate } = useTemplateStorage();
+  const { success: showSuccessToast } = useToast();
+
   // Handlers para ações principais
-  const handleSave = useCallback(() => {
-    setShowSaveModal(true);
-  }, []);
+  const handleSave = useCallback(async () => {
+    try {
+      const tpl = editor.template;
+      const isNew = tpl.id && tpl.id.startsWith('template-');
+
+      if (!isNew && tpl.id) {
+        // Persisted template: save immediately and show toast
+        const saved = await saveTemplate(tpl);
+        // Update editor with returned data and notify parent if needed
+        editor.loadTemplate(saved);
+        showSuccessToast('Template salvo com sucesso!', 'Salvo', 3000);
+        // If parent onSave exists, call it
+        if (onSave) onSave(saved);
+        return;
+      }
+
+      // New template: open save modal
+      setShowSaveModal(true);
+    } catch (err) {
+      // useTemplateStorage handles errors; nothing else here
+      console.error('Erro ao salvar template:', err);
+    }
+  }, [editor, saveTemplate, showSuccessToast, onSave]);
 
   const handleLoad = useCallback(() => {
     setShowLoadModal(true);
@@ -252,8 +289,8 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             if (isTablet || isMobile) {
               setForceShowSidebars(newShowPalette || showPropertiesPanel);
             }
-            // Re-center canvas when sidebar changes
-            setTimeout(() => canvas.centerCanvas(), 50);
+                        // Re-center canvas when sidebar changes
+                        if (typeof (canvas as any).centerCanvas === 'function') setTimeout(() => (canvas as any).centerCanvas(), 50);
             break;
           case '2':
             e.preventDefault();
@@ -361,7 +398,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 const newShow = !showElementPalette;
                 setShowElementPalette(newShow);
                 // Re-center canvas when sidebar changes
-                setTimeout(() => canvas.centerCanvas(), 50);
+                if (typeof (canvas as any).centerCanvas === 'function') setTimeout(() => (canvas as any).centerCanvas(), 50);
               }}
               className="p-1 rounded bg-transparent text-gray-200 hover:text-white hover:bg-gray-800 focus:outline-none"
               title={showElementPalette ? 'Recolher paleta' : 'Mostrar paleta'}
@@ -375,7 +412,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             <div className="flex flex-col">
               <h1 className="text-sm md:text-lg font-semibold">Editor de Layout</h1>
               <div className="text-xs md:text-sm text-gray-300 truncate hidden sm:block">
-                {editor.template.name}
+                {editor.template?.name || ''}
               </div>
             </div>
 
@@ -385,7 +422,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 const newShow = !showPropertiesPanel;
                 setShowPropertiesPanel(newShow);
                 // Re-center canvas when sidebar changes
-                setTimeout(() => canvas.centerCanvas(), 50);
+                if (typeof (canvas as any).centerCanvas === 'function') setTimeout(() => (canvas as any).centerCanvas(), 50);
               }}
               className="ml-2 p-1 rounded bg-transparent text-gray-200 hover:text-white hover:bg-gray-800 focus:outline-none"
               title={showPropertiesPanel ? 'Recolher painel de propriedades' : 'Mostrar painel de propriedades'}

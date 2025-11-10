@@ -9,6 +9,7 @@ interface SaveTemplateModalProps {
   onClose: () => void;
   template: EditorTemplate;
   onSave: (savedTemplate: EditorTemplate) => void;
+  isNewTemplate?: boolean;
 }
 
 interface FormData {
@@ -17,6 +18,8 @@ interface FormData {
   category: string;
   tags: string[];
   isPublic: boolean;
+  version?: number;
+  revision?: number;
 }
 
 const CATEGORIES = [
@@ -33,7 +36,8 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
   isOpen,
   onClose,
   template,
-  onSave
+  onSave,
+  isNewTemplate = false
 }) => {
   const { saveTemplate, isLoading, error, clearError } = useTemplateStorage();
   
@@ -43,22 +47,73 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
     category: template.category || 'default',
     tags: template.tags || [],
     isPublic: template.isPublic || false
+    ,version: template.version || 1,
+    revision: (template as any).revision ?? 0
   });
   
   const [tagInput, setTagInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveAttempts, setSaveAttempts] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [autoIncrementVersion, setAutoIncrementVersion] = useState<boolean>(true);
+  
+  // Se for template existente, salvar direto sem mostrar formulário
+  useEffect(() => {
+    if (isOpen && !isNewTemplate && !isSaving) {
+      // Template existente - salvar direto com dados atuais
+      handleQuickSave();
+    }
+  }, [isOpen, isNewTemplate]);  // Remover template das dependências para evitar loops
+  
+  // Função para salvar sem abrir modal
+  const handleQuickSave = async () => {
+    if (isSaving) return;  // Evitar múltiplas chamadas simultâneas
+    
+    setIsSaving(true);
+    try {
+      const savePayload: any = {
+        name: template.name,
+        description: template.description || undefined,
+        category: template.category,
+        tags: template.tags,
+        isPublic: template.isPublic
+      };
+
+      // Forward revision if present on template
+      if ((template as any).revision !== undefined) {
+        savePayload.revision = (template as any).revision;
+      }
+
+      const savedTemplate = await saveTemplate(template, savePayload);
+      
+      // Chamar onSave e depois fechar
+      onSave(savedTemplate);
+      setSaveSuccess(true);
+      
+      // Delay pequeno para evitar flash, depois fechar
+      setTimeout(() => {
+        onClose();
+      }, 300);
+    } catch (error) {
+      console.error('Erro ao salvar template rápido:', error);
+      // Se falhar, não fazer nada - pode ser um template novo
+    } finally {
+      setIsSaving(false);
+    }
+  };
   
   // Resetar form quando modal abrir
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isNewTemplate) {
       setFormData({
         name: template.name || 'Novo Template',
         description: template.description || '',
         category: template.category || 'default',
         tags: template.tags || [],
-        isPublic: template.isPublic || false
+        isPublic: template.isPublic || false,
+        version: template.version || 1,
+        revision: (template as any).revision ?? 0
       });
       setTagInput('');
       setErrors({});
@@ -66,7 +121,7 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
       setSaveAttempts(0);
       clearError();
     }
-  }, [isOpen, template, clearError]);
+  }, [isOpen, isNewTemplate, template, clearError]);
   
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -107,16 +162,28 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
     setSaveAttempts(prev => prev + 1);
     
     try {
-      const savedTemplate = await saveTemplate(template, {
+      const savePayload: any = {
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
         category: formData.category,
         tags: formData.tags,
-        isPublic: formData.isPublic
-      });
-      
-      setSaveSuccess(true);
-      onSave(savedTemplate);
+        isPublic: formData.isPublic,
+      };
+
+      // Only forward version when user chose to control it (autoIncrementVersion === false)
+      if (!autoIncrementVersion && typeof formData.version === 'number') {
+        savePayload.version = formData.version;
+      }
+
+      // Always forward revision when provided
+      if (typeof formData.revision === 'number') {
+        savePayload.revision = formData.revision;
+      }
+
+  const savedTemplate = await saveTemplate(template, savePayload);
+
+  setSaveSuccess(true);
+  onSave(savedTemplate);
       
       // Fechar modal após 1.5 segundos para mostrar sucesso
       setTimeout(() => {
@@ -153,10 +220,15 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
       handleAddTag();
     }
   };
+
+  // Se for template existente, não mostrar modal (salvará automático)
+  if (!isNewTemplate && isOpen) {
+    return null;
+  }
   
   return (
     <ResponsiveModal
-      isOpen={isOpen}
+      isOpen={isOpen && isNewTemplate}
       onClose={onClose}
       title="Salvar Template"
       size="lg"
@@ -319,6 +391,43 @@ const SaveTemplateModal: React.FC<SaveTemplateModalProps> = ({
                 <p className="text-sm text-gray-500">Outros usuários podem ver e usar este template</p>
               </div>
             </label>
+          </div>
+        </div>
+        
+        {/* Controle de versão e revisão */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Controle de versão</label>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={autoIncrementVersion}
+                onChange={(e) => setAutoIncrementVersion(e.target.checked)}
+                className="h-4 w-4 text-blue-600"
+              />
+              <span className="text-sm text-gray-700">Incrementar versão automaticamente</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-700">Versão</label>
+              <input
+                type="number"
+                value={formData.version}
+                onChange={(e) => setFormData(prev => ({ ...prev, version: Number(e.target.value) }))}
+                className={`w-24 px-2 py-1 border rounded-md ${autoIncrementVersion ? 'bg-gray-100' : ''}`}
+                disabled={autoIncrementVersion}
+                min={0}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-700">Revisão</label>
+              <input
+                type="number"
+                value={formData.revision}
+                onChange={(e) => setFormData(prev => ({ ...prev, revision: Number(e.target.value) }))}
+                className="w-24 px-2 py-1 border rounded-md"
+                min={0}
+              />
+            </div>
           </div>
         </div>
         

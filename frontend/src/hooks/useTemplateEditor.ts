@@ -334,6 +334,15 @@ export const useTemplateEditor = (
 
       // assign pageId to each element if missing
       normalized.elements = (normalized.elements || []).map(el => ({ ...el, pageId: el.pageId || pageId }));
+    } else {
+      // If pages exist but some elements are missing pageId or reference an unknown pageId
+      // assign them to the first page so they are visible in the editor canvas.
+      const pageIds = new Set(normalized.pages.map(p => p.id));
+      const fallbackPageId = normalized.pages[0]?.id || generateId('page');
+      normalized.elements = (normalized.elements || []).map(el => ({
+        ...el,
+        pageId: (!el.pageId || !pageIds.has(el.pageId)) ? fallbackPageId : el.pageId
+      }));
     }
 
     setTemplate(normalized);
@@ -877,20 +886,31 @@ export const useTemplateEditor = (
   const { loadTemplate: loadTemplateFromStorage } = useTemplateStorage();
   
   useEffect(() => {
-    if (templateId && templateId.trim() !== '') {
+    if (templateId && templateId.trim() !== '' && templateId !== template.id) {
       console.log('Carregando template:', templateId);
+      
+      // Flag para evitar múltiplas requisições
+      let isMounted = true;
       
       loadTemplateFromStorage(templateId)
         .then((loadedTemplate) => {
-          console.log('Template carregado com sucesso:', loadedTemplate);
-          loadTemplate(loadedTemplate);
+          if (isMounted) {
+            console.log('Template carregado com sucesso:', loadedTemplate);
+            loadTemplate(loadedTemplate);
+          }
         })
         .catch((error) => {
-          console.error('Erro ao carregar template:', error);
-          // Manter template vazio para não ficar travado
+          if (isMounted) {
+            console.error('Erro ao carregar template:', error);
+            // Manter template vazio para não ficar travado
+          }
         });
+      
+      return () => {
+        isMounted = false;
+      };
     }
-  }, [templateId, loadTemplateFromStorage, loadTemplate]);
+  }, [templateId, loadTemplate, loadTemplateFromStorage]); // Adicionadas dependências faltantes
   
   return {
     // Estado atual

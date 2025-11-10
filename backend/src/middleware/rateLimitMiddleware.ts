@@ -34,7 +34,7 @@ const rateLimitHandler = (req: Request, res: Response) => {
 // General rate limiter - applies to all requests
 export const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP/user to 1000 requests per windowMs
+  max: 5000, // Limit each IP/user to 5000 requests per windowMs (development-friendly)
   keyGenerator,
   handler: rateLimitHandler,
   standardHeaders: true,

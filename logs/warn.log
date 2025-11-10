@@ -1,0 +1,1 @@
+{"timestamp":"2025-11-10 14:54:51.173","level":"warn","service":"laudo-termico-api","message":"Request completed","environment":"development","version":"1.0.0","requestId":"req_1762797291139_bc4l4sg85","method":"PUT","url":"/api/editor-templates/90281435-26d7-4804-b96f-ccd5e7686214","statusCode":400,"responseTime":34.25,"contentLength":"184"}

@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  password    String
+  name        String
+  role        Role         @default(USER)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  avatar      String?
+  reports     Report[]
+  validations Validation[]
+
+  @@index([email])
+  @@index([role])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Client {
+  id          String       @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  cnpj        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  reports     Report[]
+  validations Validation[]
+
+  @@index([name])
+  @@index([email])
+  @@index([cnpj])
+  @@index([createdAt])
+  @@map("clients")
+}
+
+model SensorType {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  dataConfig  Json
+  sensors     Sensor[]
+
+  @@map("sensor_types")
+}
+
+model Sensor {
+  id              String           @id @default(cuid())
+  serialNumber    String           @unique
+  model           String
+  typeId          String
+  calibrationDate DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  sensorData      SensorData[]
+  type            SensorType       @relation(fields: [typeId], references: [id])
+  suitcaseSensors SuitcaseSensor[]
+
+  @@index([typeId])
+  @@index([serialNumber])
+  @@index([model])
+  @@index([createdAt])
+  @@map("sensors")
+}
+
+model Suitcase {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  sensors     SuitcaseSensor[]
+  validations Validation[]
+
+  @@map("suitcases")
+}
+
+model SuitcaseSensor {
+  id         String   @id @default(cuid())
+  suitcaseId String
+  sensorId   String
+  position   Int?
+  sensor     Sensor   @relation(fields: [sensorId], references: [id])
+  suitcase   Suitcase @relation(fields: [suitcaseId], references: [id])
+
+  @@unique([suitcaseId, sensorId])
+  @@map("suitcase_sensors")
+}
+
+model SensorData {
+  id           String      @id @default(cuid())
+  sensorId     String
+  timestamp    DateTime
+  temperature  Float
+  humidity     Float?
+  fileName     String
+  rowNumber    Int
+  createdAt    DateTime    @default(now())
+  validationId String?
+  sensor       Sensor      @relation(fields: [sensorId], references: [id])
+  validation   Validation? @relation(fields: [validationId], references: [id])
+
+  @@index([sensorId])
+  @@index([timestamp])
+  @@index([validationId])
+  @@index([fileName])
+  @@index([sensorId, timestamp])
+  @@index([validationId, timestamp])
+  @@map("sensor_data")
+}
+
+model Validation {
+  id             String       @id @default(cuid())
+  suitcaseId     String
+  clientId       String
+  userId         String
+  name           String
+  description    String?
+  minTemperature Float
+  maxTemperature Float
+  minHumidity    Float?
+  maxHumidity    Float?
+  isApproved     Boolean?
+  statistics     Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  reports        Report[]
+  sensorData     SensorData[]
+  client         Client       @relation(fields: [clientId], references: [id])
+  suitcase       Suitcase     @relation(fields: [suitcaseId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@index([clientId])
+  @@index([userId])
+  @@index([suitcaseId])
+  @@index([isApproved])
+  @@index([createdAt])
+  @@index([clientId, createdAt])
+  @@index([userId, createdAt])
+  @@map("validations")
+}
+
+model ReportTemplate {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  templatePath String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  reports      Report[]
+
+  @@map("report_templates")
+}
+
+model Report {
+  id           String         @id @default(cuid())
+  validationId String
+  templateId   String
+  userId       String
+  clientId     String
+  name         String
+  status       ReportStatus   @default(DRAFT)
+  pdfPath      String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  client       Client         @relation(fields: [clientId], references: [id])
+  template     ReportTemplate @relation(fields: [templateId], references: [id])
+  user         User           @relation(fields: [userId], references: [id])
+  validation   Validation     @relation(fields: [validationId], references: [id])
+
+  @@index([clientId])
+  @@index([userId])
+  @@index([validationId])
+  @@index([templateId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([clientId, status])
+  @@index([userId, createdAt])
+  @@map("reports")
+}
+
+model EditorTemplate {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  category      String   @default("default")
+  elements      Json     // Array of template elements
+  globalStyles  Json     // Global styling configuration
+  pages         Json?    // Array of pages (optional)
+  pageSettings  Json?    // Page configuration (size, margins, etc.)
+  tags          Json     // Array of tags for categorization (stored as JSON in SQLite)
+  thumbnail     String?  // Optional thumbnail image URL
+  isPublic      Boolean  @default(false)
+  createdBy     String   // User ID who created the template
+  version       Int      @default(1)
+  revision      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([createdBy])
+  @@index([category])
+  @@index([isPublic])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([createdBy, isPublic])
+  @@index([category, isPublic])
+  @@map("editor_templates")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  action       String
+  resource     String
+  resourceId   String?
+  userId       String?
+  userEmail    String?
+  ip           String?
+  userAgent    String?
+  oldValues    String?
+  newValues    String?
+  metadata     String?
+  success      Boolean
+  errorMessage String?
+  timestamp    DateTime @default(now())
+
+  @@index([userId])
+  @@index([resource])
+  @@index([action])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ReportStatus {
+  DRAFT
+  VALIDATED
+  FINALIZED
+}
