@@ -11,7 +11,7 @@ import './EditorLayout.css';
 
 // Componentes que serão implementados nas próximas tarefas
 import { Canvas } from './components/EditorCanvas';
-import GalleryModal from './components/Modals/GalleryModal';
+import ImageGalleryModal from './components/Modals/ImageGalleryModal';
 // Grid and Ruler are rendered inside the Canvas component for correct alignment
 import { useGridSnap } from '../../hooks/useGridSnap';
 import { ElementPalette, PropertiesPanel } from './components/Toolbars';
@@ -64,9 +64,6 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   const [showRuler, setShowRuler] = useState<boolean>(() => {
     try { return localStorage.getItem('editor.showRuler') === 'true'; } catch { return false; }
   });
-  const [showElementLabels, setShowElementLabels] = useState<boolean>(() => {
-    try { return localStorage.getItem('editor.showElementLabels') === 'true'; } catch { return false; }
-  });
   const [gridSize, setGridSize] = useState<number>(() => {
     try { return parseInt(localStorage.getItem('editor.gridSize') || '20'); } catch { return 20; }
   });
@@ -98,6 +95,61 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   // Ref para a área do canvas para medir seu tamanho e informar o hook
   const canvasAreaRef = React.useRef<HTMLDivElement | null>(null);
 
+  // Ref para o header interno do editor (faixa preta) para medir sua altura
+  const editorHeaderRef = React.useRef<HTMLDivElement | null>(null);
+  const [editorHeaderHeight, setEditorHeaderHeight] = useState<number>(0);
+
+  // Medir a altura do header global da aplicação para posicionar o modal logo abaixo dele
+  const [headerOffset, setHeaderOffset] = useState<number>(64); // fallback 64px (h-16)
+
+  // Medir a posição da sidebar do sistema (quando visível) para posicionar o
+  // editor modal de forma que comece ao lado da sidebar em vez de ficar por baixo.
+  const [sidebarOffset, setSidebarOffset] = useState<number>(0);
+
+  useEffect(() => {
+    const measureSidebar = () => {
+      // Tailwind desktop sidebar renders with classes like 'lg:fixed' and a fixed width (w-64)
+      const sidebarEl = document.querySelector('.lg\\:fixed') as HTMLElement | null;
+      if (sidebarEl) {
+        const rect = sidebarEl.getBoundingClientRect();
+        // Use rect.right as the left offset for the editor modal
+        setSidebarOffset(Math.round(rect.right));
+      } else {
+        setSidebarOffset(0);
+      }
+    };
+
+    measureSidebar();
+    window.addEventListener('resize', measureSidebar);
+
+    // MutationObserver to catch class changes or show/hide of the sidebar
+    const mo = new MutationObserver(measureSidebar);
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      window.removeEventListener('resize', measureSidebar);
+      mo.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const measure = () => {
+      const appHeader = document.querySelector('header');
+      if (appHeader) {
+        const rect = appHeader.getBoundingClientRect();
+        // Use rect.bottom so the modal top aligns with the bottom edge of the
+        // header (removes any gap caused by borders/margins).
+        setHeaderOffset(Math.round(rect.bottom));
+      } else {
+        setHeaderOffset(64);
+      }
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
   // Atualizar container size do hook de canvas ao redimensionar a área
   useEffect(() => {
     const el = canvasAreaRef.current;
@@ -116,8 +168,16 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
     canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
     canvas.centerCanvas();
 
+    // measure editor header height initially
+    const measureHeader = () => {
+      const h = editorHeaderRef.current?.getBoundingClientRect().height || 0;
+      setEditorHeaderHeight(Math.round(h));
+    };
+    measureHeader();
+    window.addEventListener('resize', measureHeader);
+
     return () => ro.disconnect();
-  }, [canvas]);
+  }, [canvas.setContainerSize, canvas.centerCanvas]);
 
   // Calcular tamanho da página baseado nas configurações
 
@@ -192,6 +252,8 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             if (isTablet || isMobile) {
               setForceShowSidebars(newShowPalette || showPropertiesPanel);
             }
+            // Re-center canvas when sidebar changes
+            setTimeout(() => canvas.centerCanvas(), 50);
             break;
           case '2':
             e.preventDefault();
@@ -201,6 +263,8 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             if (isTablet || isMobile) {
               setForceShowSidebars(newShowProperties || showElementPalette);
             }
+            // Re-center canvas when sidebar changes
+            setTimeout(() => canvas.centerCanvas(), 50);
             break;
           case '3':
             e.preventDefault();
@@ -212,6 +276,8 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             if (isTablet || isMobile) {
               setForceShowSidebars(newState);
             }
+            // Re-center canvas when sidebars change
+            setTimeout(() => canvas.centerCanvas(), 50);
             break;
           case 'r':
             e.preventDefault();
@@ -278,16 +344,54 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex">
+    // Start the modal below the application's top header using the measured header height
+    // so it doesn't float above the system header. We apply an inline top style
+    // so responsive header height is respected.
+    <div
+      className="fixed right-0 bottom-0 bg-black bg-opacity-50 z-30 flex"
+      style={{ top: `${headerOffset}px`, left: sidebarOffset ? `${sidebarOffset}px` : undefined }}
+    >
       <div className="bg-white w-full h-full flex flex-col">
         {/* Header - Barra de ferramentas principal */}
-        <div className="bg-gray-900 text-white p-3 flex items-center justify-between border-b border-gray-700 min-h-[60px]">
-          {/* Lado esquerdo - Título e nome do template */}
+    <div ref={editorHeaderRef} className="bg-gray-900 text-white p-3 flex items-center justify-between border-b border-gray-700 min-h-[60px] editor-header">
+          {/* Lado esquerdo - botão para recolher sidebar, título e nome do template */}
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
-            <h1 className="text-sm md:text-lg font-semibold truncate">Editor de Layout</h1>
-            <div className="text-xs md:text-sm text-gray-300 truncate hidden sm:block">
-              {editor.template.name}
+            <button
+              onClick={() => {
+                const newShow = !showElementPalette;
+                setShowElementPalette(newShow);
+                // Re-center canvas when sidebar changes
+                setTimeout(() => canvas.centerCanvas(), 50);
+              }}
+              className="p-1 rounded bg-transparent text-gray-200 hover:text-white hover:bg-gray-800 focus:outline-none"
+              title={showElementPalette ? 'Recolher paleta' : 'Mostrar paleta'}
+            >
+              {showElementPalette ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </button>
+
+            {/* Toggle global system sidebar (dispatch event to Layout) */}
+            {/* main system sidebar toggle removed from editor header (moved to global Header) */}
+
+            <div className="flex flex-col">
+              <h1 className="text-sm md:text-lg font-semibold">Editor de Layout</h1>
+              <div className="text-xs md:text-sm text-gray-300 truncate hidden sm:block">
+                {editor.template.name}
+              </div>
             </div>
+
+            {/* Toggle rápido para a sidebar direita (painel de propriedades) */}
+            <button
+              onClick={() => {
+                const newShow = !showPropertiesPanel;
+                setShowPropertiesPanel(newShow);
+                // Re-center canvas when sidebar changes
+                setTimeout(() => canvas.centerCanvas(), 50);
+              }}
+              className="ml-2 p-1 rounded bg-transparent text-gray-200 hover:text-white hover:bg-gray-800 focus:outline-none"
+              title={showPropertiesPanel ? 'Recolher painel de propriedades' : 'Mostrar painel de propriedades'}
+            >
+              {showPropertiesPanel ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </button>
           </div>
 
           {/* Centro - Controles principais */}
@@ -375,16 +479,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
               </button>
             </div>
 
-            <button
-              onClick={() => setShowElementLabels(s => {
-                try { localStorage.setItem('editor.showElementLabels', String(!s)); } catch {}
-                return !s;
-              })}
-              className={`p-2 rounded transition-colors ${showElementLabels ? 'text-white bg-gray-700' : 'text-gray-300 hover:text-white hover:bg-gray-700'}`}
-              title="Mostrar/ocultar rótulos de elementos"
-            >
-              <span className="text-xs font-medium">Labels</span>
-            </button>
+            {/* Labels button removed - feature deprecated */}
 
             <button
               onClick={() => setShowPageSettingsModal(true)}
@@ -437,45 +532,6 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             </div>
 
             <div className="w-px h-6 bg-gray-600 mx-1 md:mx-2 hidden lg:block" />
-
-            {/* Controles de sidebars */}
-            <div className="hidden lg:flex items-center gap-1">
-              <button
-                onClick={() => {
-                  const newShow = !showElementPalette;
-                  setShowElementPalette(newShow);
-                  if (isTablet || isMobile) {
-                    setForceShowSidebars(newShow || showPropertiesPanel);
-                  }
-                }}
-                className={`p-2 rounded transition-colors ${
-                  showElementPalette 
-                    ? 'text-white bg-gray-700' 
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                }`}
-                title="Mostrar/ocultar paleta de elementos (Ctrl+1)"
-              >
-                <span className="text-xs font-medium">Elementos</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const newShow = !showPropertiesPanel;
-                  setShowPropertiesPanel(newShow);
-                  if (isTablet || isMobile) {
-                    setForceShowSidebars(newShow || showElementPalette);
-                  }
-                }}
-                className={`p-2 rounded transition-colors ${
-                  showPropertiesPanel 
-                    ? 'text-white bg-gray-700' 
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                }`}
-                title="Mostrar/ocultar painel de propriedades (Ctrl+2)"
-              >
-                <span className="text-xs font-medium">Propriedades</span>
-              </button>
-            </div>
 
             {/* Controle compacto para tablets e mobile */}
             <button
@@ -571,7 +627,8 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
           {/* Área central - Canvas (70% da largura quando ambas sidebars visíveis) */}
           <div
             ref={canvasAreaRef}
-            className="bg-gray-100 relative overflow-auto editor-canvas-area"
+            className="relative overflow-auto editor-canvas-area flex flex-col"
+            style={{}}
             onClick={(e) => {
               // If clicked on the canvas area outside the page itself, clear selection
               const target = e.target as Node;
@@ -583,7 +640,10 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
               }
             }}
           >
-            <div className="relative w-full h-full">
+            {/* Spacer to push canvas below the editor header (avoids padding artifacts on zoom) */}
+            <div style={{ height: editorHeaderHeight, flexShrink: 0 }} />
+
+            <div className="bg-gray-100 relative w-full h-full flex-1">
               {/* Grid and ruler are rendered inside the Canvas to keep them aligned to the page */}
               <Canvas
                 elements={editor.getCurrentPageElements ? editor.getCurrentPageElements() : editor.template.elements}
@@ -739,16 +799,17 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
         }}
       />
 
-      <GalleryModal
+      <ImageGalleryModal
         isOpen={showGalleryModal}
         onClose={() => setShowGalleryModal(false)}
-        onSelectImage={(img: { src: string; alt: string; originalSize: any }) => {
+        onSelectImage={(img) => {
           // Insert image element and set its content
           const id = editor.addElement('image', { x: 20, y: 20 });
           editor.updateElementContent(id, {
             src: img.src,
             alt: img.alt,
-            originalSize: img.originalSize
+            originalSize: img.originalSize,
+            aspectRatio: img.aspectRatio
           });
           setShowGalleryModal(false);
         }}

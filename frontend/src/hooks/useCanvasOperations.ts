@@ -37,6 +37,7 @@ interface UseCanvasOperationsReturn {
   setPanOffset: (offset: Position) => void;
   panBy: (delta: Position) => void;
   centerCanvas: () => void;
+  centerCanvasHorizontally: () => void;
   resetView: () => void;
   setContainerSize: (size: Size) => void;
   
@@ -223,6 +224,16 @@ export const useCanvasOperations = (
     });
   }, [canvasSize, zoom, containerSizeState]);
 
+  // Centralizar canvas horizontalmente apenas (y fica em 0)
+  const centerCanvasHorizontally = useCallback(() => {
+    const scaledWidth = canvasSize.width * zoom;
+    
+    setPanOffsetState({
+      x: (containerSizeState.width - scaledWidth) / 2,
+      y: 0
+    });
+  }, [canvasSize, zoom, containerSizeState]);
+
   // Reset para estado inicial
   const resetView = useCallback(() => {
     setZoomState(DEFAULT_ZOOM);
@@ -351,9 +362,9 @@ export const useCanvasOperations = (
     setPanOffset,
     panBy,
     centerCanvas,
+    centerCanvasHorizontally,
     resetView,
-  // Container size helper
-  setContainerSize,
+    setContainerSize,
     
     // Conversões de coordenadas
     screenToCanvas,

@@ -20,6 +20,7 @@ import clsx from 'clsx';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  sidebarCollapsed?: boolean;
 }
 
 interface NavigationItem {
@@ -42,7 +43,7 @@ const navigation: NavigationItem[] = [
   { name: 'Configurações', href: '/settings', icon: Settings, adminOnly: true },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, sidebarCollapsed = false }) => {
   const location = useLocation();
   const { user } = useAuth();
   const { version, buildDate } = useAppVersion();
@@ -54,27 +55,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   return (
     <>
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex lg:flex-shrink-0 lg:fixed lg:inset-y-0 lg:left-0 lg:z-50">
-        <div className="flex flex-col w-64">
-          <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 overflow-y-auto h-screen">
+      <div id="app-sidebar" className="hidden lg:flex lg:flex-shrink-0 lg:fixed lg:inset-y-0 lg:left-0 lg:z-50">
+        <div className={clsx('flex flex-col', sidebarCollapsed ? 'w-16' : 'w-64')}>
+          <div className={clsx('flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 overflow-y-auto h-screen', sidebarCollapsed ? 'items-center' : '')}>
             {/* Logo */}
-            <div className="flex items-center flex-shrink-0 px-4">
+            <div className={clsx('flex items-center flex-shrink-0', sidebarCollapsed ? 'px-2' : 'px-4')}>
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center">
                     <Thermometer className="h-5 w-5 text-white" />
                   </div>
                 </div>
-                <div className="ml-3">
-                  <h1 className="text-lg font-semibold text-gray-900">
-                    Laudos Térmicos
-                  </h1>
-                </div>
+                {!sidebarCollapsed && (
+                  <div className="ml-3">
+                    <h1 className="text-lg font-semibold text-gray-900">
+                      Laudos Térmicos
+                    </h1>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Navigation */}
-            <nav className="mt-8 flex-1 px-2 space-y-1">
+            <nav className={clsx('mt-8 flex-1 space-y-1', sidebarCollapsed ? 'px-2' : 'px-2')}>
               {filteredNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
@@ -82,26 +85,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     key={item.name}
                     to={item.href}
                     className={clsx(
-                      'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-150',
+                      'group flex items-center py-3 text-sm font-medium rounded-md transition-colors duration-150',
                       isActive
-                        ? 'bg-primary-100 text-primary-900 border-r-2 border-primary-600'
+                        ? clsx(
+                            'bg-primary-100 text-primary-900 border-r-2 border-primary-600',
+                            sidebarCollapsed ? 'pr-1' : 'pl-2'
+                          )
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     )}
                   >
                     <item.icon
                       className={clsx(
-                        'mr-3 flex-shrink-0 h-5 w-5',
+                        'flex-shrink-0 h-6 w-6',
+                        sidebarCollapsed ? '' : 'mr-3',
                         isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500'
                       )}
                     />
-                    {item.name}
+                    {!sidebarCollapsed && item.name}
                     {item.badge && (
                       <span className="ml-auto inline-block py-0.5 px-2 text-xs font-medium rounded-full bg-primary-100 text-primary-800">
                         {item.badge}
                       </span>
                     )}
                     {isActive && (
-                      <ChevronRight className="ml-auto h-4 w-4 text-primary-600" />
+                      <ChevronRight className={clsx('ml-auto h-4 w-4 text-primary-600', sidebarCollapsed ? 'hidden' : '')} />
                     )}
                   </NavLink>
                 );
@@ -109,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </nav>
 
             {/* System info */}
-            <div className="flex-shrink-0 border-t border-gray-200">
+            <div className={clsx('flex-shrink-0 border-t border-gray-200', sidebarCollapsed ? 'px-2' : 'px-4')}>
               <div className="px-4 sm:px-6 lg:px-8">
                 <div className="py-3">
                   <div className="flex flex-col md:flex-row justify-center items-center">

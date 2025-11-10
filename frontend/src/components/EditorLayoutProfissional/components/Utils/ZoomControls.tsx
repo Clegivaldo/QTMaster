@@ -201,12 +201,7 @@ const ZoomControls: React.FC<ZoomControlsProps> = ({
         <Maximize className="h-4 w-4" />
       </button>
 
-      {/* Indicador de zoom atual (apenas em desenvolvimento) */}
-      {import.meta.env?.DEV && (
-        <div className="ml-2 text-xs text-gray-500">
-          {ZOOM_LEVELS.includes(zoom) ? '●' : '○'}
-        </div>
-      )}
+      {/* Removed development-only zoom indicator to avoid non-interactive visual artifact */}
     </div>
   );
 };

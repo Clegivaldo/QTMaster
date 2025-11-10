@@ -18,6 +18,7 @@ const ImportData = React.lazy(() => import('@/pages/ImportData'));
 const Validations = React.lazy(() => import('@/pages/Validations'));
 const Reports = React.lazy(() => import('@/pages/Reports'));
 const Templates = React.lazy(() => import('@/pages/Templates'));
+const EditorLayout = React.lazy(() => import('@/pages/EditorLayout'));
 const Profile = React.lazy(() => import('@/pages/Profile'));
 const Settings = React.lazy(() => import('@/pages/Settings'));
 const Unauthorized = React.lazy(() => import('@/pages/Unauthorized'));
@@ -42,6 +43,28 @@ const AppRoutes: React.FC = () => {
       <Route 
         path="/unauthorized" 
         element={<Unauthorized />} 
+      />
+      
+      {/* Editor Layout - Full screen, no sidebar/header */}
+      <Route 
+        path="/editor-layout" 
+        element={
+          <PrivateRoute>
+            <Suspense fallback={<LoadingSpinner />}>
+              <EditorLayout />
+            </Suspense>
+          </PrivateRoute>
+        } 
+      />
+      <Route 
+        path="/editor-layout/:templateId" 
+        element={
+          <PrivateRoute>
+            <Suspense fallback={<LoadingSpinner />}>
+              <EditorLayout />
+            </Suspense>
+          </PrivateRoute>
+        } 
       />
       
       {/* Protected Routes - All wrapped with Layout */}

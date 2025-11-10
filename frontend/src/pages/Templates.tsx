@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileText, Eye, Download, Palette } from 'lucide-react';
 import { apiService } from '../services/api';
-import EditorLayoutProfissional from '../components/EditorLayoutProfissional';
 
 interface Template {
   name: string;
@@ -12,10 +12,9 @@ interface Template {
 }
 
 const Templates: React.FC = () => {
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
 
   useEffect(() => {
     loadTemplates();
@@ -72,45 +71,8 @@ const Templates: React.FC = () => {
   };
 
   const openTemplateEditor = (templateId?: string) => {
-    setSelectedTemplateId(templateId);
-    setIsEditorOpen(true);
-  };
-
-  const closeTemplateEditor = () => {
-    setIsEditorOpen(false);
-    setSelectedTemplateId(undefined);
-  };
-
-  const handleSaveTemplate = async (_template: any) => {
-    try {
-      
-      // TODO: Implementar integração com API do backend
-      // const response = await apiService.api.post('/templates', template);
-      
-      // Simular salvamento
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Recarregar templates
-      await loadTemplates();
-      
-      // Fechar editor
-      closeTemplateEditor();
-      
-      alert('Template salvo com sucesso!');
-    } catch (error) {
-      console.error('Erro ao salvar template:', error);
-      alert('Erro ao salvar template');
-    }
-  };
-
-  const handleExportTemplate = async (_template: any, format: string) => {
-    try {
-      // TODO: Implementar exportação
-      alert(`Template exportado em ${format.toUpperCase()}!`);
-    } catch (error) {
-      console.error('Erro ao exportar template:', error);
-      alert('Erro ao exportar template');
-    }
+    // Navegar para a página de editor
+    navigate(templateId ? `/editor-layout/${templateId}` : '/editor-layout');
   };
 
   const previewTemplate = async (templateName: string) => {
@@ -279,43 +241,6 @@ const Templates: React.FC = () => {
           </button>
         </div>
       )}
-
-      {/* Editor Layout Profissional */}
-      <EditorLayoutProfissional
-        isOpen={isEditorOpen}
-        onClose={closeTemplateEditor}
-        templateId={selectedTemplateId}
-        onSave={handleSaveTemplate}
-        onExport={handleExportTemplate}
-      />
-
-      {/* Info Card */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <FileText className="h-4 w-4 text-blue-600" />
-            </div>
-          </div>
-          <div>
-            <h4 className="font-medium text-blue-900 mb-1">
-              Editor de Layout Profissional
-            </h4>
-            <p className="text-sm text-blue-700">
-              Novo editor integrado com funcionalidades avançadas: drag-and-drop, zoom inteligente, 
-              formatação completa de texto, redimensionamento preciso e muito mais. 
-              Crie templates profissionais com a mesma facilidade do FastReport.
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2 text-xs">
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">✨ Zoom 25%-400%</span>
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">🎨 Formatação Completa</span>
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">📐 Redimensionamento</span>
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">⌨️ Atalhos de Teclado</span>
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">💾 Auto-save</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

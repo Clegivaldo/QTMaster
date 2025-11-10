@@ -22,8 +22,8 @@ const Canvas: React.FC<CanvasProps> = ({
   onAddElement,
   showRuler = false,
   onPanChange,
-  onWheel
-  , pageRegions
+  onWheel,
+  pageRegions
 }) => {
   // showRuler optionally passed from parent
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -434,16 +434,6 @@ const Canvas: React.FC<CanvasProps> = ({
           )}
         </div>
       </div>
-
-      {/* Informações de debug (removível em produção) */}
-      {import.meta.env?.DEV && (
-        <div className="absolute top-4 left-4 bg-black bg-opacity-75 text-white text-xs p-2 rounded pointer-events-none">
-          <div>Zoom: {Math.round(zoom * 100)}%</div>
-          <div>Pan: {Math.round(panOffset.x)}, {Math.round(panOffset.y)}</div>
-          <div>Elementos: {elements.length}</div>
-          <div>Selecionados: {selectedElementIds.length}</div>
-        </div>
-      )}
     </div>
   );
 };

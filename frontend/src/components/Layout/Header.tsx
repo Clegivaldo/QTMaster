@@ -6,7 +6,8 @@ import {
   User, 
   Settings, 
   LogOut,
-  ChevronDown
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAvatar } from '@/contexts/AvatarContext';
@@ -68,6 +69,15 @@ const Header: React.FC<HeaderProps> = ({ user, onMenuClick }) => {
               className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
             >
               <Menu className="h-6 w-6" />
+            </button>
+
+            {/* Collapse system sidebar (desktop) - placed left of search as requested */}
+            <button
+              onClick={() => window.dispatchEvent(new Event('qt:toggle-collapse-sidebar'))}
+              className="hidden lg:inline-flex ml-4 p-2 rounded text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none"
+              title="Recolher/Expandir menu do sistema"
+            >
+              <ChevronRight className="h-5 w-5" />
             </button>
 
             {/* Search */}

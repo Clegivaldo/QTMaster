@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLayout } from '@/hooks/useLayout';
 import Sidebar from './Sidebar';
@@ -13,7 +13,22 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user } = useAuth();
-  const { sidebarOpen, isMobile, toggleSidebar, closeSidebar } = useLayout();
+  const { sidebarOpen, isMobile, toggleSidebar, closeSidebar, sidebarCollapsed, toggleCollapseSidebar } = useLayout();
+
+  // Allow other parts of the app to toggle the main sidebar by dispatching
+  // a custom event 'qt:toggle-sidebar' on window. Also listen for a collapse
+  // event 'qt:toggle-collapse-sidebar' which will collapse/expand the sidebar
+  // (icon-only mode).
+  useEffect(() => {
+    const onToggle = () => toggleSidebar();
+    const onCollapse = () => toggleCollapseSidebar();
+    window.addEventListener('qt:toggle-sidebar', onToggle as EventListener);
+    window.addEventListener('qt:toggle-collapse-sidebar', onCollapse as EventListener);
+    return () => {
+      window.removeEventListener('qt:toggle-sidebar', onToggle as EventListener);
+      window.removeEventListener('qt:toggle-collapse-sidebar', onCollapse as EventListener);
+    };
+  }, [toggleSidebar, toggleCollapseSidebar]);
 
   if (!user) {
     return null;
@@ -25,10 +40,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Sidebar 
         isOpen={sidebarOpen} 
         onClose={closeSidebar} 
+        sidebarCollapsed={sidebarCollapsed}
       />
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col lg:ml-64 h-full">
+  <div className={`flex-1 flex flex-col ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'} h-full`}>
         {/* Header */}
         <Header 
           user={user}
@@ -50,6 +66,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav onMenuClick={toggleSidebar} />
+
+      {/* collapse control moved to the global Header (no floating button here) */}
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && isMobile && (

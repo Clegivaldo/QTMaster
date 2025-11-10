@@ -3,6 +3,7 @@ import { useResponsive } from './useResponsive';
 
 export const useLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isMobile, isDesktop } = useResponsive();
 
   const toggleSidebar = () => {
@@ -15,6 +16,10 @@ export const useLayout = () => {
 
   const openSidebar = () => {
     setSidebarOpen(true);
+  };
+
+  const toggleCollapseSidebar = () => {
+    setSidebarCollapsed(s => !s);
   };
 
   // Auto-close sidebar on mobile when switching to mobile view
@@ -39,5 +44,7 @@ export const useLayout = () => {
     toggleSidebar,
     closeSidebar,
     openSidebar,
+    sidebarCollapsed,
+    toggleCollapseSidebar,
   };
 };

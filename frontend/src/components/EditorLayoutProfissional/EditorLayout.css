@@ -42,6 +42,7 @@
   grid-area: sidebar-left;
   min-width: 200px;
   max-width: 300px;
+  z-index: 20; /* ensure sidebars sit below the editor header */
 }
 
 .editor-canvas-area {
@@ -51,13 +52,26 @@
 
 /* Garantir pequeno espaçamento do canvas em relação à barra superior para evitar sobreposição visual */
 .editor-canvas-area {
-  padding-top: 8px;
+  /* No forced padding-top here; header is in normal flow and will push content down */
+  padding-top: 0;
+  z-index: 0;
+}
+
+/* Header container for the editor - keep it visible but not overlapping the canvas content */
+.editor-header {
+  position: sticky;
+  top: 0;
+  /* Higher z-index than sidebars so the toolbar stays visible and on top of sidebars */
+  z-index: 40; /* global app header uses z-40 outside this stacking context */
+  min-height: 64px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
 }
 
 .editor-sidebar-right {
   grid-area: sidebar-right;
   min-width: 200px;
   max-width: 300px;
+  z-index: 20; /* ensure sidebars sit below the editor header */
 }
 
 /* Responsividade para telas menores que 1200px */
