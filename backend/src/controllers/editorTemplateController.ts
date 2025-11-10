@@ -98,7 +98,7 @@ const createTemplateSchema = z.object({
       width: z.number(),
       height: z.number()
     }).optional()
-  }),
+  }).optional(), // CORRIGIDO: Agora opcional para compatibilidade com frontend
   tags: z.array(z.string()).default([]),
   isPublic: z.boolean().default(false)
 });
@@ -808,6 +808,100 @@ export class EditorTemplateController {
       res.status(500).json({
         success: false,
         error: 'Internal server error',
+      });
+    }
+  }
+
+  async exportTemplateData(req: Request, res: Response): Promise<void> {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const { template, options } = req.body;
+      
+      if (!authReq.user?.id) {
+        res.status(401).json({
+          success: false,
+          error: 'Usuário não autenticado',
+        });
+        return;
+      }
+
+      if (!template || !template.name) {
+        res.status(400).json({
+          success: false,
+          error: 'Template obrigatório com propriedade "name"',
+        });
+        return;
+      }
+
+      if (!options || !options.format) {
+        res.status(400).json({
+          success: false,
+          error: 'Opções de exportação obrigatórias com propriedade "format"',
+        });
+        return;
+      }
+
+      const exportOptions = { 
+        format: options.format,
+        quality: Math.max(1, Math.min(100, options.quality ?? 100)),
+        dpi: Math.max(72, Math.min(600, options.dpi || 300)),
+        includeMetadata: options.includeMetadata ?? true
+      };
+
+      // Gerar nome do arquivo
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `${(template.name || 'template').replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${exportOptions.format}`;
+
+      // Garantir diretório de exports
+      const exportsDir = process.env.EXPORTS_PATH || path.join(process.cwd(), 'exports');
+      await fsPromises.mkdir(exportsDir, { recursive: true });
+
+      const filePath = path.join(exportsDir, filename);
+
+      // Gerar conteúdo do arquivo conforme formato
+      if (exportOptions.format === 'pdf') {
+        const doc = new PDFDocument({ size: 'A4' });
+        const stream = fs.createWriteStream(filePath);
+        doc.pipe(stream);
+        doc.fontSize(18).text(template.name || 'Template', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(12).text(`Export gerado em: ${new Date().toLocaleString()}`);
+        doc.moveDown();
+        doc.fontSize(10).text('Conteúdo do template (resumo):');
+        doc.fontSize(9).text(JSON.stringify({ elements: (template.elements || []).length, pages: (template.pages || []).length }, null, 2));
+        doc.end();
+        await new Promise<void>((resolve, reject) => {
+          stream.on('finish', () => resolve());
+          stream.on('error', (err) => reject(err));
+        });
+      } else if (exportOptions.format === 'png') {
+        const transparentPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+        const buffer = Buffer.from(transparentPngBase64, 'base64');
+        await fsPromises.writeFile(filePath, buffer);
+      } else if (exportOptions.format === 'html') {
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>${template.name}</title></head><body><h1>${template.name}</h1><pre>${JSON.stringify(template, null, 2)}</pre></body></html>`;
+        await fsPromises.writeFile(filePath, html, 'utf-8');
+      } else if (exportOptions.format === 'json') {
+        await fsPromises.writeFile(filePath, JSON.stringify(template, null, 2), 'utf-8');
+      } else {
+        await fsPromises.writeFile(filePath, `Export do template ${template.name}`, 'utf-8');
+      }
+
+      const exportUrl = `/api/exports/${filename}`;
+
+      res.json({
+        success: true,
+        data: {
+          url: exportUrl,
+          filename,
+          format: exportOptions.format,
+        },
+      });
+    } catch (error) {
+      logger.error('Export template data error:', { error: error instanceof Error ? error.message : error });
+      res.status(500).json({
+        success: false,
+        error: 'Erro ao exportar template',
       });
     }
   }

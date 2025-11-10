@@ -249,14 +249,28 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
       const operation = async () => {
         let response;
         
-        // Verificar se é um template novo (tem padrão template-TIMESTAMP) ou persistido
-        const isNewTemplate = template.id && template.id.startsWith('template-') && !template.createdBy;
+        // Estratégia para diferenciar template novo vs persistido:
+        // 1. Se ID começa com 'template-' é NOVO (gerado pelo generateId())
+        // 2. Se ID não começa com 'template-' é PERSISTIDO (veio do backend)
+        // 3. A versão não é confiável pois pode ter mudado
+        const isNewTemplate = template.id && template.id.startsWith('template-');
+        
+        console.log('=== DEBUG saveTemplate ===');
+        console.log('Template ID:', template.id);
+        console.log('Template version:', template.version);
+        console.log('ID starts with "template-":', template.id?.startsWith('template-'));
+        console.log('isNewTemplate:', isNewTemplate);
+        console.log('Action:', isNewTemplate ? '📝 POST (CREATE)' : '🔄 PUT (UPDATE)');
+        console.log('=== FIM DEBUG ===');
         
         if (!isNewTemplate && template.id) {
-          // Template existente - atualizar
+          // Template existente - atualizar (PUT)
+          console.log('🔄 Atualizando template persistido:', template.id);
           response = await apiService.api.put(`/editor-templates/${template.id}`, templateData);
-        } else {
-          // Novo template - criar
+          console.log('✅ Template atualizado. Resposta:', response.data);
+        } else if (isNewTemplate) {
+          // Novo template - criar (POST)
+          console.log('📝 Criando novo template...');
           const newTemplateData = {
             ...templateData,
             id: undefined, // Deixar o backend gerar o ID
@@ -264,6 +278,10 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
             version: 1
           };
           response = await apiService.api.post('/editor-templates', newTemplateData);
+          console.log('✅ Template criado com sucesso. Novo ID:', response.data?.data?.template?.id);
+        } else {
+          // Sem ID válido - erro
+          throw new Error('Template não tem ID válido');
         }
         
         return response;
@@ -488,34 +506,25 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
       }
       
       // Preparar dados para exportação usando template sanitizado
+      const exportOptions = {
+        format: options.format,
+        quality: Math.max(1, Math.min(100, options.quality ?? 100)),
+        dpi: Math.max(72, Math.min(600, options.dpi || 300)),
+        includeMetadata: options.includeMetadata ?? true
+      };
+      
       const exportData = {
         template: sanitizedTemplate,
-        options: {
-          format: options.format,
-          // Quality expressed as 1-100 for API compatibility (tests expect percentages)
-          quality: Math.max(1, Math.min(100, options.quality ?? 100)),
-          dpi: Math.max(72, Math.min(600, options.dpi || 300)),
-          includeMetadata: options.includeMetadata ?? true
-        }
+        options: exportOptions
       };
       
       const operation = async () => {
-        // Se template tem ID, tentar endpoint específico primeiro
-        if (sanitizedTemplate.id && !sanitizedTemplate.id.startsWith('temp_')) {
-          try {
-            return await apiService.api.post(`/editor-templates/${sanitizedTemplate.id}/export`, exportData.options);
-          } catch (err) {
-            // If 404 (template not found / removed), fall back to generic export with template body
-            const status = (err && typeof err === 'object' && 'response' in err) ? (err as any).response?.status : undefined;
-            if (status === 404) {
-              return await apiService.api.post('/editor-templates/export', exportData);
-            }
-            throw err;
-          }
-        } else {
-          // Para templates temporários, usar endpoint genérico
-          return await apiService.api.post('/editor-templates/export', exportData);
-        }
+        // Sempre usar o endpoint genérico que aceita template no body
+        // Funciona para templates novos e persistidos
+        console.log('📤 Exportando template como', options.format, '...');
+        const response = await apiService.api.post('/editor-templates/export', exportData);
+        console.log('✅ Template exportado com sucesso');
+        return response;
       };
 
       const response = await retryWithBackoff(operation, 1); // Menos retries para export

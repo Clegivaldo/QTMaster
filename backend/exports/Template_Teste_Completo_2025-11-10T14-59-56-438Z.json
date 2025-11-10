@@ -1,0 +1,40 @@
+{
+  "name": "Template Teste Completo",
+  "description": "Template para teste E2E",
+  "category": "teste",
+  "elements": [
+    {
+      "id": "elem1",
+      "type": "text",
+      "content": "Título do Template",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "size": {
+        "width": 200,
+        "height": 50
+      },
+      "styles": {
+        "fontSize": 24,
+        "fontWeight": "bold",
+        "color": "#000000"
+      },
+      "zIndex": 1
+    }
+  ],
+  "globalStyles": {
+    "fontFamily": "Arial",
+    "fontSize": 14,
+    "color": "#000000",
+    "backgroundColor": "#ffffff",
+    "lineHeight": 1.5
+  },
+  "tags": [
+    "teste",
+    "E2E"
+  ],
+  "isPublic": false,
+  "id": "6c4ca229-2580-4703-b114-97d49a4a820f",
+  "createdBy": "test-user"
+}

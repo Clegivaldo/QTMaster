@@ -17,6 +17,9 @@ router.get('/search', editorTemplateController.searchTemplates.bind(editorTempla
 // POST /api/editor-templates/validate - Validate template data
 router.post('/validate', editorTemplateController.validateTemplate.bind(editorTemplateController));
 
+// POST /api/editor-templates/export - Export template (without ID, for new templates)
+router.post('/export', editorTemplateController.exportTemplateData.bind(editorTemplateController));
+
 // GET /api/editor-templates/:id - Get single template
 router.get('/:id', editorTemplateController.getTemplate.bind(editorTemplateController));
 

@@ -1,0 +1,22 @@
+{
+  "name": "Teste",
+  "description": "Teste",
+  "category": "test",
+  "elements": [],
+  "globalStyles": {
+    "fontFamily": "Arial",
+    "fontSize": 14,
+    "color": "#000000",
+    "backgroundColor": "#ffffff",
+    "lineHeight": 1.5
+  },
+  "pageSettings": {
+    "size": "A4",
+    "orientation": "portrait",
+    "margins": {"top": 10, "right": 10, "bottom": 10, "left": 10},
+    "backgroundColor": "#ffffff",
+    "showMargins": true
+  },
+  "tags": [],
+  "isPublic": false
+}
