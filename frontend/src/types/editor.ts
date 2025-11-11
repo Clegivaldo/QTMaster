@@ -64,6 +64,8 @@ export interface ElementStyles {
   border?: BorderConfig;
   borderRadius?: number;
   backgroundColor?: string;
+  // Vertical alignment for text inside boxes: 'top' | 'middle' | 'bottom'
+  verticalAlign?: 'top' | 'middle' | 'bottom';
   
   // Advanced
   opacity?: number;
@@ -205,10 +207,12 @@ export interface EditorTemplate {
   elements: TemplateElement[];
   pages: Page[];
   globalStyles: GlobalStyles;
+  // Optional legacy top-level page settings (some tests and consumers use this)
+  pageSettings?: PageSettings;
   
   // Metadata
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: any;
+  updatedAt: any;
   createdBy: string;
   version: number;
   
@@ -302,6 +306,10 @@ export interface CanvasProps {
     footer?: any | null;
     pageNumberInfo?: { current: number; total: number };
   };
+  // Optional callback to update page regions (header/footer) from canvas interactions
+  onUpdatePageRegions?: (header: any | null, footer: any | null) => void;
+  // Optional callback when user selects a page region (header/footer)
+  onRegionSelect?: (region: 'header' | 'footer' | null) => void;
 }
 
 export interface ElementPaletteProps {
@@ -324,6 +332,12 @@ export interface PropertiesPanelProps {
   canUngroup?: boolean;
   isVisible: boolean;
   onToggleVisibility: () => void;
+  // Optional region selection (header/footer) to show region-specific properties
+  region?: {
+    type: 'header' | 'footer';
+    data: any;
+    onUpdate: (updates: any) => void;
+  } | undefined;
 }
 
 // Tipos para operações

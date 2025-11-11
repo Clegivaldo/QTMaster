@@ -7,7 +7,7 @@ import { useErrorHandler } from '../hooks/useErrorHandler';
 import { usePageSettings } from '../hooks/usePageSettings';
 import { useToast } from '../hooks/useToast';
 import { useTemplateStorage } from '../hooks/useTemplateStorage';
-import { X, Save, Eye, Grid, Ruler, Download, FolderOpen, Settings, Minus, Plus, FileImage, ChevronLeft, ChevronRight, Home } from 'lucide-react';
+import { X, Save, Eye, Grid, Ruler, Download, FolderOpen, Settings, Minus, Plus, FileImage, ChevronLeft, ChevronRight } from 'lucide-react';
 import { KEYBOARD_SHORTCUTS } from '../types/editor-constants';
 import { Canvas } from '../components/EditorLayoutProfissional/components/EditorCanvas';
 import ImageGalleryModal from '../components/EditorLayoutProfissional/components/Modals/ImageGalleryModal';
@@ -77,6 +77,8 @@ const EditorLayout: React.FC = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showPageSettingsModal, setShowPageSettingsModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [galleryTarget, setGalleryTarget] = useState<'element' | 'background'>('element');
+  const [activeRegion, setActiveRegion] = useState<'header' | 'footer' | null>(null);
 
   // Hook para configurações de página
   const currentPageId = editor.getCurrentPageId ? editor.getCurrentPageId() : '';
@@ -89,6 +91,16 @@ const EditorLayout: React.FC = () => {
   const pageIndex = editor.template.pages.findIndex(p => p.id === currentPageId);
   const currentPageIndex = pageIndex >= 0 ? pageIndex : 0;
   const totalPages = editor.template.pages.length;
+
+  // Sincronizar mudanças nas configurações da página quando o template é atualizado
+  useEffect(() => {
+    if (currentPageMeta?.pageSettings) {
+      pageSettings.updatePageSettings(currentPageMeta.pageSettings);
+    }
+    if (currentPageMeta?.backgroundImage) {
+      pageSettings.updateBackgroundImage(currentPageMeta.backgroundImage);
+    }
+  }, [currentPageMeta?.pageSettings, currentPageMeta?.backgroundImage]);
 
   // Ref para a área do canvas
   const canvasAreaRef = React.useRef<HTMLDivElement | null>(null);
@@ -529,11 +541,11 @@ const EditorLayout: React.FC = () => {
           </button>
 
           <button
-            onClick={() => navigate('/')}
-            className="bg-orange-600 hover:bg-orange-700 p-2 rounded-full flex items-center justify-center transition-colors"
-            title="Voltar ao Dashboard"
+            onClick={() => setShowPageSettingsModal(true)}
+            className="bg-gray-700 hover:bg-gray-600 p-2 rounded-full flex items-center justify-center transition-colors"
+            title="Configurações da página"
           >
-            <Home className="h-4 w-4" />
+            <Settings className="h-4 w-4" />
           </button>
 
           <button
@@ -587,6 +599,7 @@ const EditorLayout: React.FC = () => {
               onAddElement={editor.addElement}
               showRuler={showRuler}
               onElementSelect={editor.selectElement}
+              onRegionSelect={setActiveRegion}
               onElementMove={(id, newPos) => {
                 const bounds = pageSettings.getPageBounds();
                 const mmToPx = (mm: number) => (mm * 96) / 25.4;
@@ -650,6 +663,12 @@ const EditorLayout: React.FC = () => {
               selectedElements={editor.getSelectedElements()}
               onUpdateStyles={editor.updateElementStyles}
               onUpdateContent={editor.updateElementContent}
+              onUpdateElements={editor.updateElements}
+              region={activeRegion ? { type: activeRegion, data: activeRegion === 'header' ? currentPageMeta?.header : currentPageMeta?.footer, onUpdate: (updates: any) => {
+                const newHeader = activeRegion === 'header' ? { ...(currentPageMeta?.header || {}), ...updates } : currentPageMeta?.header || null;
+                const newFooter = activeRegion === 'footer' ? { ...(currentPageMeta?.footer || {}), ...updates } : currentPageMeta?.footer || null;
+                editor.updatePageRegions && editor.updatePageRegions(newHeader as any, newFooter as any);
+              } } : undefined}
               onGroupElements={editor.groupSelectedElements}
               onUngroupElements={editor.ungroupSelectedElements}
               onBringToFront={editor.bringToFront}
@@ -684,7 +703,7 @@ const EditorLayout: React.FC = () => {
         
         <div className="flex items-center gap-2 md:gap-4">
           <span className="hidden md:inline">Página: {currentPageMeta?.pageSettings?.size || editor.template.pages?.[0]?.pageSettings?.size}</span>
-          <span className="hidden lg:inline">Orientação: {currentPageMeta?.pageSettings?.orientation || editor.template.pages?.[0]?.pageSettings?.orientation}</span>
+          <span className="hidden lg:inline">Orientação: { (currentPageMeta?.pageSettings?.orientation || editor.template.pages?.[0]?.pageSettings?.orientation) === 'portrait' ? 'Retrato' : 'Paisagem' }</span>
         </div>
       </div>
 
@@ -725,12 +744,24 @@ const EditorLayout: React.FC = () => {
         onUpdateHeaderFooter={(header, footer) => {
           editor.updatePageRegions && editor.updatePageRegions(header, footer);
         }}
+        onOpenGallery={() => { setGalleryTarget('background'); setShowGalleryModal(true); }}
       />
 
       <ImageGalleryModal
         isOpen={showGalleryModal}
         onClose={() => setShowGalleryModal(false)}
         onSelectImage={(img) => {
+          if (galleryTarget === 'background') {
+            // set as page background
+            pageSettings.updateBackgroundImage({ url: img.src, repeat: 'no-repeat', opacity: 1, position: 'center' });
+            editor.updateBackgroundImage && editor.updateBackgroundImage({ url: img.src, repeat: 'no-repeat', opacity: 1, position: 'center' });
+            setShowGalleryModal(false);
+            // keep galleryTarget default
+            setGalleryTarget('element');
+            return;
+          }
+
+          // default behavior: add image element to canvas
           const id = editor.addElement('image', { x: 20, y: 20 });
           editor.updateElementContent(id, {
             src: img.src,

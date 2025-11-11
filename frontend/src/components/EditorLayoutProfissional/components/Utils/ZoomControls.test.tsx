@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ZoomControls from './ZoomControls';
-import { ZOOM_LEVELS, MIN_ZOOM, MAX_ZOOM } from '../../../../types/editor-constants';
+import { MIN_ZOOM, MAX_ZOOM } from '../../../../types/editor-constants';
 
 describe('ZoomControls', () => {
   const mockProps = {
@@ -40,44 +40,44 @@ describe('ZoomControls', () => {
       const user = userEvent.setup();
       render(<ZoomControls {...mockProps} />);
       
-      const zoomInput = screen.getByDisplayValue('100');
+  const zoomInput = screen.getByDisplayValue('100');
       
-      await user.type(zoomInput, '50');
+  await user.type(zoomInput, '50');
       
-      // Input should contain the typed value (may append to existing)
-      expect(zoomInput.value).toContain('50');
+  // Input should contain the typed value (may append to existing)
+  expect((zoomInput as HTMLInputElement).value).toContain('50');
     });
 
     it('should process zoom input on Enter key', async () => {
       const user = userEvent.setup();
       render(<ZoomControls {...mockProps} />);
       
-      const zoomInput = screen.getByDisplayValue('100');
+  const zoomInput = screen.getByDisplayValue('100');
       
-      // Clear mock calls first
-      mockProps.onZoomChange.mockClear();
+  // Clear mock calls first
+  mockProps.onZoomChange.mockClear();
       
-      await user.clear(zoomInput);
-      await user.type(zoomInput, '200{enter}');
+  await user.clear(zoomInput);
+  await user.type(zoomInput, '200{enter}');
       
-      // Should call onZoomChange when Enter is pressed
-      expect(mockProps.onZoomChange).toHaveBeenCalled();
+  // Should call onZoomChange when Enter is pressed
+  expect(mockProps.onZoomChange).toHaveBeenCalled();
     });
 
     it('should handle zoom input validation on Enter', async () => {
       const user = userEvent.setup();
       render(<ZoomControls {...mockProps} />);
       
-      const zoomInput = screen.getByDisplayValue('100');
+  const zoomInput = screen.getByDisplayValue('100');
       
-      // Clear mock calls first
-      mockProps.onZoomChange.mockClear();
+  // Clear mock calls first
+  mockProps.onZoomChange.mockClear();
       
-      await user.clear(zoomInput);
-      await user.type(zoomInput, '50{enter}');
+  await user.clear(zoomInput);
+  await user.type(zoomInput, '50{enter}');
       
-      // Should call onZoomChange when Enter is pressed with valid input
-      expect(mockProps.onZoomChange).toHaveBeenCalled();
+  // Should call onZoomChange when Enter is pressed with valid input
+  expect(mockProps.onZoomChange).toHaveBeenCalled();
     });
 
     it('should show zoom presets dropdown', async () => {
@@ -199,12 +199,12 @@ describe('ZoomControls', () => {
       const user = userEvent.setup();
       render(<ZoomControls {...mockProps} />);
       
-      const zoomInput = screen.getByDisplayValue('100');
+  const zoomInput = screen.getByDisplayValue('100');
       
-      await user.type(zoomInput, 'abc'); // Non-numeric input
+  await user.type(zoomInput, 'abc'); // Non-numeric input
       
-      // Input should accept any text (validation happens on processing)
-      expect(zoomInput.value).toContain('abc');
+  // Input should accept any text (validation happens on processing)
+  expect((zoomInput as HTMLInputElement).value).toContain('abc');
     });
 
     it('should handle escape key to cancel input', async () => {

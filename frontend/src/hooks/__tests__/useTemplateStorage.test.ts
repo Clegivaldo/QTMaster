@@ -38,6 +38,7 @@ const mockTemplate: EditorTemplate = {
       zIndex: 1
     }
   ],
+  pages: [],
   globalStyles: {
     fontFamily: 'Arial, sans-serif',
     fontSize: 12,

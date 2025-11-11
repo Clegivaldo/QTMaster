@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
@@ -126,6 +125,7 @@ const mockTemplate: EditorTemplate = {
     backgroundColor: '#ffffff',
     showMargins: true
   },
+  pages: [],
   createdAt: new Date(),
   updatedAt: new Date(),
   createdBy: 'test-user',

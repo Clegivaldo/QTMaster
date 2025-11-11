@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ImageElement from './ImageElement';
 import { mockImageElement, createTestElement } from '../../../../test/test-utils';
-import { ImageData } from '../../../../types/editor';
+// ImageData import removed (unused) during test-type triage
 
 // Mock the hooks and modals
 // We expose a global override `window.__useImageUploadMock` so individual tests can change

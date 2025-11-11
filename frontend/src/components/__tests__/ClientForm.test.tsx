@@ -13,8 +13,8 @@ const mockClient: Client = {
   phone: '(11) 99999-9999',
   address: 'Test Address',
   cnpj: '12.345.678/0001-90',
-  createdAt: new Date(),
-  updatedAt: new Date(),
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 };
 
 describe('ClientForm', () => {
@@ -90,10 +90,9 @@ describe('ClientForm', () => {
   it('should validate email format', async () => {
     render(<ClientForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
     
-    const inputs = screen.getAllByRole('textbox');
-    const nameInput = inputs.find(input => (input as HTMLInputElement).name === 'name');
-    const emailInput = inputs.find(input => (input as HTMLInputElement).name === 'email');
-    const submitButton = screen.getByRole('button', { name: /criar/i });
+  const inputs = screen.getAllByRole('textbox');
+  const nameInput = inputs.find(input => (input as HTMLInputElement).name === 'name');
+  const emailInput = inputs.find(input => (input as HTMLInputElement).name === 'email');
     
     if (nameInput && emailInput) {
   fireEvent.change(nameInput, { target: { value: 'Valid Name' } });

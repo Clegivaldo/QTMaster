@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, RenderOptions } from '@testing-library/react';
-import { TemplateElement, ElementType, Position } from '../types/editor';
+import { TemplateElement, ElementType, Position, TableElement, ImageElement, TextElement } from '../types/editor';
 import { createDefaultElement } from '../types/editor-utils';
 import { vi } from 'vitest';
 
 // Mock data for testing
-export const mockTextElement: TemplateElement = {
+export const mockTextElement: TextElement = {
   id: 'text-1',
   type: 'text',
   content: 'Test Text Content',
@@ -21,7 +21,7 @@ export const mockTextElement: TemplateElement = {
   zIndex: 1
 };
 
-export const mockImageElement: TemplateElement = {
+export const mockImageElement: ImageElement = {
   id: 'image-1',
   type: 'image',
   content: {
@@ -43,7 +43,7 @@ export const mockImageElement: TemplateElement = {
   zIndex: 2
 };
 
-export const mockTableElement: TemplateElement = {
+export const mockTableElement: TableElement = {
   id: 'table-1',
   type: 'table',
   content: {
@@ -79,12 +79,12 @@ export const mockElements: TemplateElement[] = [
 export const createTestElement = (
   type: ElementType,
   overrides: Partial<TemplateElement> = {}
-): TemplateElement => {
+): any => {
   const defaultElement = createDefaultElement(type);
   return {
     ...defaultElement,
     ...overrides
-  };
+  } as any;
 };
 
 // Helper function to create mock canvas props

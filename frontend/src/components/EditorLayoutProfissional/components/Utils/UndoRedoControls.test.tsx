@@ -24,8 +24,8 @@ describe('UndoRedoControls', () => {
     it('should render undo and redo buttons', () => {
       render(<UndoRedoControls {...mockProps} />);
 
-      const undoButton = screen.getByLabelText('Desfazer última ação');
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const undoButton = screen.getByLabelText('Desfazer última ação');
+  const redoButton = screen.getByLabelText('Refazer ação');
 
       expect(undoButton).toBeInTheDocument();
       expect(redoButton).toBeInTheDocument();
@@ -34,8 +34,8 @@ describe('UndoRedoControls', () => {
     it('should show correct tooltips with keyboard shortcuts', () => {
       render(<UndoRedoControls {...mockProps} />);
 
-      const undoButton = screen.getByLabelText('Desfazer última ação');
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const undoButton = screen.getByLabelText('Desfazer última ação');
+  const redoButton = screen.getByLabelText('Refazer ação');
 
       expect(undoButton).toHaveAttribute('title', `Desfazer (${KEYBOARD_SHORTCUTS.UNDO})`);
       expect(redoButton).toHaveAttribute('title', `Refazer (${KEYBOARD_SHORTCUTS.REDO})`);
@@ -45,7 +45,8 @@ describe('UndoRedoControls', () => {
       render(<UndoRedoControls {...mockProps} compact={true} />);
 
       const undoButton = screen.getByLabelText('Desfazer última ação');
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const redoButton = screen.getByLabelText('Refazer ação');
+  void redoButton;
 
       // In compact mode, buttons should have smaller padding classes
       expect(undoButton).toHaveClass('p-1');
@@ -56,7 +57,8 @@ describe('UndoRedoControls', () => {
       render(<UndoRedoControls {...mockProps} compact={false} />);
 
       const undoButton = screen.getByLabelText('Desfazer última ação');
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const redoButton = screen.getByLabelText('Refazer ação');
+  void redoButton;
 
       // In normal mode, buttons should have regular padding classes
       expect(undoButton).toHaveClass('p-2');
@@ -69,7 +71,8 @@ describe('UndoRedoControls', () => {
       render(<UndoRedoControls {...mockProps} canUndo={true} canRedo={true} />);
 
       const undoButton = screen.getByLabelText('Desfazer última ação');
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const redoButton = screen.getByLabelText('Refazer ação');
+  void redoButton;
 
       expect(undoButton).not.toBeDisabled();
       expect(redoButton).not.toBeDisabled();
@@ -81,7 +84,8 @@ describe('UndoRedoControls', () => {
       render(<UndoRedoControls {...mockProps} canUndo={false} canRedo={true} />);
 
       const undoButton = screen.getByLabelText('Desfazer última ação');
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const redoButton = screen.getByLabelText('Refazer ação');
+  void redoButton;
 
       expect(undoButton).toBeDisabled();
       expect(redoButton).not.toBeDisabled();
@@ -92,7 +96,8 @@ describe('UndoRedoControls', () => {
       render(<UndoRedoControls {...mockProps} canUndo={true} canRedo={false} />);
 
       const undoButton = screen.getByLabelText('Desfazer última ação');
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const redoButton = screen.getByLabelText('Refazer ação');
+  void redoButton;
 
       expect(undoButton).not.toBeDisabled();
       expect(redoButton).toBeDisabled();
@@ -103,7 +108,8 @@ describe('UndoRedoControls', () => {
       render(<UndoRedoControls {...mockProps} canUndo={false} canRedo={false} />);
 
       const undoButton = screen.getByLabelText('Desfazer última ação');
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const redoButton = screen.getByLabelText('Refazer ação');
+  void redoButton;
 
       expect(undoButton).toBeDisabled();
       expect(redoButton).toBeDisabled();
@@ -113,7 +119,8 @@ describe('UndoRedoControls', () => {
       render(<UndoRedoControls {...mockProps} canUndo={false} canRedo={false} />);
 
       const undoButton = screen.getByLabelText('Desfazer última ação');
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const redoButton = screen.getByLabelText('Refazer ação');
+  void redoButton;
 
       expect(undoButton).toHaveAttribute('title', `Desfazer (${KEYBOARD_SHORTCUTS.UNDO}) - Nenhuma ação para desfazer`);
       expect(redoButton).toHaveAttribute('title', `Refazer (${KEYBOARD_SHORTCUTS.REDO}) - Nenhuma ação para refazer`);
@@ -135,7 +142,8 @@ describe('UndoRedoControls', () => {
       const user = userEvent.setup();
       render(<UndoRedoControls {...mockProps} canRedo={true} />);
 
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const redoButton = screen.getByLabelText('Refazer ação');
+  void redoButton;
       await user.click(redoButton);
 
       expect(mockProps.onRedo).toHaveBeenCalledTimes(1);
@@ -155,8 +163,7 @@ describe('UndoRedoControls', () => {
       const user = userEvent.setup();
       render(<UndoRedoControls {...mockProps} canRedo={false} />);
 
-      const redoButton = screen.getByLabelText('Refazer ação');
-      await user.click(redoButton);
+      await user.click(screen.getByLabelText('Refazer ação'));
 
       expect(mockProps.onRedo).not.toHaveBeenCalled();
     });
@@ -164,19 +171,17 @@ describe('UndoRedoControls', () => {
     it('should prevent default and stop propagation on button clicks', () => {
       render(<UndoRedoControls {...mockProps} />);
 
-      const undoButton = screen.getByLabelText('Desfazer última ação');
-      const redoButton = screen.getByLabelText('Refazer ação');
+  const undoButton = screen.getByLabelText('Desfazer última ação');
 
-      const undoEvent = new MouseEvent('click', { bubbles: true });
-      const redoEvent = new MouseEvent('click', { bubbles: true });
+  const undoEvent = new MouseEvent('click', { bubbles: true });
 
-      const preventDefaultSpy = vi.spyOn(undoEvent, 'preventDefault');
-      const stopPropagationSpy = vi.spyOn(undoEvent, 'stopPropagation');
+  const preventDefaultSpy = vi.spyOn(undoEvent, 'preventDefault');
+  const stopPropagationSpy = vi.spyOn(undoEvent, 'stopPropagation');
 
-      fireEvent(undoButton, undoEvent);
+  fireEvent(undoButton, undoEvent);
 
-      expect(preventDefaultSpy).toHaveBeenCalled();
-      expect(stopPropagationSpy).toHaveBeenCalled();
+  expect(preventDefaultSpy).toHaveBeenCalled();
+  expect(stopPropagationSpy).toHaveBeenCalled();
     });
   });
 

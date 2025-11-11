@@ -23,7 +23,9 @@ const Canvas: React.FC<CanvasProps> = ({
   showRuler = false,
   onPanChange,
   onWheel,
-  pageRegions
+  pageRegions,
+  onUpdatePageRegions
+  , onRegionSelect
 }) => {
   // showRuler optionally passed from parent
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,73 @@ const Canvas: React.FC<CanvasProps> = ({
 
     return { x, y };
   }, [zoom]);
+
+  const [isResizingHeader, setIsResizingHeader] = useState(false);
+  const [isResizingFooter, setIsResizingFooter] = useState(false);
+  const [resizeStartY, setResizeStartY] = useState(0);
+  const [resizeStartHeightPx, setResizeStartHeightPx] = useState(0);
+  const [previewHeaderHeightPx, setPreviewHeaderHeightPx] = useState<number | null>(null);
+  const [previewFooterHeightPx, setPreviewFooterHeightPx] = useState<number | null>(null);
+
+  // Helpers para redimensionar header/footer
+  const pxToMm = (px: number) => px / (mmToPx(1) * zoom);
+
+  useEffect(() => {
+    if (!isResizingHeader && !isResizingFooter) return;
+
+    const handleMouseMoveDoc = (e: MouseEvent) => {
+      if (isResizingHeader) {
+        const delta = e.clientY - resizeStartY;
+        const newH = Math.max(0, resizeStartHeightPx + delta);
+        setPreviewHeaderHeightPx(newH);
+      }
+      if (isResizingFooter) {
+        const delta = resizeStartY - e.clientY;
+        const newH = Math.max(0, resizeStartHeightPx + delta);
+        setPreviewFooterHeightPx(newH);
+      }
+    };
+
+    const handleMouseUpDoc = () => {
+      if (isResizingHeader) {
+        const finalPx = previewHeaderHeightPx ?? resizeStartHeightPx;
+        const finalMm = pxToMm(finalPx);
+        try {
+          const newHeader = { ...(pageRegions?.header || {}), height: Math.max(0, finalMm) };
+          onUpdatePageRegions?.(newHeader, pageRegions?.footer ?? null);
+        } catch (err) {
+          console.error('Erro ao atualizar header height', err);
+        }
+      }
+      if (isResizingFooter) {
+        const finalPx = previewFooterHeightPx ?? resizeStartHeightPx;
+        const finalMm = pxToMm(finalPx);
+        try {
+          const newFooter = { ...(pageRegions?.footer || {}), height: Math.max(0, finalMm) };
+          onUpdatePageRegions?.(pageRegions?.header ?? null, newFooter);
+        } catch (err) {
+          console.error('Erro ao atualizar footer height', err);
+        }
+      }
+
+      setIsResizingHeader(false);
+      setIsResizingFooter(false);
+      setResizeStartY(0);
+      setResizeStartHeightPx(0);
+      setPreviewHeaderHeightPx(null);
+      setPreviewFooterHeightPx(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMoveDoc);
+    document.addEventListener('mouseup', handleMouseUpDoc);
+    document.body.style.cursor = 'row-resize';
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMoveDoc);
+      document.removeEventListener('mouseup', handleMouseUpDoc);
+      document.body.style.cursor = 'default';
+    };
+  }, [isResizingHeader, isResizingFooter, resizeStartY, resizeStartHeightPx, previewHeaderHeightPx, previewFooterHeightPx, onUpdatePageRegions, pageRegions]);
 
   // Handler para clique no canvas (deselecionar elementos)
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
@@ -92,6 +161,8 @@ const Canvas: React.FC<CanvasProps> = ({
 
     // Seleção normal
     onElementSelect?.(elementId, multiSelect);
+    // clear region selection when a normal element is selected
+    onRegionSelect?.(null as any);
   }, [elements, selectedElementIds, onElementSelect]);
 
   // Handler para início de drag no canvas (pan)
@@ -320,18 +391,8 @@ const Canvas: React.FC<CanvasProps> = ({
                 const header = pageRegions.header;
                 const headerHeightPx = mmToPx(header.height) * zoom;
                 return (
-                  <div
-                    className="absolute left-0 right-0"
-                    style={{
-                      top: 0,
-                      height: headerHeightPx,
-                      pointerEvents: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    {Array.isArray(header.elements) && header.elements.map((el: any, idx: number) => {
+                          <div className="absolute left-0 right-0" style={{ top: 0, height: headerHeightPx, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    {Array.isArray(header.elements) && header.elements.map((el: any, idx: number) => {
                       if (!el) return null;
                       if (el.type === 'text') {
                         return <div key={el.id || idx} className="text-xs text-gray-700" style={{ pointerEvents: 'none' }}>{el.content}</div>;
@@ -347,6 +408,35 @@ const Canvas: React.FC<CanvasProps> = ({
                       }
                       return null;
                     })}
+                    {/* Drag handle at bottom edge of header */}
+                    <div
+                      data-testid="header-resize-handle"
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        setIsResizingHeader(true);
+                        setResizeStartY(e.clientY);
+                        setResizeStartHeightPx(headerHeightPx);
+                        setPreviewHeaderHeightPx(headerHeightPx);
+                      }}
+                      className="absolute left-0 right-0 h-1 cursor-row-resize hover:bg-blue-500 transition-colors"
+                      style={{ top: Math.max(0, headerHeightPx - 2), zIndex: 60, background: isResizingHeader ? '#3b82f6' : '#e5e7eb', pointerEvents: 'auto' }}
+                    />
+                    {/* Click region to select header */}
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRegionSelect?.('header');
+                      }}
+                      className="absolute left-0 right-0 top-0 bottom-0"
+                      style={{ zIndex: 40, pointerEvents: 'auto', background: 'transparent' }}
+                    />
+                    {/* preview overlay */}
+                    {isResizingHeader && previewHeaderHeightPx !== null && (
+                      <>
+                        <div className="absolute left-0 right-0 bg-blue-400 opacity-30" style={{ top: 0, height: previewHeaderHeightPx, pointerEvents: 'none', zIndex: 50 }} />
+                        <div className="absolute left-0 right-0 border-b-2 border-blue-500" style={{ top: previewHeaderHeightPx - 1, pointerEvents: 'none', zIndex: 50 }} />
+                      </>
+                    )}
                   </div>
                 );
               } catch (err) {
@@ -379,17 +469,7 @@ const Canvas: React.FC<CanvasProps> = ({
                 const footer = pageRegions.footer;
                 const footerHeightPx = mmToPx(footer.height) * zoom;
                 return (
-                  <div
-                    className="absolute left-0 right-0"
-                    style={{
-                      bottom: 0,
-                      height: footerHeightPx,
-                      pointerEvents: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
+                  <div className="absolute left-0 right-0" style={{ bottom: 0, height: footerHeightPx, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {Array.isArray(footer.elements) && footer.elements.map((el: any, idx: number) => {
                       if (!el) return null;
                       if (el.type === 'text') {
@@ -406,6 +486,34 @@ const Canvas: React.FC<CanvasProps> = ({
                       }
                       return null;
                     })}
+                    {/* Drag handle at top edge of footer */}
+                    <div
+                      data-testid="footer-resize-handle"
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        setIsResizingFooter(true);
+                        setResizeStartY(e.clientY);
+                        setResizeStartHeightPx(footerHeightPx);
+                        setPreviewFooterHeightPx(footerHeightPx);
+                      }}
+                      className="absolute left-0 right-0 h-1 cursor-row-resize hover:bg-blue-500 transition-colors"
+                      style={{ bottom: Math.max(0, footerHeightPx - 2), zIndex: 60, background: isResizingFooter ? '#3b82f6' : '#e5e7eb', pointerEvents: 'auto' }}
+                    />
+                    {isResizingFooter && previewFooterHeightPx !== null && (
+                      <>
+                        <div className="absolute left-0 right-0 bg-blue-400 opacity-30" style={{ bottom: 0, height: previewFooterHeightPx, pointerEvents: 'none', zIndex: 50 }} />
+                        <div className="absolute left-0 right-0 border-t-2 border-blue-500" style={{ bottom: previewFooterHeightPx - 1, pointerEvents: 'none', zIndex: 50 }} />
+                      </>
+                    )}
+                    {/* Click region to select footer */}
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRegionSelect?.('footer');
+                      }}
+                      className="absolute left-0 right-0 top-0 bottom-0"
+                      style={{ zIndex: 40, pointerEvents: 'auto', background: 'transparent' }}
+                    />
                   </div>
                 );
               } catch (err) {

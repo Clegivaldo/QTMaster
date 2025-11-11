@@ -53,6 +53,22 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       color: styles.color,
       textAlign: styles.textAlign,
       lineHeight: styles.lineHeight,
+
+      // Vertical alignment for text/heading elements
+      // map our logical verticalAlign ('top'|'middle'|'bottom') to CSS flex alignItems
+      ...(element.type === 'text' || element.type === 'heading'
+        ? {
+            display: 'flex' as const,
+            flexDirection: 'column' as const,
+            justifyContent:
+              styles.verticalAlign === 'middle'
+                ? 'center'
+                : styles.verticalAlign === 'bottom'
+                ? 'flex-end'
+                : 'flex-start',
+            alignItems: 'stretch'
+          }
+        : {}),
       
       // Estilos de layout
       backgroundColor: styles.backgroundColor,
@@ -91,6 +107,13 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
 
     // Avoid starting a drag on a double click (detail > 1)
     if (e.detail > 1) return;
+
+    // If element is locked, allow selection but do not start dragging or editing
+    if (element.locked) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
 
     setIsDragging(true);
     setDragStart({
@@ -165,10 +188,11 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       case 'heading':
         return (
           <div
-            className="w-full h-full outline-none overflow-hidden"
+            className="flex-1 w-full h-full outline-none"
             style={{ 
               wordWrap: 'break-word',
-              whiteSpace: 'pre-wrap'
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'break-word'
             }}
             onDoubleClick={(e) => {
               // enable editing on double click
@@ -267,13 +291,13 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
         select-none
         ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
         ${element.visible ? '' : 'opacity-50'}
-        ${element.locked ? 'pointer-events-none' : ''}
+        ${element.locked ? 'opacity-70 cursor-not-allowed' : ''}
       `}
     >
       {renderContent()}
       
       {/* Alças de redimensionamento */}
-      {isSelected && onResize && onMove && (
+      {isSelected && onResize && onMove && !element.locked && (
         <SelectionHandles
           element={element}
           zoom={zoom}

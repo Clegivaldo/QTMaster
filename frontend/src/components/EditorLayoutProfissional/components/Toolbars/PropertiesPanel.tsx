@@ -18,10 +18,11 @@ import {
   Group,
   Ungroup
 } from 'lucide-react';
+import { X as IconX } from 'lucide-react';
 import { PropertiesPanelProps, ElementStyles } from '../../../../types/editor';
 import { AVAILABLE_FONTS, FONT_SIZES } from '../../../../types/editor-constants';
 
-const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
+const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (elementIds: string[], updates: any) => void }> = ({
   selectedElements,
   onUpdateStyles,
   onUpdateContent,
@@ -32,7 +33,9 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   canGroup = false,
   canUngroup = false,
   isVisible,
-  onToggleVisibility
+  onToggleVisibility,
+  onUpdateElements,
+  region
 }) => {
   const hasSelection = selectedElements.length > 0;
   const singleSelection = selectedElements.length === 1;
@@ -72,6 +75,100 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
     applyStyle({ [property]: newValue });
   }, [getCommonStringStyle, applyStyle]);
 
+  // Helpers para borda
+  const isBorderEnabledCommon = useCallback(() => {
+    if (!hasSelection) return false;
+    return selectedElements.every(el => {
+      if (el.type === 'rectangle' || el.type === 'circle') {
+        return ((el.content as any).strokeWidth || 0) > 0;
+      }
+      const b = el.styles.border as any;
+      return b && b.style && b.style !== 'none' && (b.width || 0) > 0;
+    });
+  }, [selectedElements, hasSelection]);
+
+  const getCommonBorderWidth = useCallback((): number | undefined => {
+    if (!hasSelection) return undefined;
+    const first = selectedElements[0];
+    if (first.type === 'rectangle' || first.type === 'circle') {
+      const w = (first.content as any).strokeWidth || 0;
+      const allSame = selectedElements.every(el => ((el.content as any).strokeWidth || 0) === w);
+      return allSame ? w : undefined;
+    }
+    const bw = (first.styles.border as any)?.width || 0;
+    const allSame = selectedElements.every(el => ((el.styles.border as any)?.width || 0) === bw);
+    return allSame ? bw : undefined;
+  }, [selectedElements, hasSelection]);
+
+  const getCommonBorderColor = useCallback((): string | undefined => {
+    if (!hasSelection) return undefined;
+    const first = selectedElements[0];
+    if (first.type === 'rectangle' || first.type === 'circle') {
+      const c = (first.content as any).strokeColor || '#000000';
+      const allSame = selectedElements.every(el => ((el.content as any).strokeColor || '#000000') === c);
+      return allSame ? c : undefined;
+    }
+    const c = (first.styles.border as any)?.color || '#000000';
+    const allSame = selectedElements.every(el => ((el.styles.border as any)?.color || '#000000') === c);
+    return allSame ? c : undefined;
+  }, [selectedElements, hasSelection]);
+
+  const toggleBorderForSelection = useCallback((enable: boolean) => {
+    if (!hasSelection) return;
+    selectedElements.forEach(el => {
+      if (el.type === 'rectangle' || el.type === 'circle') {
+        const shapeData = (el.content as any) || {};
+        const newData = { ...shapeData, strokeWidth: enable ? (shapeData.strokeWidth && shapeData.strokeWidth > 0 ? shapeData.strokeWidth : 1) : 0, strokeColor: shapeData.strokeColor || '#000000' };
+        onUpdateContent?.(el.id, newData);
+      } else {
+        if (!enable) {
+          // store previous border
+          const currentBorder = el.styles.border as any;
+          const prev = currentBorder ? { ...currentBorder } : null;
+          applyStyle({ border: { width: 0, style: 'none', color: (currentBorder && currentBorder.color) || '#000000' } as any });
+          onUpdateElements?.([el.id], { metadata: { ...(el.metadata || {}), prevBorder: prev } } as any);
+        } else {
+          const prev = (el.metadata as any)?.prevBorder;
+          if (prev) {
+            applyStyle({ border: { width: prev.width || 1, style: prev.style || 'solid', color: prev.color || '#000000' } as any });
+            onUpdateElements?.([el.id], { metadata: { ...(el.metadata || {}), prevBorder: undefined } } as any);
+          } else {
+            const firstBorder = (selectedElements[0].styles.border as any) || { width: 1, style: 'solid', color: '#000000' };
+            applyStyle({ border: { width: firstBorder.width || 1, style: firstBorder.style === 'none' ? 'solid' : firstBorder.style, color: firstBorder.color || '#000000' } as any });
+          }
+        }
+      }
+    });
+  }, [selectedElements, applyStyle, onUpdateContent, onUpdateElements, hasSelection]);
+
+  const setBorderWidthForSelection = useCallback((width: number) => {
+    if (!hasSelection) return;
+    selectedElements.forEach(el => {
+      if (el.type === 'rectangle' || el.type === 'circle') {
+        const shapeData = (el.content as any) || {};
+        const newData = { ...shapeData, strokeWidth: width };
+        onUpdateContent?.(el.id, newData);
+      } else {
+        const current = (el.styles.border as any) || { style: 'solid', color: '#000000' };
+        applyStyle({ border: { width, style: current.style || 'solid', color: current.color || '#000000' } as any });
+      }
+    });
+  }, [selectedElements, applyStyle, onUpdateContent, hasSelection]);
+
+  const setBorderColorForSelection = useCallback((color: string) => {
+    if (!hasSelection) return;
+    selectedElements.forEach(el => {
+      if (el.type === 'rectangle' || el.type === 'circle') {
+        const shapeData = (el.content as any) || {};
+        const newData = { ...shapeData, strokeColor: color };
+        onUpdateContent?.(el.id, newData);
+      } else {
+        const current = (el.styles.border as any) || { width: 1, style: 'solid' };
+        applyStyle({ border: { width: current.width || 1, style: current.style || 'solid', color } as any });
+      }
+    });
+  }, [selectedElements, applyStyle, onUpdateContent, hasSelection]);
+
   // Verificar se elemento suporta formatação de texto
   const supportsTextFormatting = hasSelection && selectedElements.some(el => 
     el.type === 'text' || el.type === 'heading'
@@ -96,13 +193,27 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       </div>
       
       <div className="flex-1 overflow-y-auto">
-        {!hasSelection ? (
+        {!hasSelection && !region ? (
           <div className="p-8 text-center text-gray-500">
             <div className="text-sm">Selecione um elemento</div>
             <div className="text-xs mt-1">para editar suas propriedades</div>
           </div>
         ) : (
           <div className="space-y-1">
+            {/* Region selected (header/footer) */}
+            {region && (
+              <div className="p-4 bg-white border-b border-gray-200">
+                <div className="text-sm font-medium text-gray-700 mb-1">{region.type === 'header' ? 'Cabeçalho' : 'Rodapé'}</div>
+                <div className="text-xs text-gray-500 mb-2">Propriedades do {region.type === 'header' ? 'cabeçalho' : 'rodapé'}</div>
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-500">Altura: {region.data?.height ?? '—'} mm (defina arrastando a linha na página)</div>
+                  <label className="flex items-center">
+                    <input type="checkbox" checked={!!region.data?.replicateAcrossPages} onChange={(e) => region.onUpdate({ ...(region.data || {}), replicateAcrossPages: e.target.checked })} className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
+                    <span className="ml-2 text-sm text-gray-700">Replicar em todas as páginas</span>
+                  </label>
+                </div>
+              </div>
+            )}
             {/* Informações do elemento */}
             <div className="p-4 bg-white border-b border-gray-200">
               <div className="text-sm font-medium text-gray-700 mb-1">
@@ -120,30 +231,35 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    // TODO: Implementar toggle de visibilidade
+                    const ids = selectedElements.map(s => s.id);
+                    const anyHidden = !selectedElements.every(el => el.visible);
+                    // Se algum não visível, tornar todos visíveis, senão esconder todos
+                    onUpdateElements ? onUpdateElements(ids, { visible: anyHidden }) : null;
                   }}
-                  className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                  className="p-2 rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 flex items-center justify-center transition-colors"
+                  title="Alternar visibilidade"
                 >
                   {selectedElements.every(el => el.visible) ? (
                     <Eye className="h-4 w-4" />
                   ) : (
                     <EyeOff className="h-4 w-4" />
                   )}
-                  <span>Visível</span>
                 </button>
 
                 <button
                   onClick={() => {
-                    // TODO: Implementar toggle de bloqueio
+                    const ids = selectedElements.map(s => s.id);
+                    const anyLocked = !selectedElements.every(el => el.locked);
+                    onUpdateElements ? onUpdateElements(ids, { locked: anyLocked }) : null;
                   }}
-                  className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                  className="p-2 rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 flex items-center justify-center transition-colors"
+                  title="Alternar bloqueio"
                 >
                   {selectedElements.every(el => el.locked) ? (
                     <Lock className="h-4 w-4" />
                   ) : (
                     <Unlock className="h-4 w-4" />
                   )}
-                  <span>Bloqueado</span>
                 </button>
               </div>
             </div>
@@ -183,6 +299,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     <div>• Mínimo de 2 elementos para agrupar</div>
                   </div>
                 </div>
+
+                  {/* Alinhamento vertical - movido para seção de formatação de texto (visível quando suporta formatação) */}
               </div>
             )}
 
@@ -387,6 +505,31 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                     </div>
                   </div>
 
+                  {/* Alinhamento vertical (novo lugar) */}
+                  <div className="mt-3">
+                    <label className="block text-xs text-gray-500 mb-2">Alinhamento Vertical</label>
+                    <div className="flex gap-1">
+                      {[
+                        { value: 'top', icon: ChevronUp, title: 'Topo' },
+                        { value: 'middle', icon: AlignCenter, title: 'Centro' },
+                        { value: 'bottom', icon: ChevronDown, title: 'Base' }
+                      ].map(({ value, icon: Icon, title }) => (
+                        <button
+                          key={value}
+                          onClick={() => applyStyle({ verticalAlign: value as any })}
+                          className={`p-2 border rounded transition-colors ${
+                            getCommonStringStyle('verticalAlign') === value
+                              ? 'bg-blue-500 text-white border-blue-500'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
+                          title={title}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Cor do texto */}
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Cor do Texto</label>
@@ -395,13 +538,14 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                         type="color"
                         value={getCommonStringStyle('color') || '#000000'}
                         onChange={(e) => applyStyle({ color: e.target.value })}
-                        className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+                        className="w-8 h-8 border border-gray-300 rounded-sm cursor-pointer"
+                        aria-label="Cor do texto"
                       />
                       <input
                         type="text"
                         value={getCommonStringStyle('color') || '#000000'}
                         onChange={(e) => applyStyle({ color: e.target.value })}
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm font-mono"
+                        className="w-28 px-2 py-1 border border-gray-300 rounded text-sm font-mono"
                         placeholder="#000000"
                       />
                     </div>
@@ -422,20 +566,22 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                       type="color"
                       value={getCommonStringStyle('backgroundColor') || '#ffffff'}
                       onChange={(e) => applyStyle({ backgroundColor: e.target.value })}
-                      className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+                      className="w-8 h-8 border border-gray-300 rounded-sm cursor-pointer"
+                      aria-label="Cor do fundo"
                     />
                     <input
                       type="text"
                       value={getCommonStringStyle('backgroundColor') || '#ffffff'}
                       onChange={(e) => applyStyle({ backgroundColor: e.target.value })}
-                      className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm font-mono"
+                      className="w-28 px-2 py-1 border border-gray-300 rounded text-sm font-mono"
                       placeholder="#ffffff"
                     />
                     <button
                       onClick={() => applyStyle({ backgroundColor: 'transparent' })}
-                      className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                      className="ml-2 p-1 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center"
+                      title="Fundo transparente"
                     >
-                      Transparente
+                      <IconX className="h-3 w-3 text-red-500" />
                     </button>
                   </div>
                 </div>
@@ -456,18 +602,56 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                   />
                 </div>
 
-                {/* Borda radius */}
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Borda Arredondada</label>
-                  <input
-                    type="number"
-                    value={getCommonNumberStyle('borderRadius') || 0}
-                    onChange={(e) => applyStyle({ borderRadius: parseInt(e.target.value) || 0 })}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                    min="0"
-                    max="50"
-                    placeholder="0"
-                  />
+                <div className="flex items-start gap-3">
+                  <div className="pt-2">
+                    <input
+                      id="enable-border"
+                      type="checkbox"
+                      checked={isBorderEnabledCommon()}
+                      onChange={(e) => toggleBorderForSelection(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-300"
+                      title="Ativar/Desativar borda"
+                    />
+                  </div>
+
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">Borda Arredondada</label>
+                    <input
+                      type="number"
+                      value={getCommonNumberStyle('borderRadius') || 0}
+                      onChange={(e) => applyStyle({ borderRadius: parseInt(e.target.value) || 0 })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      min="0"
+                      max="50"
+                      placeholder="0"
+                    />
+
+                    <div className="mt-3 grid grid-cols-3 gap-2 items-end">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Espessura</label>
+                        <input
+                          type="number"
+                          value={getCommonBorderWidth() ?? 1}
+                          onChange={(e) => setBorderWidthForSelection(parseInt(e.target.value) || 0)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                          min="0"
+                          max="20"
+                          disabled={!isBorderEnabledCommon()}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs text-gray-400 mb-1">Cor</label>
+                        <input
+                          type="color"
+                          value={getCommonBorderColor() || '#000000'}
+                          onChange={(e) => setBorderColorForSelection(e.target.value)}
+                          className="w-8 h-8 border border-gray-300 rounded-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          aria-label="Cor da borda"
+                          disabled={!isBorderEnabledCommon()}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -591,9 +775,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                           const newData = { ...shapeData, fillColor: 'transparent' };
                           onUpdateContent?.(element.id, newData);
                         }}
-                        className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                        className="ml-2 p-1 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center"
+                        title="Preenchimento transparente"
                       >
-                        Transparente
+                        <IconX className="h-3 w-3 text-red-500" />
                       </button>
                     </div>
                   </div>

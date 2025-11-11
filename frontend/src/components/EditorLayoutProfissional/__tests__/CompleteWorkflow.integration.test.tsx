@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import EditorLayoutProfissional from '../index';
 import { EditorTemplate } from '../../../types/editor';
@@ -16,17 +16,17 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // Mock do ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+(window as any).ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
 // Mock do HTMLCanvasElement
-HTMLCanvasElement.prototype.getContext = vi.fn();
+HTMLCanvasElement.prototype.getContext = (vi.fn() as any);
 
 describe('Editor Layout Profissional - Fluxo Completo de Integração', () => {
-  const mockTemplate: EditorTemplate = {
+  const mockTemplate: any = {
     id: 'test-template',
     name: 'Template de Teste',
     elements: [],
@@ -36,12 +36,12 @@ describe('Editor Layout Profissional - Fluxo Completo de Integração', () => {
       margins: { top: 20, right: 20, bottom: 20, left: 20 },
       backgroundColor: '#ffffff'
     },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     userId: 'test-user'
   };
 
-  const mockProps = {
+  const mockProps: any = {
     isOpen: true,
     onClose: vi.fn(),
     template: mockTemplate,
@@ -74,8 +74,7 @@ describe('Editor Layout Profissional - Fluxo Completo de Integração', () => {
   });
 
   it('deve permitir expandir categorias na paleta de elementos', async () => {
-    const user = userEvent.setup();
-    render(<EditorLayoutProfissional {...mockProps} />);
+  render(<EditorLayoutProfissional {...mockProps} />);
 
     // Verificar se as categorias estão presentes (sem clicar, pois podem não estar visíveis)
     expect(screen.getByText('Editor de Layout')).toBeInTheDocument();

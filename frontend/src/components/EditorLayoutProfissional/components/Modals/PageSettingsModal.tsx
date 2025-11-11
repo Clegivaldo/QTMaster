@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Settings, 
   FileImage, 
-  Upload, 
   X, 
   Eye, 
   EyeOff,
@@ -36,6 +35,7 @@ interface PageSettingsModalProps {
   onUpdatePageSettings: (settings: PageSettings) => void;
   onUpdateBackgroundImage: (image: BackgroundImageSettings | null) => void;
   onUpdateHeaderFooter?: (header: any | null, footer: any | null) => void;
+  onOpenGallery?: () => void;
 }
 
 const PAGE_SIZES = [
@@ -69,12 +69,12 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
   onUpdatePageSettings,
   onUpdateBackgroundImage
   , onUpdateHeaderFooter
+  , onOpenGallery
 }) => {
   const [localSettings, setLocalSettings] = useState<PageSettings>(pageSettings);
   const [localBackgroundImage, setLocalBackgroundImage] = useState<BackgroundImageSettings | null>(backgroundImage || null);
   const [localHeader, setLocalHeader] = useState<any | null>(null);
   const [localFooter, setLocalFooter] = useState<any | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
 
   // Resetar estado quando modal abrir
@@ -84,7 +84,6 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
       setLocalBackgroundImage(backgroundImage || null);
       setLocalHeader(null);
       setLocalFooter(null);
-      setUploadingImage(false);
       setShowPreview(true);
     }
   }, [isOpen, pageSettings, backgroundImage]);
@@ -110,11 +109,13 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
   };
 
   const handleMarginChange = (side: keyof PageSettings['margins'], value: number) => {
+    // `value` is received from the UI in cm; convert to mm for internal storage
+    const mm = Math.round(Math.max(0, Math.min(10, value)) * 10);
     setLocalSettings(prev => ({
       ...prev,
       margins: {
         ...prev.margins,
-        [side]: Math.max(0, Math.min(100, value)) // Limitar entre 0 e 100mm
+        [side]: mm
       }
     }));
   };
@@ -129,51 +130,7 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
     }));
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validar tipo de arquivo
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione um arquivo de imagem válido.');
-      return;
-    }
-
-    // Validar tamanho (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('A imagem deve ter no máximo 5MB.');
-      return;
-    }
-
-    setUploadingImage(true);
-
-    try {
-      // Criar URL temporária para preview
-      const url = URL.createObjectURL(file);
-      
-      // TODO: Implementar upload real para o servidor
-      // const formData = new FormData();
-      // formData.append('image', file);
-      // const response = await fetch('/api/uploads/background-image', {
-      //   method: 'POST',
-      //   body: formData
-      // });
-      // const { url } = await response.json();
-
-      setLocalBackgroundImage({
-        url,
-        repeat: 'repeat',
-        opacity: 0.1,
-        position: 'center'
-      });
-
-    } catch (error) {
-      console.error('Erro ao fazer upload da imagem:', error);
-      alert('Erro ao fazer upload da imagem. Tente novamente.');
-    } finally {
-      setUploadingImage(false);
-    }
-  };
+  
 
   const handleRemoveBackgroundImage = () => {
     if (localBackgroundImage?.url.startsWith('blob:')) {
@@ -324,7 +281,7 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 <Ruler className="inline h-4 w-4 mr-2" />
-                Margens (mm)
+                Margens (cm)
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -332,9 +289,10 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
                   <input
                     type="number"
                     min="0"
-                    max="100"
-                    value={localSettings.margins.top}
-                    onChange={(e) => handleMarginChange('top', parseInt(e.target.value) || 0)}
+                    max="10"
+                    step="0.1"
+                    value={(localSettings.margins.top || 0) / 10}
+                    onChange={(e) => handleMarginChange('top', parseFloat(e.target.value) || 0)}
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
@@ -343,9 +301,10 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
                   <input
                     type="number"
                     min="0"
-                    max="100"
-                    value={localSettings.margins.bottom}
-                    onChange={(e) => handleMarginChange('bottom', parseInt(e.target.value) || 0)}
+                    max="10"
+                    step="0.1"
+                    value={(localSettings.margins.bottom || 0) / 10}
+                    onChange={(e) => handleMarginChange('bottom', parseFloat(e.target.value) || 0)}
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
@@ -354,9 +313,10 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
                   <input
                     type="number"
                     min="0"
-                    max="100"
-                    value={localSettings.margins.left}
-                    onChange={(e) => handleMarginChange('left', parseInt(e.target.value) || 0)}
+                    max="10"
+                    step="0.1"
+                    value={(localSettings.margins.left || 0) / 10}
+                    onChange={(e) => handleMarginChange('left', parseFloat(e.target.value) || 0)}
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
@@ -365,9 +325,10 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
                   <input
                     type="number"
                     min="0"
-                    max="100"
-                    value={localSettings.margins.right}
-                    onChange={(e) => handleMarginChange('right', parseInt(e.target.value) || 0)}
+                    max="10"
+                    step="0.1"
+                    value={(localSettings.margins.right || 0) / 10}
+                    onChange={(e) => handleMarginChange('right', parseFloat(e.target.value) || 0)}
                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
@@ -394,52 +355,7 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
                       <span>Cabeçalho habilitado</span>
                     </label>
                     {localHeader && (
-                      <div className="mt-2">
-                        <label className="block text-xs text-gray-600">Altura (mm)</label>
-                        <input type="number" min={0} max={200} value={localHeader.height} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, height: Math.max(0, Math.min(200, parseInt(e.target.value) || 0)) }))} className="w-full px-2 py-1 border border-gray-300 rounded" />
-                        <label className="flex items-center mt-2 text-xs"><input type="checkbox" className="mr-2" checked={!!localHeader.replicateAcrossPages} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, replicateAcrossPages: e.target.checked }))} /> <span>Replicar em todas as páginas</span></label>
-                        
-                        {/* Header elements editor (simple) */}
-                        <div className="mt-3">
-                          <div className="flex gap-2">
-                            <button type="button" className="px-2 py-1 bg-blue-600 text-white rounded text-xs" onClick={() => setLocalHeader((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `h-${Math.random().toString(36).slice(2,8)}`, type: 'text', content: 'Cabeçalho' }] }))}>Adicionar Texto</button>
-                            <button type="button" className="px-2 py-1 bg-gray-700 text-white rounded text-xs" onClick={() => setLocalHeader((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `hpn-${Math.random().toString(36).slice(2,8)}`, type: 'pageNumber', content: 'Página {n} de {total}' }] }))}>Adicionar Número de Página</button>
-                            <label className="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-xs cursor-pointer">
-                              Adicionar Imagem
-                              <input type="file" accept="image/*" onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                const url = URL.createObjectURL(file);
-                                setLocalHeader((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `hi-${Math.random().toString(36).slice(2,8)}`, type: 'image', src: url, alt: file.name }] }));
-                                // reset input
-                                (e.target as HTMLInputElement).value = '';
-                              }} className="hidden" />
-                            </label>
-                          </div>
-
-                          {Array.isArray(localHeader.elements) && localHeader.elements.length > 0 && (
-                            <div className="mt-3 space-y-2">
-                              {localHeader.elements.map((el: any, idx: number) => (
-                                <div key={el.id || idx} className="flex items-center gap-2">
-                                  {el.type === 'text' && (
-                                    <input type="text" value={el.content} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, content: e.target.value } : it) }))} className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm" />
-                                  )}
-                                  {el.type === 'pageNumber' && (
-                                    <input type="text" value={el.content} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, content: e.target.value } : it) }))} className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm" />
-                                  )}
-                                  {el.type === 'image' && (
-                                    <div className="flex items-center gap-2">
-                                      <img src={el.src} alt={el.alt || ''} className="h-8 object-contain" />
-                                      <input type="text" value={el.alt || ''} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, alt: e.target.value } : it) }))} className="px-2 py-1 border border-gray-300 rounded text-sm" />
-                                    </div>
-                                  )}
-                                  <button type="button" className="px-2 py-1 text-red-600" onClick={() => setLocalHeader((prev: any) => ({ ...prev, elements: prev.elements.filter((it: any) => it.id !== el.id) }))}>Remover</button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <label className="flex items-center mt-2 text-xs"><input type="checkbox" className="mr-2" checked={!!localHeader.replicateAcrossPages} onChange={(e) => setLocalHeader((prev: any) => ({ ...prev, replicateAcrossPages: e.target.checked }))} /> <span>Replicar em todas as páginas</span></label>
                     )}
                   </div>
 
@@ -449,105 +365,33 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
                       <span>Rodapé habilitado</span>
                     </label>
                     {localFooter && (
-                      <div className="mt-2">
-                        <label className="block text-xs text-gray-600">Altura (mm)</label>
-                        <input type="number" min={0} max={200} value={localFooter.height} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, height: Math.max(0, Math.min(200, parseInt(e.target.value) || 0)) }))} className="w-full px-2 py-1 border border-gray-300 rounded" />
-                        <label className="flex items-center mt-2 text-xs"><input type="checkbox" className="mr-2" checked={!!localFooter.replicateAcrossPages} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, replicateAcrossPages: e.target.checked }))} /> <span>Replicar em todas as páginas</span></label>
-                        
-                        {/* Footer elements editor (simple) */}
-                        <div className="mt-3">
-                          <div className="flex gap-2">
-                            <button type="button" className="px-2 py-1 bg-blue-600 text-white rounded text-xs" onClick={() => setLocalFooter((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `f-${Math.random().toString(36).slice(2,8)}`, type: 'text', content: 'Rodapé' }] }))}>Adicionar Texto</button>
-                            <button type="button" className="px-2 py-1 bg-gray-700 text-white rounded text-xs" onClick={() => setLocalFooter((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `fpn-${Math.random().toString(36).slice(2,8)}`, type: 'pageNumber', content: 'Página {n} de {total}' }] }))}>Adicionar Número de Página</button>
-                            <label className="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded text-xs cursor-pointer">
-                              Adicionar Imagem
-                              <input type="file" accept="image/*" onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                const url = URL.createObjectURL(file);
-                                setLocalFooter((prev: any) => ({ ...(prev || { height: 20, replicateAcrossPages: true, elements: [] }), elements: [...(prev?.elements || []), { id: `fi-${Math.random().toString(36).slice(2,8)}`, type: 'image', src: url, alt: file.name }] }));
-                                (e.target as HTMLInputElement).value = '';
-                              }} className="hidden" />
-                            </label>
-                          </div>
-
-                          {Array.isArray(localFooter.elements) && localFooter.elements.length > 0 && (
-                            <div className="mt-3 space-y-2">
-                              {localFooter.elements.map((el: any, idx: number) => (
-                                <div key={el.id || idx} className="flex items-center gap-2">
-                                  {el.type === 'text' && (
-                                    <input type="text" value={el.content} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, content: e.target.value } : it) }))} className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm" />
-                                  )}
-                                  {el.type === 'pageNumber' && (
-                                    <input type="text" value={el.content} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, content: e.target.value } : it) }))} className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm" />
-                                  )}
-                                  {el.type === 'image' && (
-                                    <div className="flex items-center gap-2">
-                                      <img src={el.src} alt={el.alt || ''} className="h-8 object-contain" />
-                                      <input type="text" value={el.alt || ''} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, elements: prev.elements.map((it: any) => it.id === el.id ? { ...it, alt: e.target.value } : it) }))} className="px-2 py-1 border border-gray-300 rounded text-sm" />
-                                    </div>
-                                  )}
-                                  <button type="button" className="px-2 py-1 text-red-600" onClick={() => setLocalFooter((prev: any) => ({ ...prev, elements: prev.elements.filter((it: any) => it.id !== el.id) }))}>Remover</button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <label className="flex items-center mt-2 text-xs"><input type="checkbox" className="mr-2" checked={!!localFooter.replicateAcrossPages} onChange={(e) => setLocalFooter((prev: any) => ({ ...prev, replicateAcrossPages: e.target.checked }))} /> <span>Replicar em todas as páginas</span></label>
                     )}
                   </div>
                 </div>
               </div>
 
-            {/* Cor de fundo */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Cor de Fundo
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={localSettings.backgroundColor}
-                  onChange={(e) => setLocalSettings(prev => ({ ...prev, backgroundColor: e.target.value }))}
-                  className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={localSettings.backgroundColor}
-                  onChange={(e) => setLocalSettings(prev => ({ ...prev, backgroundColor: e.target.value }))}
-                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="#ffffff"
-                />
-              </div>
-            </div>
-
             {/* Imagem de fundo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                <FileImage className="inline h-4 w-4 mr-2" />
+                <FileImage className="inline h-3 w-3 mr-2" />
                 Imagem de Fundo
               </label>
 
               {!localBackgroundImage ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 mb-3">
-                    Adicione uma imagem de fundo que aparecerá em todas as páginas
-                  </p>
-                  <label className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 cursor-pointer">
-                    <Upload className="h-4 w-4 mr-2" />
-                    {uploadingImage ? 'Enviando...' : 'Selecionar Imagem'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploadingImage}
-                      className="hidden"
-                    />
-                  </label>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Formatos suportados: JPG, PNG, GIF (máx. 5MB)
-                  </p>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                  <FileImage className="h-4 w-4 text-gray-500 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-3">Escolha uma imagem de fundo pela galeria</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onOpenGallery && onOpenGallery()}
+                      className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                    >
+                      <FileImage className="h-3 w-3 mr-2" />
+                      Abrir Galeria
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">

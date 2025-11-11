@@ -80,6 +80,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showPageSettingsModal, setShowPageSettingsModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [galleryTarget, setGalleryTarget] = useState<'element' | 'background'>('element');
 
   // Hook para configurações de página
   // Use page-specific settings when available (multi-page support)
@@ -603,7 +604,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             </button>
 
             <button
-              onClick={() => setShowGalleryModal(true)}
+              onClick={() => { setGalleryTarget('element'); setShowGalleryModal(true); }}
               className="bg-blue-600 hover:bg-blue-700 p-2 rounded-full flex items-center justify-center transition-colors"
               title="Galeria de Imagens"
             >
@@ -746,6 +747,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 pageSettings={pageSettings}
                 backgroundImage={pageSettings.backgroundImage}
                 pageRegions={{ header: currentPageMeta?.header, footer: currentPageMeta?.footer, pageNumberInfo: { current: currentPageIndex + 1, total: totalPages } }}
+                onUpdatePageRegions={editor.updatePageRegions}
               />
             </div>
           </div>
@@ -759,6 +761,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 selectedElements={editor.getSelectedElements()}
                 onUpdateStyles={editor.updateElementStyles}
                 onUpdateContent={editor.updateElementContent}
+                onUpdateElements={editor.updateElements}
                 onGroupElements={editor.groupSelectedElements}
                 onUngroupElements={editor.ungroupSelectedElements}
                 onBringToFront={editor.bringToFront}
@@ -793,7 +796,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
           
           <div className="flex items-center gap-2 md:gap-4">
             <span className="hidden md:inline">Página: {currentPageMeta?.pageSettings?.size || editor.template.pages?.[0]?.pageSettings?.size}</span>
-            <span className="hidden lg:inline">Orientação: {currentPageMeta?.pageSettings?.orientation || editor.template.pages?.[0]?.pageSettings?.orientation}</span>
+            <span className="hidden lg:inline">Orientação: { (currentPageMeta?.pageSettings?.orientation || editor.template.pages?.[0]?.pageSettings?.orientation) === 'portrait' ? 'Retrato' : 'Paisagem' }</span>
           </div>
         </div>
       </div>
@@ -834,12 +837,21 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
         onUpdateHeaderFooter={(header, footer) => {
           editor.updatePageRegions && editor.updatePageRegions(header, footer);
         }}
+        onOpenGallery={() => { setGalleryTarget('background'); setShowGalleryModal(true); }}
       />
 
       <ImageGalleryModal
         isOpen={showGalleryModal}
         onClose={() => setShowGalleryModal(false)}
         onSelectImage={(img) => {
+          if (galleryTarget === 'background') {
+            pageSettings.updateBackgroundImage({ url: img.src, repeat: 'no-repeat', opacity: 1, position: 'center' });
+            editor.updateBackgroundImage && editor.updateBackgroundImage({ url: img.src, repeat: 'no-repeat', opacity: 1, position: 'center' });
+            setShowGalleryModal(false);
+            setGalleryTarget('element');
+            return;
+          }
+
           // Insert image element and set its content
           const id = editor.addElement('image', { x: 20, y: 20 });
           editor.updateElementContent(id, {

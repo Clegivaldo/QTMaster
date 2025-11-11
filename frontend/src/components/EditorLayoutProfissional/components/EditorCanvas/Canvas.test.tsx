@@ -26,8 +26,8 @@ describe('Canvas Component', () => {
     it('should render canvas with correct dimensions', () => {
       render(<Canvas {...mockProps} />);
       
-      // Look for the main canvas container by class
-      const canvas = document.querySelector('.bg-white');
+  // Look for the main canvas container by class (shadow-xl is canvas wrapper)
+  const canvas = document.querySelector('.shadow-xl');
       expect(canvas).toBeInTheDocument();
     });
 
@@ -182,7 +182,7 @@ describe('Canvas Component', () => {
   describe('Debug Information', () => {
     it('should show debug info in development mode', () => {
       // Mock development environment
-      vi.stubEnv('DEV', 'true');
+  (vi as any).stubEnv('DEV', 'true');
       
       render(<Canvas {...mockProps} />);
       
@@ -202,8 +202,8 @@ describe('Canvas Component', () => {
       
       // This tests the internal coordinate conversion logic
       // The actual implementation is tested through interactions
-      const canvas = document.querySelector('.bg-white');
-      expect(canvas).toBeInTheDocument();
+  const canvas = document.querySelector('.shadow-xl');
+  expect(canvas).toBeInTheDocument();
     });
   });
 
@@ -232,8 +232,8 @@ describe('Canvas Component', () => {
     it('should have proper cursor states', () => {
       render(<Canvas {...mockProps} />);
       
-      const canvas = document.querySelector('.bg-white');
-      expect(canvas).toBeInTheDocument();
+  const canvas = document.querySelector('.shadow-xl');
+  expect(canvas).toBeInTheDocument();
       // The cursor style may be applied via CSS classes, so just check element exists
     });
 
@@ -246,6 +246,50 @@ describe('Canvas Component', () => {
         // Should prevent default wheel behavior
         expect(canvas).toBeInTheDocument();
       }
+    });
+  });
+
+  describe('Header/Footer resize interactions', () => {
+    it('should call onUpdatePageRegions when header is resized by dragging the handle', () => {
+      const onUpdatePageRegions = vi.fn();
+      // start with header 5mm
+      const props = { ...mockProps, pageRegions: { header: { height: 5, elements: [] }, footer: { height: 4, elements: [] }, pageNumberInfo: { current: 1, total: 1 } }, onUpdatePageRegions };
+      render(<Canvas {...props} />);
+
+      const handle = screen.getByTestId('header-resize-handle');
+      // simulate drag: start at y=100, move to y=100 + 38 (approx 10mm)
+      const startY = 100;
+      const deltaPx = 38; // roughly 10mm in px (96/25.4 ≈ 3.78 px/mm -> 10mm ≈ 37.8px)
+
+      fireEvent.mouseDown(handle, { clientY: startY });
+      // move document to new position
+      fireEvent.mouseMove(document, { clientY: startY + deltaPx });
+      fireEvent.mouseUp(document);
+
+      expect(onUpdatePageRegions).toHaveBeenCalled();
+      const callArg = onUpdatePageRegions.mock.calls[0][0];
+      // callArg is the new header; its height should be greater than initial 5mm
+      expect(callArg).toHaveProperty('height');
+      expect(callArg.height).toBeGreaterThan(5 - 0.1);
+    });
+
+    it('should call onUpdatePageRegions when footer is resized by dragging the handle', () => {
+      const onUpdatePageRegions = vi.fn();
+      const props = { ...mockProps, pageRegions: { header: { height: 6, elements: [] }, footer: { height: 3, elements: [] }, pageNumberInfo: { current: 1, total: 1 } }, onUpdatePageRegions };
+      render(<Canvas {...props} />);
+
+      const handle = screen.getByTestId('footer-resize-handle');
+      const startY = 200;
+      const deltaPx = 38; // move up to increase footer height
+
+      fireEvent.mouseDown(handle, { clientY: startY });
+      fireEvent.mouseMove(document, { clientY: startY - deltaPx });
+      fireEvent.mouseUp(document);
+
+      expect(onUpdatePageRegions).toHaveBeenCalled();
+      const callArg = onUpdatePageRegions.mock.calls[0][1];
+      expect(callArg).toHaveProperty('height');
+      expect(callArg.height).toBeGreaterThan(3 - 0.1);
     });
   });
 });

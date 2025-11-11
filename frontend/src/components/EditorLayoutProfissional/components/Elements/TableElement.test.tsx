@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TableElement from './TableElement';
 import { mockTableElement, createTestElement } from '../../../../test/test-utils';
-import { TableData } from '../../../../types/editor';
+import { TableData, TableElement as TableElementType } from '../../../../types/editor';
 
 describe('TableElement Component', () => {
   const mockProps = {
@@ -234,7 +234,7 @@ describe('TableElement Component', () => {
           data: [['Cell 1', 'Cell 2']],
           headers: []
         }
-      });
+  }) as TableElementType;
       
       render(
         <TableElement 
@@ -256,7 +256,7 @@ describe('TableElement Component', () => {
           data: [['Cell 1'], ['Cell 2']],
           headers: []
         }
-      });
+  }) as TableElementType;
       
       render(
         <TableElement 
@@ -317,8 +317,8 @@ describe('TableElement Component', () => {
         />
       );
       
-      const cell = screen.getByText((content, element) => 
-        content.includes('Header 1')
+      const cell = screen.getByText((content) => 
+        String(content).includes('Header 1')
       ).closest('td');
       await user.dblClick(cell!);
       
@@ -368,8 +368,8 @@ describe('TableElement Component', () => {
         />
       );
       
-      const cell = screen.getByText((content, element) => 
-        content.includes('Header 1')
+      const cell = screen.getByText((content) => 
+        String(content).includes('Header 1')
       ).closest('td');
       await user.dblClick(cell!);
       
@@ -399,8 +399,8 @@ describe('TableElement Component', () => {
         />
       );
       
-      const cell = screen.getByText((content, element) => 
-        content.includes('Header 1')
+      const cell = screen.getByText((content) => 
+        String(content).includes('Header 1')
       ).closest('td');
       await user.dblClick(cell!);
       
@@ -426,8 +426,8 @@ describe('TableElement Component', () => {
         </div>
       );
       
-      const cell = screen.getByText((content, element) => 
-        content.includes('Header 1')
+      const cell = screen.getByText((content) => 
+        String(content).includes('Header 1')
       ).closest('td');
       await user.click(cell!);
       
@@ -510,8 +510,8 @@ describe('TableElement Component', () => {
         />
       );
       
-      const cell = screen.getByText((content, element) => 
-        content.includes('Header 1')
+      const cell = screen.getByText((content) => 
+        String(content).includes('Header 1')
       ).closest('td');
       await user.hover(cell!);
       

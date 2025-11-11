@@ -29,7 +29,8 @@ describe('PreviewModal', () => {
     version: 1,
     isPublic: false,
     tags: [],
-    elements: [],
+  elements: [],
+  pages: [],
     pageSettings: {
       size: 'A4',
       orientation: 'portrait',

@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import LineElement from './LineElement';
 import { createTestElement } from '../../../../test/test-utils';
-import { LineData } from '../../../../types/editor';
+import { LineData, TemplateElement } from '../../../../types/editor';
 
 describe('LineElement Component', () => {
   const mockProps = {
@@ -12,7 +12,7 @@ describe('LineElement Component', () => {
     onEdit: vi.fn()
   };
 
-  const createLineElement = (lineData: Partial<LineData> = {}) => {
+  const createLineElement = (lineData: Partial<LineData> = {}): TemplateElement & { content: LineData } => {
     return createTestElement('line', {
       content: {
         startPoint: { x: 0, y: 0 },
@@ -21,7 +21,7 @@ describe('LineElement Component', () => {
         style: { width: 2, style: 'solid', color: '#000000' },
         ...lineData
       }
-    });
+    }) as TemplateElement & { content: LineData };
   };
 
   beforeEach(() => {
@@ -457,7 +457,7 @@ describe('LineElement Component', () => {
     it('should handle missing line data properties', () => {
       const incompleteLineElement = createTestElement('line', {
         content: {} as LineData
-      });
+      }) as TemplateElement & { content: LineData };
       
       const { container } = render(
         <LineElement 
@@ -481,7 +481,7 @@ describe('LineElement Component', () => {
           startPoint: { x: 0, y: 0 }
           // Missing endPoint
         } as LineData
-      });
+      }) as TemplateElement & { content: LineData };
       
       const { container } = render(
         <LineElement 

@@ -40,6 +40,7 @@ const createMockTemplate = (id: string = 'template_1', name: string = 'Test Temp
     backgroundColor: '#ffffff',
     showMargins: true
   },
+  pages: [],
   createdAt: new Date('2024-01-01T10:00:00Z'),
   updatedAt: new Date('2024-01-01T10:00:00Z'),
   createdBy: 'user_123',

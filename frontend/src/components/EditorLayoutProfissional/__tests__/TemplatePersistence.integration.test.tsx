@@ -102,6 +102,7 @@ const mockCompleteTemplate: EditorTemplate = {
     backgroundColor: '#ffffff',
     showMargins: true
   },
+  pages: [],
   createdAt: new Date('2024-01-01T10:00:00Z'),
   updatedAt: new Date('2024-01-01T12:00:00Z'),
   createdBy: 'user_123',
@@ -198,8 +199,8 @@ describe('Template Persistence Integration Tests', () => {
         });
       });
 
-      expect(exportResult).toBeDefined();
-      expect(exportResult?.format).toBe('pdf');
+  expect(exportResult).toBeDefined();
+  expect((exportResult as any)?.format).toBe('pdf');
       expect(mockApiPost).toHaveBeenCalledWith(
         `/editor-templates/${mockCompleteTemplate.id}/export`,
         expect.objectContaining({
@@ -297,11 +298,10 @@ describe('Template Persistence Integration Tests', () => {
       const { result } = renderHook(() => useTemplateStorage());
 
       // Salvar template existente
-      let savedTemplate: EditorTemplate | undefined;
       await act(async () => {
-        savedTemplate = await result.current.saveTemplate(mockCompleteTemplate, {
+        await result.current.saveTemplate(mockCompleteTemplate, {
           name: 'Template Integridade'
-        });
+        } as any);
       });
 
       // Verificar dados salvos
@@ -421,7 +421,7 @@ describe('Template Persistence Integration Tests', () => {
 
       // Salvar template complexo
       await act(async () => {
-        await result.current.saveTemplate(complexTemplate);
+  await result.current.saveTemplate(complexTemplate as any);
       });
 
       // Carregar e verificar dados da tabela

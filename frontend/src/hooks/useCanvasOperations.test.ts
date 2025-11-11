@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCanvasOperations } from './useCanvasOperations';
-import { ZOOM_LEVELS, MIN_ZOOM, MAX_ZOOM, DEFAULT_ZOOM } from '../types/editor-constants';
+import { MIN_ZOOM, MAX_ZOOM, DEFAULT_ZOOM } from '../types/editor-constants';
 
 describe('useCanvasOperations', () => {
   const defaultOptions = {

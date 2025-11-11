@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import PropertiesPanel from './PropertiesPanel';
 import { mockTextElement, mockImageElement, mockTableElement } from '../../../../test/test-utils';
-import { TemplateElement } from '../../../../types/editor';
 
 describe('PropertiesPanel Component', () => {
   const mockProps = {
@@ -121,7 +120,7 @@ describe('PropertiesPanel Component', () => {
         styles: { ...mockTextElement.styles, fontWeight: 'bold' }
       };
       
-      render(<PropertiesPanel {...mockProps} selectedElements={[boldTextElement]} />);
+  render(<PropertiesPanel {...mockProps} selectedElements={[boldTextElement as any]} />);
       
       const boldButton = screen.getByTitle('Negrito');
       await user.click(boldButton);
@@ -202,7 +201,6 @@ describe('PropertiesPanel Component', () => {
     });
 
     it('should change font size when size input is changed', async () => {
-      const user = userEvent.setup();
       render(<PropertiesPanel {...mockProps} />);
       
       // Find the number input for font size (not the select)
@@ -222,7 +220,6 @@ describe('PropertiesPanel Component', () => {
     });
 
     it('should enforce font size limits', async () => {
-      const user = userEvent.setup();
       render(<PropertiesPanel {...mockProps} />);
       
       const sizeInput = screen.getByDisplayValue('14');
@@ -271,10 +268,11 @@ describe('PropertiesPanel Component', () => {
 
     it('should set background to transparent when transparent button is clicked', async () => {
       const user = userEvent.setup();
-      render(<PropertiesPanel {...mockProps} />);
+      const { container } = render(<PropertiesPanel {...mockProps} />);
       
-      const transparentButton = screen.getByText('Transparente');
-      await user.click(transparentButton);
+      // button is now an icon button with title "Fundo transparente"
+      const transparentButton = screen.getByTitle('Fundo transparente') || container.querySelector('button[title="Fundo transparente"]');
+      await user.click(transparentButton as Element);
       
       expect(mockProps.onUpdateStyles).toHaveBeenCalledWith(
         [mockTextElement.id],
@@ -385,7 +383,6 @@ describe('PropertiesPanel Component', () => {
     });
 
     it('should update opacity when opacity slider is changed', async () => {
-      const user = userEvent.setup();
       render(<PropertiesPanel {...mockProps} />);
       
       const opacitySlider = screen.getByRole('slider');
@@ -407,6 +404,100 @@ describe('PropertiesPanel Component', () => {
       expect(mockProps.onUpdateStyles).toHaveBeenCalledWith(
         [mockTextElement.id],
         { borderRadius: 10 }
+      );
+    });
+
+    it('should disable border for generic element and store prevBorder via onUpdateElements', async () => {
+      const onUpdateElements = vi.fn();
+      const onUpdateStyles = vi.fn();
+  const props = { ...mockProps, selectedElements: [mockImageElement], onUpdateElements, onUpdateStyles } as any;
+  render(<PropertiesPanel {...props} />);
+
+  const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+      // ensure initial state is checked (image has border width 1)
+      expect(checkbox).toBeTruthy();
+      expect(checkbox.checked).toBe(true);
+
+      // toggle off
+  fireEvent.click(checkbox);
+
+      // onUpdateStyles should be called to set border width 0 and style none
+      expect(onUpdateStyles).toHaveBeenCalledWith(
+        [mockImageElement.id],
+        { border: { width: 0, style: 'none', color: '#cccccc' } }
+      );
+
+      // onUpdateElements should store prevBorder in metadata
+      expect(onUpdateElements).toHaveBeenCalledWith(
+        [mockImageElement.id],
+        { metadata: { ...(mockImageElement.metadata || {}), prevBorder: { width: 1, style: 'solid', color: '#cccccc' } } }
+      );
+    });
+
+    it('should disable border for shape element by setting strokeWidth to 0 via onUpdateContent', async () => {
+      const onUpdateContent = vi.fn();
+      // create a rectangle with strokeWidth
+      const rect = {
+        id: 'rect-1',
+        type: 'rectangle',
+        content: { strokeWidth: 2, strokeColor: '#111111', fillColor: '#ffffff' },
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 50 },
+        styles: {},
+        locked: false,
+        visible: true,
+        zIndex: 5
+      } as any;
+
+      const props = { ...mockProps, selectedElements: [rect], onUpdateContent } as any;
+      render(<PropertiesPanel {...props} />);
+
+      const { container } = render(<PropertiesPanel {...props} />);
+      const inputs = container.querySelectorAll('#enable-border');
+      expect(inputs.length).toBeGreaterThan(0);
+      const checkbox = inputs[0] as HTMLInputElement;
+      // initial should be checked because strokeWidth > 0
+      expect(checkbox).toBeTruthy();
+      expect(checkbox.checked).toBe(true);
+
+      // toggle off -> strokeWidth becomes 0
+      fireEvent.click(checkbox);
+
+      expect(onUpdateContent).toHaveBeenCalledWith(
+        rect.id,
+        expect.objectContaining({ strokeWidth: 0 })
+      );
+    });
+
+    it('should restore prevBorder when re-enabling border for generic element', async () => {
+      const onUpdateElements = vi.fn();
+      const onUpdateStyles = vi.fn();
+
+      const imageNoBorder = {
+        ...mockImageElement,
+        styles: { border: { width: 0, style: 'none', color: '#cccccc' } },
+        metadata: { prevBorder: { width: 2, style: 'dashed', color: '#ff00ff' } }
+      } as any;
+
+      const props = { ...mockProps, selectedElements: [imageNoBorder], onUpdateElements, onUpdateStyles } as any;
+      render(<PropertiesPanel {...props} />);
+
+      const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+      // initially unchecked since border width is 0 / style none
+      expect(checkbox).toBeTruthy();
+      expect(checkbox.checked).toBe(false);
+
+      // toggle on -> should restore prevBorder via onUpdateStyles and clear metadata.prevBorder
+      fireEvent.click(checkbox);
+
+      expect(onUpdateStyles).toHaveBeenCalledWith(
+        [imageNoBorder.id],
+        { border: { width: 2, style: 'dashed', color: '#ff00ff' } }
+      );
+
+      expect(onUpdateElements).toHaveBeenCalledWith(
+        [imageNoBorder.id],
+        { metadata: { ...(imageNoBorder.metadata || {}), prevBorder: undefined } }
       );
     });
   });

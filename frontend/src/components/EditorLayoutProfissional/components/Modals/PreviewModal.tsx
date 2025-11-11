@@ -6,7 +6,7 @@ import {
   RotateCcw, 
   ChevronLeft, 
   ChevronRight,
-  Download,
+  /* Download removed from header actions */
   Maximize,
   Minimize,
   Loader2
@@ -15,9 +15,6 @@ import ResponsiveModal from '../../../ResponsiveModal';
 import { EditorTemplate, TemplateElement } from '../../../../types/editor';
 import { PageSettings, BackgroundImageSettings } from './PageSettingsModal';
 import { TemplatePage } from '../../../../hooks/usePageManagement';
-import { useErrorHandler, EditorErrorType } from '../../../../hooks/useErrorHandler';
-import { useNotifications } from '../Utils/NotificationSystem';
-import { useLoadingOverlay } from '../Utils/LoadingOverlay';
 
 interface PreviewModalProps {
   isOpen: boolean;
@@ -302,16 +299,13 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
   template,
   pages = [],
   pageSettings,
-  backgroundImage,
-  onExport
+  backgroundImage
 }) => {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [zoom, setZoom] = useState(0.5);
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const { handleError } = useErrorHandler();
-  const { showExportSuccess, showError } = useNotifications();
-  const { showExportLoading, updateProgress, hideLoading } = useLoadingOverlay();
+  // Export handled elsewhere; no local export actions in this modal
 
   // Reset state when modal opens
   useEffect(() => {
@@ -385,52 +379,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
       : sizeInfo;
   };
 
-  const handleExport = async (format: 'pdf' | 'png') => {
-    if (!onExport) return;
-    let progressInterval: any;
-    try {
-      // Marcar loading localmente e mostrar loading overlay
-      setIsLoading(true);
-      showExportLoading(format, template.name || 'template');
-
-      // Simular progresso
-      progressInterval = setInterval(() => {
-        updateProgress(Math.random() * 30 + 10);
-      }, 500);
-
-      await onExport(format);
-
-      // Limpar interval e finalizar
-      clearInterval(progressInterval);
-      updateProgress(100, 'Finalizando...');
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      hideLoading();
-      setIsLoading(false);
-      showExportSuccess(`${template.name || 'template'}.${format}`, format);
-      
-    } catch (error) {
-      hideLoading();
-      setIsLoading(false);
-      if (progressInterval) clearInterval(progressInterval);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-
-      const status = (error && typeof error === 'object' && 'response' in error) ? (error as any).response?.status : undefined;
-      if (status === 404 || (typeof errorMessage === 'string' && errorMessage.includes('Template não encontrado'))) {
-        showError('Template não encontrado', 'O template solicitado para pré-visualização/exportação não foi encontrado. Verifique se ele existe ou recarregue a lista de templates.');
-      } else {
-        showError('Erro na Exportação', `Erro ao exportar como ${format.toUpperCase()}: ${errorMessage}`);
-      }
-
-      handleError({
-        type: EditorErrorType.EXPORT_FAILED,
-        message: errorMessage,
-        details: error,
-        recoverable: true
-      });
-    }
-  };
+  // export removed from preview header; export handled elsewhere
 
   const goToNextPage = () => {
     setCurrentPageIndex(prev => Math.min(prev + 1, previewPages.length - 1));
@@ -528,36 +477,6 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
 
           {/* Actions */}
           <div className="flex items-center space-x-2">
-            {onExport && (
-              <>
-                <button
-                  onClick={() => handleExport('pdf')}
-                  disabled={isLoading}
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4 mr-2" />
-                  )}
-                  PDF
-                </button>
-                
-                <button
-                  onClick={() => handleExport('png')}
-                  disabled={isLoading}
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4 mr-2" />
-                  )}
-                  PNG
-                </button>
-              </>
-            )}
-            
             <button
               onClick={onClose}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
@@ -569,8 +488,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto bg-gray-100 preview-container">
-          <div className="p-8 flex justify-center">
+        <div className="flex-1 overflow-auto preview-container bg-gray-50 flex items-center justify-center">
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">
@@ -593,7 +511,6 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                 </div>
               </div>
             )}
-          </div>
         </div>
       </div>
     </ResponsiveModal>

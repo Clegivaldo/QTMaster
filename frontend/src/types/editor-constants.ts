@@ -35,12 +35,12 @@ export const PAGE_SIZES = {
   Legal: { width: 816, height: 1344 }
 };
 
-// Margens padrão (em pixels)
+// Margens padrão (em pixels) - 2cm todos os lados
 export const DEFAULT_MARGINS = {
-  top: 56,    // ~20mm
-  right: 42,  // ~15mm
-  bottom: 56, // ~20mm
-  left: 42    // ~15mm
+  top: 76,    // ~2cm (20mm)
+  right: 76,  // ~2cm (20mm)
+  bottom: 76, // ~2cm (20mm)
+  left: 76    // ~2cm (20mm)
 };
 
 // Estilos globais padrão

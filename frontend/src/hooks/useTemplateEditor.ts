@@ -76,6 +76,8 @@ interface UseTemplateEditorReturn {
   resizeElement: (elementId: string, newSize: Size) => void;
   updateElementContent: (elementId: string, content: any) => void;
   updateElementStyles: (elementIds: string[], styles: Partial<ElementStyles>) => void;
+  // Atualiza atributos/top-level dos elementos (visible, locked, groupId, etc.)
+  updateElements: (elementIds: string[], updates: Partial<TemplateElement>) => void;
   
   // Ordenação (z-index)
   bringToFront: (elementId: string) => void;
@@ -643,6 +645,20 @@ export const useTemplateEditor = (
       updatedAt: new Date()
     }), `Alterar estilo${count > 1 ? 's' : ''}`);
   }, [updateTemplate]);
+
+  // Atualizar propriedades/atributos de elemento (visible, locked, groupId, etc.)
+  const updateElements = useCallback((elementIds: string[], updates: Partial<Partial<TemplateElement>>) => {
+    const count = elementIds.length;
+    updateTemplate(prev => ({
+      ...prev,
+      elements: prev.elements.map(el => 
+        elementIds.includes(el.id)
+          ? { ...el, ...updates }
+          : el
+      ),
+      updatedAt: new Date()
+    }), `Atualizar elemento${count > 1 ? 's' : ''}`);
+  }, [updateTemplate]);
   
   // Controles de z-index
   const bringToFront = useCallback((elementId: string) => {
@@ -954,6 +970,7 @@ export const useTemplateEditor = (
     resizeElement,
     updateElementContent,
     updateElementStyles,
+  updateElements,
     
     // Ordenação
     bringToFront,
