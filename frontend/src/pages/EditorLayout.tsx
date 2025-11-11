@@ -92,6 +92,15 @@ const EditorLayout: React.FC = () => {
   const currentPageIndex = pageIndex >= 0 ? pageIndex : 0;
   const totalPages = editor.template.pages.length;
 
+  // Debug: log when current page header/footer change to help trace resize persistence
+  useEffect(() => {
+    try {
+      console.log('[EditorLayout] currentPageMeta header/footer:', { header: currentPageMeta?.header ? { height: currentPageMeta.header.height } : null, footer: currentPageMeta?.footer ? { height: currentPageMeta.footer.height } : null });
+    } catch (err) {
+      // ignore
+    }
+  }, [currentPageMeta?.header?.height, currentPageMeta?.footer?.height]);
+
   // Sincronizar mudanças nas configurações da página quando o template é atualizado
   useEffect(() => {
     if (currentPageMeta?.pageSettings) {
@@ -138,7 +147,7 @@ const EditorLayout: React.FC = () => {
     return () => {
       ro.disconnect();
     };
-  }, [canvas.setContainerSize, canvas.centerCanvasHorizontally]);
+  }, [canvas.setContainerSize]);
 
   // Hook para salvar templates (persistidos vs novos)
   const { saveTemplate } = useTemplateStorage();
@@ -603,10 +612,13 @@ const EditorLayout: React.FC = () => {
               onElementMove={(id, newPos) => {
                 const bounds = pageSettings.getPageBounds();
                 const mmToPx = (mm: number) => (mm * 96) / 25.4;
+                const pageSize = pageSettings.getPageSize();
+                const pageHeightPx = pageSize ? mmToPx(pageSize.height) : mmToPx(bounds.maxX);
                 const minX = mmToPx(bounds.minX);
                 const maxX = mmToPx(bounds.maxX);
-                const minY = mmToPx(bounds.minY);
-                const maxY = mmToPx(bounds.maxY);
+                // Allow placing into header region: if current page has header, allow minY = 0
+                const minY = currentPageMeta?.header ? 0 : mmToPx(bounds.minY);
+                const maxY = currentPageMeta?.footer ? pageHeightPx : mmToPx(bounds.maxY);
 
                 const el = editor.getElementById(id);
                 const elW = el?.size.width || 0;
@@ -650,6 +662,7 @@ const EditorLayout: React.FC = () => {
               pageSettings={pageSettings}
               backgroundImage={pageSettings.backgroundImage}
               pageRegions={{ header: currentPageMeta?.header, footer: currentPageMeta?.footer, pageNumberInfo: { current: currentPageIndex + 1, total: totalPages } }}
+              onUpdatePageRegions={editor.updatePageRegions}
             />
           </div>
         </div>
@@ -702,7 +715,19 @@ const EditorLayout: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2 md:gap-4">
-          <span className="hidden md:inline">Página: {currentPageMeta?.pageSettings?.size || editor.template.pages?.[0]?.pageSettings?.size}</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => editor.goToPage(Math.max(0, currentPageIndex - 1))}
+              disabled={currentPageIndex <= 0}
+              className="px-2 py-1 bg-gray-100 rounded disabled:opacity-50"
+            >‹</button>
+            <div className="text-sm">Página {currentPageIndex + 1} / {totalPages}</div>
+            <button
+              onClick={() => editor.goToPage(Math.min(totalPages - 1, currentPageIndex + 1))}
+              disabled={currentPageIndex >= totalPages - 1}
+              className="px-2 py-1 bg-gray-100 rounded disabled:opacity-50"
+            >›</button>
+          </div>
           <span className="hidden lg:inline">Orientação: { (currentPageMeta?.pageSettings?.orientation || editor.template.pages?.[0]?.pageSettings?.orientation) === 'portrait' ? 'Retrato' : 'Paisagem' }</span>
         </div>
       </div>
@@ -733,6 +758,8 @@ const EditorLayout: React.FC = () => {
         onClose={() => setShowPageSettingsModal(false)}
         pageSettings={pageSettings.pageSettings}
         backgroundImage={pageSettings.backgroundImage}
+        initialHeader={currentPageMeta?.header}
+        initialFooter={currentPageMeta?.footer}
         onUpdatePageSettings={(settings) => {
           pageSettings.updatePageSettings(settings);
           editor.updatePageSettings(settings);

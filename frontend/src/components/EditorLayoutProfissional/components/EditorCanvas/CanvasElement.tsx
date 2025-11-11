@@ -188,11 +188,12 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       case 'heading':
         return (
           <div
-            className="flex-1 w-full h-full outline-none"
+            className="w-full h-full outline-none overflow-hidden"
             style={{ 
               wordWrap: 'break-word',
               whiteSpace: 'pre-wrap',
-              overflowWrap: 'break-word'
+              overflowWrap: 'break-word',
+              flex: 1
             }}
             onDoubleClick={(e) => {
               // enable editing on double click

@@ -192,6 +192,13 @@ export const useTemplateEditor = (
     setTemplate(prev => {
       const newTemplate = updater(prev);
       undoRedo.addToHistory(newTemplate, action);
+      // Debug: log template changes for header/footer updates
+      try {
+        // Log only summary to avoid huge output
+        console.log('[useTemplateEditor] updateTemplate action:', action, 'pages:', newTemplate.pages.map(p => ({ id: p.id, header: p.header ? { height: p.header.height } : null, footer: p.footer ? { height: p.footer.height } : null })));
+      } catch (err) {
+        // ignore
+      }
       return newTemplate;
     });
   }, [undoRedo]);
@@ -405,6 +412,7 @@ export const useTemplateEditor = (
     }
     newElement.zIndex = getNextZIndex(template.elements);
     
+    console.log('[useTemplateEditor] addElement creating', { type, position, newElement });
     updateTemplate(prev => ({
       ...prev,
       elements: [...prev.elements, newElement],

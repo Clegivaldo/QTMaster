@@ -60,56 +60,98 @@ const Canvas: React.FC<CanvasProps> = ({
 
   const [isResizingHeader, setIsResizingHeader] = useState(false);
   const [isResizingFooter, setIsResizingFooter] = useState(false);
-  const [resizeStartY, setResizeStartY] = useState(0);
-  const [resizeStartHeightPx, setResizeStartHeightPx] = useState(0);
   const [previewHeaderHeightPx, setPreviewHeaderHeightPx] = useState<number | null>(null);
   const [previewFooterHeightPx, setPreviewFooterHeightPx] = useState<number | null>(null);
+  // Refs to hold mutable values used by document-level handlers to avoid
+  // stale closures and to prevent re-creating the effect on every preview update.
+  const resizeStartYRef = useRef<number>(0);
+  const resizeStartHeightPxRef = useRef<number>(0);
+  const previewHeaderHeightRef = useRef<number | null>(null);
+  const previewFooterHeightRef = useRef<number | null>(null);
 
   // Helpers para redimensionar header/footer
-  const pxToMm = (px: number) => px / (mmToPx(1) * zoom);
+  // 1mm = 96/25.4 pixels (at 96 DPI)
+  const mmToPxFactor = 96 / 25.4;
+  const pxToMm = (px: number) => px / (mmToPxFactor * zoom);
 
+  // Precompute header/footer pixel sizes for layout and interaction decisions
+  const headerHeightPxComputed = pageRegions?.header ? (previewHeaderHeightPx !== null ? previewHeaderHeightPx : mmToPx(pageRegions.header.height) * zoom) : 0;
+  const footerHeightPxComputed = pageRegions?.footer ? (previewFooterHeightPx !== null ? previewFooterHeightPx : mmToPx(pageRegions.footer.height) * zoom) : 0;
+
+  // Determine if any normal page element currently sits inside header/footer areas
+  const hasElementsInHeader = pageRegions?.header ? sortedElements.some(el => (el.position?.y || 0) * zoom < headerHeightPxComputed) : false;
+  const hasElementsInFooter = pageRegions?.footer ? sortedElements.some(el => ((el.position?.y || 0) * zoom + (el.size?.height || 0) * zoom) > (canvasHeight - footerHeightPxComputed)) : false;
+
+  // Log when pageRegions header/footer change so we can verify the prop flow
+  useEffect(() => {
+    try {
+      const headerMm = pageRegions?.header?.height ?? null;
+      const footerMm = pageRegions?.footer?.height ?? null;
+      const headerPx = headerMm !== null ? mmToPx(headerMm) * zoom : null;
+      const footerPx = footerMm !== null ? mmToPx(footerMm) * zoom : null;
+      console.log('[Canvas] Received pageRegions header/footer:', { headerMm, headerPx, footerMm, footerPx, zoom });
+    } catch (err) {
+      // ignore
+    }
+  }, [pageRegions?.header?.height, pageRegions?.footer?.height, zoom]);
+
+  // Add global listeners only when resizing starts. Avoid including preview/state
+  // values in the dependency array because they are updated on every mouse move
+  // and would cause this effect to re-run repeatedly (leading to infinite loops).
   useEffect(() => {
     if (!isResizingHeader && !isResizingFooter) return;
 
     const handleMouseMoveDoc = (e: MouseEvent) => {
       if (isResizingHeader) {
-        const delta = e.clientY - resizeStartY;
-        const newH = Math.max(0, resizeStartHeightPx + delta);
+        const delta = e.clientY - resizeStartYRef.current;
+        const newH = Math.max(0, resizeStartHeightPxRef.current + delta);
+        previewHeaderHeightRef.current = newH;
         setPreviewHeaderHeightPx(newH);
+        console.log('[Canvas] Header move - delta:', delta, 'newH:', newH);
       }
       if (isResizingFooter) {
-        const delta = resizeStartY - e.clientY;
-        const newH = Math.max(0, resizeStartHeightPx + delta);
+        const delta = resizeStartYRef.current - e.clientY;
+        const newH = Math.max(0, resizeStartHeightPxRef.current + delta);
+        previewFooterHeightRef.current = newH;
         setPreviewFooterHeightPx(newH);
+        console.log('[Canvas] Footer move - delta:', delta, 'newH:', newH);
       }
     };
 
     const handleMouseUpDoc = () => {
       if (isResizingHeader) {
-        const finalPx = previewHeaderHeightPx ?? resizeStartHeightPx;
+        const finalPx = previewHeaderHeightRef.current ?? resizeStartHeightPxRef.current;
         const finalMm = pxToMm(finalPx);
+        console.log('Header resize - finalPx:', finalPx, 'finalMm:', finalMm, 'zoom:', zoom, 'mmToPxFactor:', mmToPxFactor);
         try {
           const newHeader = { ...(pageRegions?.header || {}), height: Math.max(0, finalMm) };
+          console.log('newHeader:', newHeader);
+          console.log('[Canvas] Calling onUpdatePageRegions with newHeader');
           onUpdatePageRegions?.(newHeader, pageRegions?.footer ?? null);
         } catch (err) {
           console.error('Erro ao atualizar header height', err);
         }
       }
       if (isResizingFooter) {
-        const finalPx = previewFooterHeightPx ?? resizeStartHeightPx;
+        const finalPx = previewFooterHeightRef.current ?? resizeStartHeightPxRef.current;
         const finalMm = pxToMm(finalPx);
+        console.log('Footer resize - finalPx:', finalPx, 'finalMm:', finalMm, 'zoom:', zoom, 'mmToPxFactor:', mmToPxFactor);
         try {
           const newFooter = { ...(pageRegions?.footer || {}), height: Math.max(0, finalMm) };
+          console.log('newFooter:', newFooter);
+          console.log('[Canvas] Calling onUpdatePageRegions with newFooter');
           onUpdatePageRegions?.(pageRegions?.header ?? null, newFooter);
         } catch (err) {
           console.error('Erro ao atualizar footer height', err);
         }
       }
 
-      setIsResizingHeader(false);
-      setIsResizingFooter(false);
-      setResizeStartY(0);
-      setResizeStartHeightPx(0);
+  setIsResizingHeader(false);
+  setIsResizingFooter(false);
+  resizeStartYRef.current = 0;
+  resizeStartHeightPxRef.current = 0;
+      previewHeaderHeightRef.current = null;
+      previewFooterHeightRef.current = null;
       setPreviewHeaderHeightPx(null);
       setPreviewFooterHeightPx(null);
     };
@@ -117,13 +159,18 @@ const Canvas: React.FC<CanvasProps> = ({
     document.addEventListener('mousemove', handleMouseMoveDoc);
     document.addEventListener('mouseup', handleMouseUpDoc);
     document.body.style.cursor = 'row-resize';
+    console.log('[Canvas] Resize listeners added. isResizingHeader:', isResizingHeader, 'isResizingFooter:', isResizingFooter);
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMoveDoc);
       document.removeEventListener('mouseup', handleMouseUpDoc);
       document.body.style.cursor = 'default';
     };
-  }, [isResizingHeader, isResizingFooter, resizeStartY, resizeStartHeightPx, previewHeaderHeightPx, previewFooterHeightPx, onUpdatePageRegions, pageRegions]);
+    // Intentionally only depend on the resize flags so this effect is added/removed
+    // once per resize action. Including the preview/position state here causes
+    // the effect to re-run on every mousemove, which results in repeated listener
+    // registrations and can trigger maximum update depth errors.
+  }, [isResizingHeader, isResizingFooter]);
 
   // Handler para clique no canvas (deselecionar elementos)
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
@@ -215,7 +262,7 @@ const Canvas: React.FC<CanvasProps> = ({
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   // Handler para adicionar elemento via drop
-  const handleCanvasDrop = useCallback((e: React.DragEvent) => {
+  const handleCanvasDrop = useCallback((e: React.DragEvent, region?: 'header' | 'footer' | null) => {
     e.preventDefault();
 
     const elementType = e.dataTransfer.getData('text/plain');
@@ -236,10 +283,24 @@ const Canvas: React.FC<CanvasProps> = ({
 
         // leave small padding so element center doesn't go out of bounds
         finalPos.x = Math.max(minX, Math.min(finalPos.x, Math.max(minX, maxX - 10)));
-        finalPos.y = Math.max(minY, Math.min(finalPos.y, Math.max(minY, maxY - 10)));
+
+        // If drop was explicitly over header/footer region, allow Y to be inside that region
+        if (region === 'header') {
+          // allow dropping anywhere above the top margin (including top of page)
+          finalPos.y = Math.max(0, Math.min(finalPos.y, Math.max(0, maxY - 10)));
+        } else if (region === 'footer') {
+          // allow dropping in bottom region (below margins)
+          // compute page height in px
+          const pageSize = pageSettings?.getPageSize ? pageSettings.getPageSize() : null;
+          const pageHeightPx = pageSize ? mmToPxLocal(pageSize.height) : maxY;
+          finalPos.y = Math.max(minY, Math.min(finalPos.y, Math.max(minY, pageHeightPx - 10)));
+        } else {
+          finalPos.y = Math.max(minY, Math.min(finalPos.y, Math.max(minY, maxY - 10)));
+        }
       }
 
       try {
+        console.log('[Canvas] Dropping element', elementType, 'region:', region, 'finalPos:', finalPos);
         onAddElement(elementType as any, finalPos);
       } catch (err) {
         console.error('Erro ao adicionar elemento via drop:', err);
@@ -389,37 +450,47 @@ const Canvas: React.FC<CanvasProps> = ({
             (() => {
               try {
                 const header = pageRegions.header;
-                const headerHeightPx = mmToPx(header.height) * zoom;
+                // Usar previewHeaderHeightPx durante resize, caso contrário usar header.height
+                const headerHeightPx = previewHeaderHeightPx !== null 
+                  ? previewHeaderHeightPx 
+                  : mmToPx(header.height) * zoom;
                 return (
                           <div className="absolute left-0 right-0" style={{ top: 0, height: headerHeightPx, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    {Array.isArray(header.elements) && header.elements.map((el: any, idx: number) => {
-                      if (!el) return null;
-                      if (el.type === 'text') {
-                        return <div key={el.id || idx} className="text-xs text-gray-700" style={{ pointerEvents: 'none' }}>{el.content}</div>;
-                      }
-                      if (el.type === 'pageNumber') {
-                        const info = pageRegions.pageNumberInfo;
-                        const text = el.content ? String(el.content).replace('{n}', String(info?.current || '')) .replace('{total}', String(info?.total || '')) : (info ? `${info.current} / ${info.total}` : '');
-                        return <div key={el.id || idx} className="text-xs text-gray-700">{text}</div>;
-                      }
-                      if (el.type === 'image') {
-                        const src = el.src || el.url || (el.content && (el.content.src || el.content.url));
-                        return src ? <img key={el.id || idx} src={src} alt={el.alt || ''} style={{ maxHeight: headerHeightPx * 0.9 }} /> : null;
-                      }
-                      return null;
-                    })}
+                                    {Array.isArray(header.elements) && (
+                                      // Render region elements as interactive CanvasElement items so they can be selected/moved
+                                      <div style={{ position: 'relative', zIndex: 45, width: '100%', height: '100%', pointerEvents: 'auto' }}>
+                                        {header.elements.map((el: any) => (
+                                          el ? (
+                                            <CanvasElement
+                                              key={el.id}
+                                              element={el}
+                                              isSelected={selectedElementIds.includes(el.id)}
+                                              zoom={zoom}
+                                              onSelect={handleElementSelect}
+                                              onMove={onElementMove}
+                                              onResize={onElementResize}
+                                              onEdit={onElementEdit}
+                                              snapToGrid={snapToGrid}
+                                            />
+                                          ) : null
+                                        ))}
+                                      </div>
+                                    )}
                     {/* Drag handle at bottom edge of header */}
                     <div
                       data-testid="header-resize-handle"
                       onMouseDown={(e) => {
                         e.stopPropagation();
+                        console.log('[Canvas] Header resize start - clientY:', e.clientY, 'headerHeightPx:', headerHeightPx);
                         setIsResizingHeader(true);
-                        setResizeStartY(e.clientY);
-                        setResizeStartHeightPx(headerHeightPx);
+                        // update refs used by document handlers
+                        resizeStartYRef.current = e.clientY;
+                        resizeStartHeightPxRef.current = headerHeightPx;
+                        previewHeaderHeightRef.current = headerHeightPx;
                         setPreviewHeaderHeightPx(headerHeightPx);
                       }}
-                      className="absolute left-0 right-0 h-1 cursor-row-resize hover:bg-blue-500 transition-colors"
-                      style={{ top: Math.max(0, headerHeightPx - 2), zIndex: 60, background: isResizingHeader ? '#3b82f6' : '#e5e7eb', pointerEvents: 'auto' }}
+                      className="absolute left-0 right-0 h-1 cursor-row-resize hover:bg-blue-600 transition-colors"
+                      style={{ top: Math.max(0, headerHeightPx - 2), zIndex: 60, background: '#3b82f6', pointerEvents: 'auto' }}
                     />
                     {/* Click region to select header */}
                     <div
@@ -427,8 +498,11 @@ const Canvas: React.FC<CanvasProps> = ({
                         e.stopPropagation();
                         onRegionSelect?.('header');
                       }}
+                      // Allow drag/drop over the header region: forward dragOver/drop to canvas handlers
+                      onDragOver={(e) => { e.preventDefault(); }}
+                      onDrop={(e) => { handleCanvasDrop(e as any, 'header'); }}
                       className="absolute left-0 right-0 top-0 bottom-0"
-                      style={{ zIndex: 40, pointerEvents: 'auto', background: 'transparent' }}
+                      style={{ zIndex: 40, pointerEvents: hasElementsInHeader ? 'none' : 'auto', background: 'transparent' }}
                     />
                     {/* preview overlay */}
                     {isResizingHeader && previewHeaderHeightPx !== null && (
@@ -444,7 +518,6 @@ const Canvas: React.FC<CanvasProps> = ({
               }
             })()
           )}
-
           {/* Elementos do template */}
           <div className="absolute inset-0">
             {sortedElements.map((element) => (
@@ -467,37 +540,45 @@ const Canvas: React.FC<CanvasProps> = ({
             (() => {
               try {
                 const footer = pageRegions.footer;
-                const footerHeightPx = mmToPx(footer.height) * zoom;
+                // Usar previewFooterHeightPx durante resize, caso contrário usar footer.height
+                const footerHeightPx = previewFooterHeightPx !== null 
+                  ? previewFooterHeightPx 
+                  : mmToPx(footer.height) * zoom;
                 return (
                   <div className="absolute left-0 right-0" style={{ bottom: 0, height: footerHeightPx, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {Array.isArray(footer.elements) && footer.elements.map((el: any, idx: number) => {
-                      if (!el) return null;
-                      if (el.type === 'text') {
-                        return <div key={el.id || idx} className="text-xs text-gray-700" style={{ pointerEvents: 'none' }}>{el.content}</div>;
-                      }
-                      if (el.type === 'pageNumber') {
-                        const info = pageRegions.pageNumberInfo;
-                        const text = el.content ? String(el.content).replace('{n}', String(info?.current || '')) .replace('{total}', String(info?.total || '')) : (info ? `${info.current} / ${info.total}` : '');
-                        return <div key={el.id || idx} className="text-xs text-gray-700">{text}</div>;
-                      }
-                      if (el.type === 'image') {
-                        const src = el.src || el.url || (el.content && (el.content.src || el.content.url));
-                        return src ? <img key={el.id || idx} src={src} alt={el.alt || ''} style={{ maxHeight: footerHeightPx * 0.9 }} /> : null;
-                      }
-                      return null;
-                    })}
+                    {Array.isArray(footer.elements) && (
+                      <div style={{ position: 'relative', zIndex: 45, width: '100%', height: '100%', pointerEvents: 'auto' }}>
+                        {footer.elements.map((el: any) => (
+                          el ? (
+                            <CanvasElement
+                              key={el.id}
+                              element={el}
+                              isSelected={selectedElementIds.includes(el.id)}
+                              zoom={zoom}
+                              onSelect={handleElementSelect}
+                              onMove={onElementMove}
+                              onResize={onElementResize}
+                              onEdit={onElementEdit}
+                              snapToGrid={snapToGrid}
+                            />
+                          ) : null
+                        ))}
+                      </div>
+                    )}
                     {/* Drag handle at top edge of footer */}
                     <div
                       data-testid="footer-resize-handle"
                       onMouseDown={(e) => {
                         e.stopPropagation();
                         setIsResizingFooter(true);
-                        setResizeStartY(e.clientY);
-                        setResizeStartHeightPx(footerHeightPx);
+                        // update refs used by document handlers
+                        resizeStartYRef.current = e.clientY;
+                        resizeStartHeightPxRef.current = footerHeightPx;
+                        previewFooterHeightRef.current = footerHeightPx;
                         setPreviewFooterHeightPx(footerHeightPx);
                       }}
-                      className="absolute left-0 right-0 h-1 cursor-row-resize hover:bg-blue-500 transition-colors"
-                      style={{ bottom: Math.max(0, footerHeightPx - 2), zIndex: 60, background: isResizingFooter ? '#3b82f6' : '#e5e7eb', pointerEvents: 'auto' }}
+                      className="absolute left-0 right-0 h-1 cursor-row-resize hover:bg-blue-600 transition-colors"
+                      style={{ bottom: Math.max(0, footerHeightPx - 2), zIndex: 60, background: '#3b82f6', pointerEvents: 'auto' }}
                     />
                     {isResizingFooter && previewFooterHeightPx !== null && (
                       <>
@@ -511,8 +592,11 @@ const Canvas: React.FC<CanvasProps> = ({
                         e.stopPropagation();
                         onRegionSelect?.('footer');
                       }}
+                      // Allow drag/drop over the footer region
+                      onDragOver={(e) => { e.preventDefault(); }}
+                      onDrop={(e) => { handleCanvasDrop(e as any, 'footer'); }}
                       className="absolute left-0 right-0 top-0 bottom-0"
-                      style={{ zIndex: 40, pointerEvents: 'auto', background: 'transparent' }}
+                      style={{ zIndex: 40, pointerEvents: hasElementsInFooter ? 'none' : 'auto', background: 'transparent' }}
                     />
                   </div>
                 );

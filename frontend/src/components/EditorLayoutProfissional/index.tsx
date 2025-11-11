@@ -826,6 +826,8 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
         onClose={() => setShowPageSettingsModal(false)}
         pageSettings={pageSettings.pageSettings}
         backgroundImage={pageSettings.backgroundImage}
+        initialHeader={currentPageMeta?.header}
+        initialFooter={currentPageMeta?.footer}
         onUpdatePageSettings={(settings) => {
           pageSettings.updatePageSettings(settings);
           editor.updatePageSettings(settings);

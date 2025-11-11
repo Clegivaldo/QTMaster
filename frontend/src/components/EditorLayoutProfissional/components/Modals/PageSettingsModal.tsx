@@ -32,6 +32,8 @@ interface PageSettingsModalProps {
   onClose: () => void;
   pageSettings: PageSettings;
   backgroundImage?: BackgroundImageSettings | null;
+  initialHeader?: any | null;
+  initialFooter?: any | null;
   onUpdatePageSettings: (settings: PageSettings) => void;
   onUpdateBackgroundImage: (image: BackgroundImageSettings | null) => void;
   onUpdateHeaderFooter?: (header: any | null, footer: any | null) => void;
@@ -66,27 +68,31 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
   onClose,
   pageSettings,
   backgroundImage,
+  initialHeader,
+  initialFooter,
   onUpdatePageSettings,
-  onUpdateBackgroundImage
-  , onUpdateHeaderFooter
-  , onOpenGallery
+  onUpdateBackgroundImage,
+  onUpdateHeaderFooter,
+  onOpenGallery
 }) => {
   const [localSettings, setLocalSettings] = useState<PageSettings>(pageSettings);
   const [localBackgroundImage, setLocalBackgroundImage] = useState<BackgroundImageSettings | null>(backgroundImage || null);
-  const [localHeader, setLocalHeader] = useState<any | null>(null);
-  const [localFooter, setLocalFooter] = useState<any | null>(null);
+  const [localHeader, setLocalHeader] = useState<any | null>(initialHeader || null);
+  const [localFooter, setLocalFooter] = useState<any | null>(initialFooter || null);
   const [showPreview, setShowPreview] = useState(true);
 
-  // Resetar estado quando modal abrir
+  // Resetar estado quando modal abrir - CORRIGIDO: manter valores existentes de header/footer
   useEffect(() => {
     if (isOpen) {
+      console.log('[PageSettingsModal] Modal opened. initialHeader:', initialHeader, 'initialFooter:', initialFooter);
       setLocalSettings(pageSettings);
       setLocalBackgroundImage(backgroundImage || null);
-      setLocalHeader(null);
-      setLocalFooter(null);
+      setLocalHeader(initialHeader || null);
+      setLocalFooter(initialFooter || null);
+      // Manter header/footer existentes, não resetar para null
       setShowPreview(true);
     }
-  }, [isOpen, pageSettings, backgroundImage]);
+  }, [isOpen, pageSettings, backgroundImage, initialHeader, initialFooter]);
 
   const handleSizeChange = (size: PageSettings['size']) => {
     const sizeInfo = PAGE_SIZES.find(s => s.value === size);
@@ -149,6 +155,7 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
   };
 
   const handleApply = () => {
+    console.log('[PageSettingsModal] Apply clicked. localHeader:', localHeader, 'localFooter:', localFooter);
     onUpdatePageSettings(localSettings);
     if (localBackgroundImage) {
       onUpdateBackgroundImage(localBackgroundImage);
@@ -156,6 +163,7 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
       onUpdateBackgroundImage(null);
     }
     if (onUpdateHeaderFooter) {
+      console.log('[PageSettingsModal] Calling onUpdateHeaderFooter');
       onUpdateHeaderFooter(localHeader, localFooter);
     }
     onClose();
