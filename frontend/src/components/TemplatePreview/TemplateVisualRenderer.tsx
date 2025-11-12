@@ -4,15 +4,26 @@ import './TemplateVisualRenderer.css';
 
 interface TemplateVisualRendererProps {
   template: EditorTemplate;
+  showControls?: boolean;
+  currentPageIndex?: number;
+  onPageChange?: (pageIndex: number) => void;
 }
 
 /**
  * Renderiza um template visualmente e permite exportar como PDF
  * Simula o layout final do documento com elementos posicionados
  */
-export const TemplateVisualRenderer: React.FC<TemplateVisualRendererProps> = ({ template }) => {
+export const TemplateVisualRenderer: React.FC<TemplateVisualRendererProps> = ({ 
+  template, 
+  showControls = true,
+  currentPageIndex,
+  onPageChange 
+}) => {
   const previewRef = useRef<HTMLDivElement>(null);
-  const [pageIndex, setPageIndex] = useState<number>(0);
+  const [internalPageIndex, setInternalPageIndex] = useState<number>(0);
+
+  const pageIndex = currentPageIndex !== undefined ? currentPageIndex : internalPageIndex;
+  const setPageIndex = onPageChange || setInternalPageIndex;
 
   const pages = template.pages && template.pages.length > 0 ? template.pages : [{ id: 'p-1', elements: template.elements || [], pageSettings: null, header: null, footer: null } as any];
   const currentPage = pages[pageIndex];
@@ -112,11 +123,13 @@ export const TemplateVisualRenderer: React.FC<TemplateVisualRendererProps> = ({ 
       {/* Export removed from visual renderer - exports are handled elsewhere */}
 
       {/* Preview do template */}
-      <div className="template-preview-controls px-4 py-2 border-b bg-gray-50 flex items-center gap-2">
-        <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} disabled={pageIndex === 0} className="btn-page">‹</button>
-        <div className="text-sm">Página {pageIndex + 1} / {pages.length}</div>
-        <button onClick={() => setPageIndex(Math.min(pages.length - 1, pageIndex + 1))} disabled={pageIndex === pages.length - 1} className="btn-page">›</button>
-      </div>
+      {showControls && (
+        <div className="template-preview-controls px-4 py-2 border-b bg-gray-50 flex items-center gap-2">
+          <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} disabled={pageIndex === 0} className="btn-page">‹</button>
+          <div className="text-sm">Página {pageIndex + 1} / {pages.length}</div>
+          <button onClick={() => setPageIndex(Math.min(pages.length - 1, pageIndex + 1))} disabled={pageIndex === pages.length - 1} className="btn-page">›</button>
+        </div>
+      )}
 
       <div ref={previewRef} className="template-preview">
         <div

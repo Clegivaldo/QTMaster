@@ -404,39 +404,41 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-          <div className="flex items-center space-x-4">
+          {/* Título à esquerda */}
+          <div className="flex items-center">
             <h2 className="text-lg font-semibold text-gray-900">
               Preview - {template.name}
             </h2>
-            
-            {previewPages.length > 1 && (
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={goToPreviousPage}
-                  disabled={currentPageIndex === 0}
-                  className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Página anterior"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                
-                <span className="text-sm text-gray-600 min-w-[80px] text-center">
-                  {currentPageIndex + 1} de {previewPages.length}
-                </span>
-                
-                <button
-                  onClick={goToNextPage}
-                  disabled={currentPageIndex === previewPages.length - 1}
-                  className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Próxima página"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Zoom Controls */}
+          {/* Navegação de páginas centralizada */}
+          {previewPages.length > 1 && (
+            <div className="flex items-center space-x-2 absolute left-1/2 transform -translate-x-1/2">
+              <button
+                onClick={goToPreviousPage}
+                disabled={currentPageIndex === 0}
+                className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Página anterior"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              
+              <span className="text-sm text-gray-600 min-w-[80px] text-center">
+                {currentPageIndex + 1} de {previewPages.length}
+              </span>
+              
+              <button
+                onClick={goToNextPage}
+                disabled={currentPageIndex === previewPages.length - 1}
+                className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Próxima página"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Controles de zoom e fechar à direita */}
           <div className="flex items-center space-x-2">
             <button
               onClick={handleZoomOut}
@@ -473,10 +475,9 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
             >
               {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
             </button>
-          </div>
 
-          {/* Actions */}
-          <div className="flex items-center space-x-2">
+            <div className="w-px h-6 bg-gray-300 mx-2"></div>
+
             <button
               onClick={onClose}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"

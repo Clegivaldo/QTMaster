@@ -74,13 +74,11 @@ const Canvas: React.FC<CanvasProps> = ({
   const mmToPxFactor = 96 / 25.4;
   const pxToMm = (px: number) => px / (mmToPxFactor * zoom);
 
-  // Precompute header/footer pixel sizes for layout and interaction decisions
-  const headerHeightPxComputed = pageRegions?.header ? (previewHeaderHeightPx !== null ? previewHeaderHeightPx : mmToPx(pageRegions.header.height) * zoom) : 0;
-  const footerHeightPxComputed = pageRegions?.footer ? (previewFooterHeightPx !== null ? previewFooterHeightPx : mmToPx(pageRegions.footer.height) * zoom) : 0;
+  // Precompute footer pixel sizes for layout and interaction decisions
+  // const footerHeightPxComputed = pageRegions?.footer ? (previewFooterHeightPx !== null ? previewFooterHeightPx : mmToPx(pageRegions.footer.height) * zoom) : 0;
 
-  // Determine if any normal page element currently sits inside header/footer areas
-  const hasElementsInHeader = pageRegions?.header ? sortedElements.some(el => (el.position?.y || 0) * zoom < headerHeightPxComputed) : false;
-  const hasElementsInFooter = pageRegions?.footer ? sortedElements.some(el => ((el.position?.y || 0) * zoom + (el.size?.height || 0) * zoom) > (canvasHeight - footerHeightPxComputed)) : false;
+  // Determine if any normal page element currently sits inside footer areas
+  // const hasElementsInFooter = pageRegions?.footer ? sortedElements.some(el => ((el.position?.y || 0) * zoom + (el.size?.height || 0) * zoom) > (canvasHeight - footerHeightPxComputed)) : false;
 
   // Log when pageRegions header/footer change so we can verify the prop flow
   useEffect(() => {
@@ -124,7 +122,12 @@ const Canvas: React.FC<CanvasProps> = ({
         const finalMm = pxToMm(finalPx);
         console.log('Header resize - finalPx:', finalPx, 'finalMm:', finalMm, 'zoom:', zoom, 'mmToPxFactor:', mmToPxFactor);
         try {
-          const newHeader = { ...(pageRegions?.header || {}), height: Math.max(0, finalMm) };
+          // Clamp header so header + footer não ultrapassem a altura da página (considerando margens)
+          const margins = pageSettings?.pageSettings?.margins || { top: 0, bottom: 0 };
+          const footerMm = pageRegions?.footer?.height || 0;
+          const maxHeaderMm = Math.max(0, (pageSize?.height || 0) - (margins.top || 0) - (margins.bottom || 0) - footerMm);
+          const newHeaderHeightMm = Math.max(0, Math.min(finalMm, maxHeaderMm));
+          const newHeader = { ...(pageRegions?.header || {}), height: newHeaderHeightMm };
           console.log('newHeader:', newHeader);
           console.log('[Canvas] Calling onUpdatePageRegions with newHeader');
           onUpdatePageRegions?.(newHeader, pageRegions?.footer ?? null);
@@ -137,7 +140,12 @@ const Canvas: React.FC<CanvasProps> = ({
         const finalMm = pxToMm(finalPx);
         console.log('Footer resize - finalPx:', finalPx, 'finalMm:', finalMm, 'zoom:', zoom, 'mmToPxFactor:', mmToPxFactor);
         try {
-          const newFooter = { ...(pageRegions?.footer || {}), height: Math.max(0, finalMm) };
+          // Clamp footer so header + footer não ultrapassem a altura da página (considerando margens)
+          const margins = pageSettings?.pageSettings?.margins || { top: 0, bottom: 0 };
+          const headerMm = pageRegions?.header?.height || 0;
+          const maxFooterMm = Math.max(0, (pageSize?.height || 0) - (margins.top || 0) - (margins.bottom || 0) - headerMm);
+          const newFooterHeightMm = Math.max(0, Math.min(finalMm, maxFooterMm));
+          const newFooter = { ...(pageRegions?.footer || {}), height: newFooterHeightMm };
           console.log('newFooter:', newFooter);
           console.log('[Canvas] Calling onUpdatePageRegions with newFooter');
           onUpdatePageRegions?.(pageRegions?.header ?? null, newFooter);
@@ -261,12 +269,132 @@ const Canvas: React.FC<CanvasProps> = ({
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  // Handlers for region elements
+  const handleRegionElementMove = useCallback((elementId: string, newPosition: Position, regionType: 'header' | 'footer') => {
+    if (!onUpdatePageRegions) return;
+    
+    const region = regionType === 'header' ? pageRegions?.header : pageRegions?.footer;
+    if (!region || !Array.isArray(region.elements)) return;
+    
+    const elementIndex = region.elements.findIndex((el: any) => el.id === elementId);
+    if (elementIndex === -1) return;
+    
+    const element = region.elements[elementIndex];
+    
+    // Apply margin constraints for region elements (they should respect page margins)
+  const pageBounds = pageSettings?.getPageBounds ? pageSettings.getPageBounds() : null;
+    
+    let constrainedPosition = { ...newPosition };
+    
+
+    if (pageBounds && element) {
+      // Convert page bounds (mm) -> px on-screen coordinates (considering zoom)
+      const minX = mmToPx(pageBounds.minX) * zoom;
+      const maxX = mmToPx(pageBounds.maxX) * zoom;
+      const elementWidth = (element.size?.width || 100) * zoom;
+
+      // Constrain X position to page margins (all in px)
+      constrainedPosition.x = Math.max(minX, Math.min(constrainedPosition.x, Math.max(minX, maxX - elementWidth)));
+
+      // Constrain Y position so element stays inside header/footer vertical bounds
+  const headerHeightPxLocal = previewHeaderHeightRef.current !== null ? previewHeaderHeightRef.current : (pageRegions?.header ? mmToPx(pageRegions.header.height) * zoom : 0);
+  const footerHeightPxLocal = previewFooterHeightRef.current !== null ? previewFooterHeightRef.current : (pageRegions?.footer ? mmToPx(pageRegions.footer.height) * zoom : 0);
+  const elementHeightPx = (element.size?.height || 10) * zoom;
+
+  const minY = mmToPx(pageBounds.minY) * zoom;
+  const maxY = mmToPx(pageBounds.maxY) * zoom;
+
+      if (regionType === 'header') {
+        const yMin = minY;
+  const yMax = Math.max(yMin, yMin + headerHeightPxLocal - elementHeightPx);
+        constrainedPosition.y = Math.max(yMin, Math.min(constrainedPosition.y, yMax));
+      } else {
+        const yMin = Math.max(minY, maxY - footerHeightPxLocal);
+  const yMax = Math.max(yMin, maxY - elementHeightPx);
+        constrainedPosition.y = Math.max(yMin, Math.min(constrainedPosition.y, yMax));
+      }
+    }
+    
+    const updatedElements = [...region.elements];
+    updatedElements[elementIndex] = { ...updatedElements[elementIndex], position: constrainedPosition };
+    
+    const updatedRegion = { ...region, elements: updatedElements };
+    
+    if (regionType === 'header') {
+      onUpdatePageRegions(updatedRegion, pageRegions?.footer || null);
+    } else {
+      onUpdatePageRegions(pageRegions?.header || null, updatedRegion);
+    }
+  }, [onUpdatePageRegions, pageRegions, pageSettings]);
+
+  const handleRegionElementResize = useCallback((elementId: string, newSize: any, regionType: 'header' | 'footer') => {
+    if (!onUpdatePageRegions) return;
+    
+    const region = regionType === 'header' ? pageRegions?.header : pageRegions?.footer;
+    if (!region || !Array.isArray(region.elements)) return;
+    
+    const elementIndex = region.elements.findIndex((el: any) => el.id === elementId);
+    if (elementIndex === -1) return;
+    
+    const element = region.elements[elementIndex];
+    
+    // Apply margin constraints for region elements resize
+    const pageBounds = pageSettings?.getPageBounds ? pageSettings.getPageBounds() : null;
+    const mmToPxLocal = (mm: number) => (mm * 96) / 25.4;
+    
+    let constrainedSize = { ...newSize };
+    
+    if (pageBounds && element) {
+      const maxX = mmToPxLocal(pageBounds.maxX);
+      const elementX = element.position?.x || 0;
+      
+      // Constrain width so element doesn't cross right margin
+      const maxAllowedWidth = Math.max(1, maxX - elementX);
+      constrainedSize.width = Math.max(1, Math.min(constrainedSize.width, maxAllowedWidth));
+    }
+
+    // (Nota) mantemos por enquanto apenas restrição horizontal aqui — as restrições verticais
+    // de posicionamento já são aplicadas no movimento (handleRegionElementMove).
+    
+    const updatedElements = [...region.elements];
+    updatedElements[elementIndex] = { ...updatedElements[elementIndex], size: constrainedSize };
+    
+    const updatedRegion = { ...region, elements: updatedElements };
+    
+    if (regionType === 'header') {
+      onUpdatePageRegions(updatedRegion, pageRegions?.footer || null);
+    } else {
+      onUpdatePageRegions(pageRegions?.header || null, updatedRegion);
+    }
+  }, [onUpdatePageRegions, pageRegions, pageSettings]);
+
+  const handleRegionElementEdit = useCallback((elementId: string, content: any, regionType: 'header' | 'footer') => {
+    if (!onUpdatePageRegions) return;
+    
+    const region = regionType === 'header' ? pageRegions?.header : pageRegions?.footer;
+    if (!region || !Array.isArray(region.elements)) return;
+    
+    const elementIndex = region.elements.findIndex((el: any) => el.id === elementId);
+    if (elementIndex === -1) return;
+    
+    const updatedElements = [...region.elements];
+    updatedElements[elementIndex] = { ...updatedElements[elementIndex], content };
+    
+    const updatedRegion = { ...region, elements: updatedElements };
+    
+    if (regionType === 'header') {
+      onUpdatePageRegions(updatedRegion, pageRegions?.footer || null);
+    } else {
+      onUpdatePageRegions(pageRegions?.header || null, updatedRegion);
+    }
+  }, [onUpdatePageRegions, pageRegions]);
+
   // Handler para adicionar elemento via drop
   const handleCanvasDrop = useCallback((e: React.DragEvent, region?: 'header' | 'footer' | null) => {
     e.preventDefault();
 
     const elementType = e.dataTransfer.getData('text/plain');
-    if (elementType && onAddElement) {
+    if (elementType) {
       const canvasCoords = getCanvasCoordinates(e.clientX, e.clientY);
 
       // Clamp position to page bounds (margins) if possible
@@ -301,12 +429,45 @@ const Canvas: React.FC<CanvasProps> = ({
 
       try {
         console.log('[Canvas] Dropping element', elementType, 'region:', region, 'finalPos:', finalPos);
-        onAddElement(elementType as any, finalPos);
+        
+        if (region && onUpdatePageRegions) {
+          // Add element to region instead of global elements
+          const newElement = {
+            id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: elementType as any,
+            position: finalPos,
+            size: { width: 100, height: 50 }, // default size
+            styles: {},
+            content: elementType === 'text' ? 'Novo texto' : undefined,
+            zIndex: 1,
+            visible: true,
+            locked: false
+          };
+          
+          if (region === 'header') {
+            const currentHeader = pageRegions?.header || { height: 20, replicateAcrossPages: false, elements: [] };
+            const updatedHeader = {
+              ...currentHeader,
+              elements: [...(currentHeader.elements || []), newElement]
+            };
+            onUpdatePageRegions(updatedHeader, pageRegions?.footer || null);
+          } else if (region === 'footer') {
+            const currentFooter = pageRegions?.footer || { height: 20, replicateAcrossPages: false, elements: [] };
+            const updatedFooter = {
+              ...currentFooter,
+              elements: [...(currentFooter.elements || []), newElement]
+            };
+            onUpdatePageRegions(pageRegions?.header || null, updatedFooter);
+          }
+        } else if (onAddElement) {
+          // Add to global elements for page content
+          onAddElement(elementType as any, finalPos);
+        }
       } catch (err) {
         console.error('Erro ao adicionar elemento via drop:', err);
       }
     }
-  }, [getCanvasCoordinates, onAddElement, pageSettings]);
+  }, [getCanvasCoordinates, onAddElement, onUpdatePageRegions, pageSettings, pageRegions]);
 
   const handleCanvasDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -347,6 +508,9 @@ const Canvas: React.FC<CanvasProps> = ({
       </div>
     );
   };
+
+  // Página em mm -> px considerando zoom
+  const pageSize = pageSettings?.getPageSize ? pageSettings.getPageSize() : null;
 
   // Renderizar grid
   const renderGrid = () => {
@@ -454,11 +618,27 @@ const Canvas: React.FC<CanvasProps> = ({
                 const headerHeightPx = previewHeaderHeightPx !== null 
                   ? previewHeaderHeightPx 
                   : mmToPx(header.height) * zoom;
+                
+                // Get margins for positioning
+                const marginsMM = pageSettings?.pageSettings?.margins;
+                const marginsPx = marginsMM ? {
+                  top: mmToPx(marginsMM.top),
+                  bottom: mmToPx(marginsMM.bottom),
+                  left: mmToPx(marginsMM.left),
+                  right: mmToPx(marginsMM.right)
+                } : DEFAULT_MARGINS;
+
+                // numeric inner-top for header inner container
+                const headerInnerTop = -marginsPx.top * zoom;
+
+                // Debug log for header alignment
+                console.log('[Canvas][header] headerHeightPx:', headerHeightPx, 'marginsPx:', marginsPx, 'headerInnerTop:', headerInnerTop, 'zoom:', zoom);
                 return (
-                          <div className="absolute left-0 right-0" style={{ top: 0, height: headerHeightPx, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div className="absolute left-0 right-0" style={{ top: marginsPx.top * zoom, height: headerHeightPx, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     {Array.isArray(header.elements) && (
                                       // Render region elements as interactive CanvasElement items so they can be selected/moved
-                                      <div style={{ position: 'relative', zIndex: 45, width: '100%', height: '100%', pointerEvents: 'auto' }}>
+                                      // We offset the inner coordinate system so element.position can remain global (page) coordinates
+                                      <div style={{ position: 'relative', zIndex: 60, width: '100%', height: '100%', pointerEvents: 'auto', top: headerInnerTop, left: -marginsPx.left * zoom }}>
                                         {header.elements.map((el: any) => (
                                           el ? (
                                             <CanvasElement
@@ -467,9 +647,9 @@ const Canvas: React.FC<CanvasProps> = ({
                                               isSelected={selectedElementIds.includes(el.id)}
                                               zoom={zoom}
                                               onSelect={handleElementSelect}
-                                              onMove={onElementMove}
-                                              onResize={onElementResize}
-                                              onEdit={onElementEdit}
+                                              onMove={(id, pos) => handleRegionElementMove(id, pos, 'header')}
+                                              onResize={(id, size) => handleRegionElementResize(id, size, 'header')}
+                                              onEdit={(id, content) => handleRegionElementEdit(id, content, 'header')}
                                               snapToGrid={snapToGrid}
                                             />
                                           ) : null
@@ -489,24 +669,18 @@ const Canvas: React.FC<CanvasProps> = ({
                         previewHeaderHeightRef.current = headerHeightPx;
                         setPreviewHeaderHeightPx(headerHeightPx);
                       }}
-                      className="absolute left-0 right-0 h-1 cursor-row-resize hover:bg-blue-600 transition-colors"
-                      style={{ top: Math.max(0, headerHeightPx - 2), zIndex: 60, background: '#3b82f6', pointerEvents: 'auto' }}
-                    />
-                    {/* Click region to select header */}
-                    <div
                       onClick={(e) => {
                         e.stopPropagation();
                         onRegionSelect?.('header');
                       }}
-                      // Allow drag/drop over the header region: forward dragOver/drop to canvas handlers
-                      onDragOver={(e) => { e.preventDefault(); }}
-                      onDrop={(e) => { handleCanvasDrop(e as any, 'header'); }}
-                      className="absolute left-0 right-0 top-0 bottom-0"
-                      style={{ zIndex: 40, pointerEvents: hasElementsInHeader ? 'none' : 'auto', background: 'transparent' }}
+                      className="absolute left-0 right-0 h-1 cursor-row-resize hover:bg-blue-600 transition-colors"
+                      style={{ top: Math.max(0, headerHeightPx - 2), zIndex: 62, background: '#3b82f6', pointerEvents: 'auto' }}
                     />
+                    {/* Removed click region to avoid interference with element selection */}
                     {/* preview overlay */}
                     {isResizingHeader && previewHeaderHeightPx !== null && (
                       <>
+                        {/* overlay relativo ao wrapper: começar em 0 (wrapper já está posicionado na margem) */}
                         <div className="absolute left-0 right-0 bg-blue-400 opacity-30" style={{ top: 0, height: previewHeaderHeightPx, pointerEvents: 'none', zIndex: 50 }} />
                         <div className="absolute left-0 right-0 border-b-2 border-blue-500" style={{ top: previewHeaderHeightPx - 1, pointerEvents: 'none', zIndex: 50 }} />
                       </>
@@ -544,10 +718,26 @@ const Canvas: React.FC<CanvasProps> = ({
                 const footerHeightPx = previewFooterHeightPx !== null 
                   ? previewFooterHeightPx 
                   : mmToPx(footer.height) * zoom;
+                
+                // Get margins for positioning
+                const marginsMM = pageSettings?.pageSettings?.margins;
+                const marginsPx = marginsMM ? {
+                  top: mmToPx(marginsMM.top),
+                  bottom: mmToPx(marginsMM.bottom),
+                  left: mmToPx(marginsMM.left),
+                  right: mmToPx(marginsMM.right)
+                } : DEFAULT_MARGINS;
+
+                // compute inner-top for footer inner container so element positions can remain in page coords
+                const footerInnerTop = -(canvasHeight - footerHeightPx - (marginsPx.bottom * zoom));
+
+                // Debug logs for alignment troubleshooting
+                console.log('[Canvas][footer] canvasHeight:', canvasHeight, 'footerHeightPx:', footerHeightPx, 'marginsPx:', marginsPx, 'footerInnerTop:', footerInnerTop, 'zoom:', zoom);
+
                 return (
-                  <div className="absolute left-0 right-0" style={{ bottom: 0, height: footerHeightPx, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div className="absolute left-0 right-0" style={{ bottom: marginsPx.bottom * zoom, height: footerHeightPx, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {Array.isArray(footer.elements) && (
-                      <div style={{ position: 'relative', zIndex: 45, width: '100%', height: '100%', pointerEvents: 'auto' }}>
+                      <div style={{ position: 'relative', zIndex: 60, width: '100%', height: '100%', pointerEvents: 'auto', top: footerInnerTop, left: -marginsPx.left * zoom }}>
                         {footer.elements.map((el: any) => (
                           el ? (
                             <CanvasElement
@@ -556,9 +746,9 @@ const Canvas: React.FC<CanvasProps> = ({
                               isSelected={selectedElementIds.includes(el.id)}
                               zoom={zoom}
                               onSelect={handleElementSelect}
-                              onMove={onElementMove}
-                              onResize={onElementResize}
-                              onEdit={onElementEdit}
+                              onMove={(id, pos) => handleRegionElementMove(id, pos, 'footer')}
+                              onResize={(id, size) => handleRegionElementResize(id, size, 'footer')}
+                              onEdit={(id, content) => handleRegionElementEdit(id, content, 'footer')}
                               snapToGrid={snapToGrid}
                             />
                           ) : null
@@ -577,27 +767,20 @@ const Canvas: React.FC<CanvasProps> = ({
                         previewFooterHeightRef.current = footerHeightPx;
                         setPreviewFooterHeightPx(footerHeightPx);
                       }}
-                      className="absolute left-0 right-0 h-1 cursor-row-resize hover:bg-blue-600 transition-colors"
-                      style={{ bottom: Math.max(0, footerHeightPx - 2), zIndex: 60, background: '#3b82f6', pointerEvents: 'auto' }}
-                    />
-                    {isResizingFooter && previewFooterHeightPx !== null && (
-                      <>
-                        <div className="absolute left-0 right-0 bg-blue-400 opacity-30" style={{ bottom: 0, height: previewFooterHeightPx, pointerEvents: 'none', zIndex: 50 }} />
-                        <div className="absolute left-0 right-0 border-t-2 border-blue-500" style={{ bottom: previewFooterHeightPx - 1, pointerEvents: 'none', zIndex: 50 }} />
-                      </>
-                    )}
-                    {/* Click region to select footer */}
-                    <div
                       onClick={(e) => {
                         e.stopPropagation();
                         onRegionSelect?.('footer');
                       }}
-                      // Allow drag/drop over the footer region
-                      onDragOver={(e) => { e.preventDefault(); }}
-                      onDrop={(e) => { handleCanvasDrop(e as any, 'footer'); }}
-                      className="absolute left-0 right-0 top-0 bottom-0"
-                      style={{ zIndex: 40, pointerEvents: hasElementsInFooter ? 'none' : 'auto', background: 'transparent' }}
+                      className="absolute left-0 right-0 h-1 cursor-row-resize hover:bg-blue-600 transition-colors"
+                      style={{ bottom: (marginsPx.bottom * zoom) + Math.max(0, footerHeightPx - 2), zIndex: 62, background: '#3b82f6', pointerEvents: 'auto' }}
                     />
+                    {isResizingFooter && previewFooterHeightPx !== null && (
+                      <>
+                        <div className="absolute left-0 right-0 bg-blue-400 opacity-30" style={{ bottom: marginsPx.bottom * zoom, height: previewFooterHeightPx, pointerEvents: 'none', zIndex: 50 }} />
+                        <div className="absolute left-0 right-0 border-t-2 border-blue-500" style={{ bottom: (marginsPx.bottom * zoom) + previewFooterHeightPx - 1, pointerEvents: 'none', zIndex: 50 }} />
+                      </>
+                    )}
+                    {/* Removed click region to avoid interference with element selection */}
                   </div>
                 );
               } catch (err) {

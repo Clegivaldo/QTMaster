@@ -18,6 +18,7 @@ export interface PageSettings {
   backgroundColor: string;
   showMargins: boolean;
   customSize?: { width: number; height: number };
+  replicateAcrossPages?: boolean;
 }
 
 export interface BackgroundImageSettings {
@@ -175,7 +176,8 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
       orientation: 'portrait',
       margins: { top: 20, right: 20, bottom: 20, left: 20 },
       backgroundColor: '#ffffff',
-      showMargins: true
+      showMargins: true,
+      replicateAcrossPages: false
     };
     setLocalSettings(defaultSettings);
     setLocalBackgroundImage(null);
@@ -350,6 +352,16 @@ const PageSettingsModal: React.FC<PageSettingsModalProps> = ({
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm text-gray-700">Mostrar guias de margem</span>
+              </label>
+
+              <label className="flex items-center mt-3">
+                <input
+                  type="checkbox"
+                  checked={!!localSettings.replicateAcrossPages}
+                  onChange={(e) => setLocalSettings(prev => ({ ...prev, replicateAcrossPages: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 text-sm text-gray-700">Aplicar configurações a todas as páginas</span>
               </label>
             </div>
 

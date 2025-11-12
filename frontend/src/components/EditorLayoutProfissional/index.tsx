@@ -56,6 +56,15 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [forceShowSidebars, setForceShowSidebars] = useState(false);
+  
+  // Estado para região selecionada (header/footer)
+  const [selectedRegion, setSelectedRegion] = useState<'header' | 'footer' | null>(null);
+  
+  // Handler para ESC - limpar seleção de elementos e regiões
+  const handleEscape = useCallback(() => {
+    editor.clearSelection();
+    setSelectedRegion(null);
+  }, [editor]);
   // Grid / snap
   const [showGrid, setShowGrid] = useState<boolean>(() => {
     try { return localStorage.getItem('editor.showGrid') === 'true'; } catch { return false; }
@@ -255,7 +264,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
     onLoad: handleLoad,
     onSelectAll: editor.selectAll,
     onDelete: editor.removeSelectedElements,
-    onEscape: editor.clearSelection,
+    onEscape: handleEscape,
     onGroup: editor.groupSelectedElements,
     onUngroup: editor.ungroupSelectedElements,
     onZoomIn: canvas.zoomIn,
@@ -550,7 +559,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 onClick={() => editor.removeCurrentPage && editor.removeCurrentPage()}
                 className="p-2 rounded text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
                 title="Remover página atual"
-                disabled={editor.template.pages && editor.template.pages.length <= 1}
+                disabled={editor.template?.pages && editor.template.pages.length <= 1}
               >
                 <Minus className="h-4 w-4" />
               </button>
@@ -684,7 +693,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             <div className="bg-gray-100 relative w-full h-full flex-1">
               {/* Grid and ruler are rendered inside the Canvas to keep them aligned to the page */}
               <Canvas
-                elements={editor.getCurrentPageElements ? editor.getCurrentPageElements() : editor.template.elements}
+                elements={editor.getCurrentPageElements ? editor.getCurrentPageElements() : editor.template?.elements || []}
                 selectedElementIds={editor.selectedElementIds}
                 zoom={canvas.zoom}
                 panOffset={canvas.panOffset}
@@ -748,6 +757,7 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 backgroundImage={pageSettings.backgroundImage}
                 pageRegions={{ header: currentPageMeta?.header, footer: currentPageMeta?.footer, pageNumberInfo: { current: currentPageIndex + 1, total: totalPages } }}
                 onUpdatePageRegions={editor.updatePageRegions}
+                onRegionSelect={setSelectedRegion}
               />
             </div>
           </div>
@@ -770,6 +780,21 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
                 canUngroup={editor.canUngroupSelection()}
                 isVisible={showPropertiesPanel}
                 onToggleVisibility={() => setShowPropertiesPanel(false)}
+                region={selectedRegion ? {
+                  type: selectedRegion,
+                  data: currentPageMeta?.[selectedRegion] || {},
+                  onUpdate: (updates: any) => {
+                    // Update the region (header/footer) properties
+                    const currentRegion = currentPageMeta?.[selectedRegion];
+                    const updatedRegion = { ...(currentRegion || {}), ...updates };
+                    
+                    if (selectedRegion === 'header') {
+                      editor.updatePageRegions(updatedRegion, currentPageMeta?.footer || null);
+                    } else {
+                      editor.updatePageRegions(currentPageMeta?.header || null, updatedRegion);
+                    }
+                  }
+                } : undefined}
               />
             </div>
           )}

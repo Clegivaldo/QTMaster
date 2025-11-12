@@ -240,14 +240,30 @@ export const useTemplateEditor = (
 
   // Pages management
   const addPage = useCallback((name: string = `Página ${template.pages.length + 1}`) => {
+    // Prefer copying replication data from the current page if it has replicateAcrossPages
+    const currentPage = template.pages && template.pages[currentPageIndex] ? template.pages[currentPageIndex] : template.pages[0];
+
+    const findReplicated = (key: 'header' | 'footer') => {
+      // If current page has replicate flag, use it
+      const region = currentPage && (currentPage as any)[key];
+      if (region && region.replicateAcrossPages) return JSON.parse(JSON.stringify(region));
+
+      // Otherwise fall back to any page that has replicateAcrossPages set
+      const found = template.pages.find(p => (p as any)[key]?.replicateAcrossPages);
+      return found ? JSON.parse(JSON.stringify((found as any)[key])) : null;
+    };
+
+    const replicatedHeader = findReplicated('header');
+    const replicatedFooter = findReplicated('footer');
+
     const newPage = {
       id: generateId('page'),
       name,
       elements: [],
       pageSettings: DEFAULT_PAGE_SETTINGS,
       backgroundImage: null,
-      header: null,
-      footer: null
+      header: replicatedHeader,
+      footer: replicatedFooter
     };
 
     updateTemplate(prev => ({
@@ -296,25 +312,32 @@ export const useTemplateEditor = (
 
   const updatePageRegions = useCallback((header: any | null, footer: any | null) => {
     updateTemplate(prev => {
-      // If header/footer requests replication across pages, apply to all pages
-      const applyToAllHeader = header && header.replicateAcrossPages;
-      const applyToAllFooter = footer && footer.replicateAcrossPages;
-
+      // Simpler, mais previsível: quando header/footer são passados
+      // - se header.replicateAcrossPages === true -> aplicar o objeto completo a todas as páginas
+      // - se header === undefined -> não alterar
+      // - caso contrário -> aplicar apenas à página atual
       const pages = prev.pages.map((p, idx) => {
-        if (applyToAllHeader || applyToAllFooter) {
-          return {
-            ...p,
-            header: applyToAllHeader ? header : (idx === currentPageIndex ? header : p.header),
-            footer: applyToAllFooter ? footer : (idx === currentPageIndex ? footer : p.footer)
-          };
+        let newHeader = p.header;
+        let newFooter = p.footer;
+
+        if (header !== undefined) {
+          if (header && header.replicateAcrossPages) {
+            newHeader = header;
+          } else if (idx === currentPageIndex) {
+            newHeader = header;
+          }
         }
 
-        // Default: only update current page
-        return idx === currentPageIndex ? { ...p, header, footer } : p;
-      });
+        if (footer !== undefined) {
+          if (footer && footer.replicateAcrossPages) {
+            newFooter = footer;
+          } else if (idx === currentPageIndex) {
+            newFooter = footer;
+          }
+        }
 
-      // Optionally, replicate header/footer elements into page.elements if required at model level
-      // (We keep header/footer as regions; rendering will include region.elements)
+        return { ...p, header: newHeader, footer: newFooter };
+      });
 
       return { ...prev, pages, updatedAt: new Date() };
     }, 'Atualizar header/footer');
@@ -375,12 +398,20 @@ export const useTemplateEditor = (
 
   // Atualizar configurações de página diretamente no template
   const updatePageSettings = useCallback((settings: any) => {
-    // Update settings for the current page
     updateTemplate(prev => {
-      const pages = prev.pages.map((p, idx) => idx === currentPageIndex ? { ...p, pageSettings: settings } : p);
+      let pages;
+
+      if (settings.replicateAcrossPages) {
+        // Replicar configurações para todas as páginas
+        pages = prev.pages.map(p => ({ ...p, pageSettings: { ...settings } }));
+      } else {
+        // Atualizar apenas a página atual
+        pages = prev.pages.map((p, idx) => idx === currentPageIndex ? { ...p, pageSettings: settings } : p);
+      }
+
       return { ...prev, pages, updatedAt: new Date() };
-    }, 'Atualizar configurações da página');
-  }, [updateTemplate]);
+    }, settings.replicateAcrossPages ? 'Atualizar configurações da página (todas as páginas)' : 'Atualizar configurações da página');
+  }, [updateTemplate, currentPageIndex]);
 
   const updateBackgroundImage = useCallback((image: any) => {
     // Update background image for current page
@@ -803,8 +834,12 @@ export const useTemplateEditor = (
   
   // Utilitários
   const getSelectedElements = useCallback((): TemplateElement[] => {
-    return template.elements.filter(el => selectedElementIds.includes(el.id));
-  }, [template.elements, selectedElementIds]);
+    const pageElements = template.elements.filter(el => selectedElementIds.includes(el.id));
+    const currentPage = getCurrentPage();
+    const headerElements = currentPage?.header?.elements?.filter(el => selectedElementIds.includes(el.id)) || [];
+    const footerElements = currentPage?.footer?.elements?.filter(el => selectedElementIds.includes(el.id)) || [];
+    return [...pageElements, ...headerElements, ...footerElements];
+  }, [template.elements, selectedElementIds, getCurrentPage]);
   
   const getElementById = useCallback((id: string): TemplateElement | undefined => {
     return template.elements.find(el => el.id === id);

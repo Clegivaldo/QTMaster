@@ -33,13 +33,76 @@ vi.mock('../../../hooks/useErrorHandler', () => ({
           return 'Erro';
       }
     })
-  })
+  }),
+  EditorErrorType: {
+    TEMPLATE_NOT_FOUND: 'TEMPLATE_NOT_FOUND',
+    NETWORK_ERROR: 'NETWORK_ERROR',
+    EXPORT_FAILED: 'EXPORT_FAILED',
+    VALIDATION_ERROR: 'VALIDATION_ERROR'
+  }
 }));
 
 describe('Error Notification System', () => {
   const mockTemplateEditor = {
-    elements: [],
+    template: { id: 'test', name: 'Test', elements: [], pages: [] },
     selectedElementIds: [],
+    zoom: 1,
+    panOffset: { x: 0, y: 0 },
+    isDragging: false,
+    isResizing: false,
+    canUndo: false,
+    canRedo: false,
+    historySize: 0,
+    currentHistoryIndex: 0,
+    createNewTemplate: vi.fn(),
+    loadTemplate: vi.fn(),
+    saveTemplate: vi.fn(),
+    exportTemplate: vi.fn(),
+    addElement: vi.fn(),
+    removeElement: vi.fn(),
+    removeSelectedElements: vi.fn(),
+    duplicateElement: vi.fn(),
+    duplicateSelectedElements: vi.fn(),
+    copySelection: vi.fn(),
+    pasteClipboard: vi.fn(),
+    selectElement: vi.fn(),
+    selectElements: vi.fn(),
+    selectAll: vi.fn(),
+    clearSelection: vi.fn(),
+    moveElement: vi.fn(),
+    resizeElement: vi.fn(),
+    updateElementContent: vi.fn(),
+    updateElementStyles: vi.fn(),
+    updateElements: vi.fn(),
+    bringToFront: vi.fn(),
+    sendToBack: vi.fn(),
+    bringForward: vi.fn(),
+    sendBackward: vi.fn(),
+    setZoom: vi.fn(),
+    setPanOffset: vi.fn(),
+    zoomIn: vi.fn(),
+    zoomOut: vi.fn(),
+    zoomToFit: vi.fn(),
+    undo: vi.fn(),
+    redo: vi.fn(),
+    clearHistory: vi.fn(),
+    setDragging: vi.fn(),
+    setResizing: vi.fn(),
+    validateTemplate: vi.fn(),
+    updatePageSettings: vi.fn(),
+    updateBackgroundImage: vi.fn(),
+    updatePageRegions: vi.fn(),
+    addPage: vi.fn(),
+    removeCurrentPage: vi.fn(),
+    goToPage: vi.fn(),
+    getCurrentPageElements: vi.fn(() => []),
+    getCurrentPageId: vi.fn(() => 'page-1'),
+    groupSelectedElements: vi.fn(),
+    ungroupSelectedElements: vi.fn(),
+    canGroupSelection: vi.fn(() => false),
+    canUngroupSelection: vi.fn(() => false),
+    getSelectedElements: vi.fn(() => []),
+    getElementById: vi.fn(),
     canvas: {
       zoom: 1,
       panOffset: { x: 0, y: 0 },
@@ -61,10 +124,7 @@ describe('Error Notification System', () => {
       redo: vi.fn(),
       canUndo: false,
       canRedo: false
-    },
-    exportTemplate: vi.fn(),
-    saveTemplate: vi.fn(),
-    loadTemplate: vi.fn()
+    }
   };
 
   beforeEach(() => {

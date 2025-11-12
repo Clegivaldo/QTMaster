@@ -96,15 +96,23 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
 
   // Handler para clique no elemento
   const handleElementClick = useCallback((e: React.MouseEvent) => {
-    // prevent bubbling but selection is handled on mouseDown to avoid double-invokes
+    // Perform selection on click, honoring multi-select (Ctrl/Cmd)
+    try {
+      // debug log to help trace clicks reaching the element in the browser
+  if (typeof window !== 'undefined' && (import.meta as any).env?.MODE !== 'test') {
+        // eslint-disable-next-line no-console
+        console.debug('[CanvasElement] click', { id: element.id, multi: e.ctrlKey || e.metaKey });
+      }
+    } catch (err) {
+      // ignore
+    }
+
+    onSelect?.(element.id, e.ctrlKey || e.metaKey);
     e.stopPropagation();
   }, [element.id, onSelect]);
 
   // Handler para início do drag
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Always perform selection on mouse down (single click), honoring multi-select (Ctrl/Cmd)
-    onSelect?.(element.id, e.ctrlKey || e.metaKey);
-
     // Avoid starting a drag on a double click (detail > 1)
     if (e.detail > 1) return;
 
@@ -113,6 +121,20 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       e.preventDefault();
       e.stopPropagation();
       return;
+    }
+
+    // Ensure element is selected when user begins interacting (prevents mousedown stopping
+    // the subsequent click from selecting in some browsers/contexts).
+    // This also makes header/footer child elements reliably selectable when dragging starts.
+    try {
+      // debug log to help trace mousedown events in browser console
+  if (typeof window !== 'undefined' && (import.meta as any).env?.MODE !== 'test') {
+        // eslint-disable-next-line no-console
+        console.debug('[CanvasElement] mousedown', { id: element.id, clientX: e.clientX, clientY: e.clientY });
+      }
+      onSelect?.(element.id, e.ctrlKey || e.metaKey);
+    } catch (err) {
+      // ignore
     }
 
     setIsDragging(true);
@@ -292,7 +314,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
         select-none
         ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
         ${element.visible ? '' : 'opacity-50'}
-        ${element.locked ? 'opacity-70 cursor-not-allowed' : ''}
+        ${element.locked ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}
       `}
     >
       {renderContent()}

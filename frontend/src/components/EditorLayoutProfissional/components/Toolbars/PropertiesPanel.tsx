@@ -174,6 +174,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
     el.type === 'text' || el.type === 'heading'
   );
 
+  const isRegionHeaderFooter = !!(region && (region.type === 'header' || region.type === 'footer'));
+
   if (!isVisible) return null;
 
   return (
@@ -555,7 +557,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             )}
 
             {/* Cor de fundo */}
-            <div className="p-4 bg-white border-b border-gray-200">
+            {!isRegionHeaderFooter && (
+              <div className="p-4 bg-white border-b border-gray-200">
               <h4 className="text-sm font-medium text-gray-700 mb-3">Aparência</h4>
               
               <div className="space-y-3">
@@ -654,7 +657,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                   </div>
                 </div>
               </div>
-            </div>
+              </div>
+            )}
 
             {/* Controles específicos para linhas */}
             {singleSelection && selectedElements[0].type === 'line' && (
@@ -993,7 +997,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             )}
 
             {/* Z-Index */}
-            <div className="p-4 bg-white">
+            {!isRegionHeaderFooter && (
+              <div className="p-4 bg-white">
               <h4 className="text-sm font-medium text-gray-700 mb-3">Camadas</h4>
               
               <div className="flex items-center gap-2">
@@ -1025,7 +1030,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                   </div>
                 )}
               </div>
-            </div>
+              </div>
+            )}
           </div>
         )}
       </div>

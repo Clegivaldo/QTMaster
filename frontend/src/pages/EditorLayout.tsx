@@ -37,6 +37,18 @@ const EditorLayout: React.FC = () => {
     autoSave: false
   });
 
+  // Expose editor for debugging in development so you can inspect template/pages in the browser console
+  try {
+    if (typeof window !== 'undefined' && (import.meta as any).env?.MODE !== 'production') {
+      // eslint-disable-next-line no-console
+      console.debug('[EditorLayout] Exposing __EDITOR_DEBUG__ on window for debugging');
+      // @ts-ignore - dev-only debug handle
+      (window as any).__EDITOR_DEBUG__ = editor;
+    }
+  } catch (err) {
+    // ignore
+  }
+
   // Hook para operações de canvas (zoom, pan)
   const canvas = useCanvasOperations({
     initialZoom: 1,

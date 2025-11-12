@@ -8,6 +8,8 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, requireAdmin = false }) => {
+  // Allow bypass for end-to-end tests when VITE_TEST_E2E is truthy
+  const isE2E = typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_TEST_E2E === 'true';
   const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
 
@@ -20,6 +22,8 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, requireAdmin = fa
   }
 
   if (!isAuthenticated) {
+    // If running E2E test mode, bypass auth and allow access
+    if (isE2E) return <>{children}</>;
     // Redirect to login page with return url
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
