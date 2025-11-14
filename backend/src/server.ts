@@ -22,6 +22,7 @@ import {
 } from './middleware/metricsMiddleware';
 import { performanceMiddleware } from './services/performanceService';
 import { BackupService } from './services/backupService';
+import { prisma } from './utils/prisma';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -202,6 +203,38 @@ process.on('uncaughtException', (error) => {
 });
 
 app.listen(PORT, async () => {
+  // Ensure database is reachable before fully starting
+  try {
+    await prisma.$connect();
+    logger.info('🗄️  Database connection successful');
+  } catch (err) {
+    const databaseUrl = process.env.DATABASE_URL || 'not set';
+    // Try to extract host:port without exposing credentials
+    let hostPort = 'unknown';
+    try {
+      const url = new URL(databaseUrl);
+      hostPort = `${url.hostname}:${url.port || '5432'}`;
+    } catch (e) {
+      // ignore URL parse errors
+    }
+
+    logger.error('❌ Cannot connect to database', {
+      message: (err as any)?.message || err,
+      database: hostPort,
+    });
+
+    logger.info('> If you are using docker, run `docker-start.ps1` or `docker-compose up -d` to start PostgreSQL');
+    logger.info('> If you are running locally, update `backend/.env` to use localhost or start a local Postgres server');
+
+    // allow Redis to initialize and other cleanup
+    try {
+      await redisService.disconnect();
+    } catch (er) {
+      // ignore
+    }
+
+    process.exit(1);
+  }
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📊 Health check: http://localhost:${PORT}/api/monitoring/health`);
   logger.info(`🔍 Monitoring: http://localhost:${PORT}/api/monitoring`);

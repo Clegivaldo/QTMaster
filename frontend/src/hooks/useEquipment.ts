@@ -18,7 +18,6 @@ export const equipmentKeys = {
   type: (id: string) => [...equipmentKeys.types(), id] as const,
   clientEquipments: (clientId?: string) => [...equipmentKeys.all, 'client-equipments', clientId] as const,
   clientEquipment: (id: string) => [...equipmentKeys.clientEquipments(), id] as const,
-  cycles: (validationId: string) => [...equipmentKeys.all, 'cycles', validationId] as const,
 };
 
 // Brand hooks
@@ -26,8 +25,7 @@ export const useBrands = () => {
   return useQuery({
     queryKey: equipmentKeys.brands(),
     queryFn: async () => {
-      const response = await equipmentService.getBrands();
-      return response.data?.brands || [];
+      return equipmentService.getBrands();
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -37,8 +35,8 @@ export const useBrand = (id: string) => {
   return useQuery({
     queryKey: equipmentKeys.brand(id),
     queryFn: async () => {
-      const response = await equipmentService.getBrand(id);
-      return response.data?.brand;
+      const brands = await equipmentService.getBrands();
+      return brands.find((brand) => brand.id === id);
     },
     enabled: !!id,
   });
@@ -83,8 +81,7 @@ export const useEquipmentModels = () => {
   return useQuery({
     queryKey: equipmentKeys.models(),
     queryFn: async () => {
-      const response = await equipmentService.getModels();
-      return response.data?.models || [];
+      return equipmentService.getModels();
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -94,8 +91,8 @@ export const useEquipmentModel = (id: string) => {
   return useQuery({
     queryKey: equipmentKeys.model(id),
     queryFn: async () => {
-      const response = await equipmentService.getModel(id);
-      return response.data?.model;
+      const models = await equipmentService.getModels();
+      return models.find((model) => model.id === id);
     },
     enabled: !!id,
   });
@@ -140,8 +137,7 @@ export const useEquipmentTypes = () => {
   return useQuery({
     queryKey: equipmentKeys.types(),
     queryFn: async () => {
-      const response = await equipmentService.getEquipmentTypes();
-      return response.data?.equipmentTypes || [];
+      return equipmentService.getEquipmentTypes();
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -151,8 +147,8 @@ export const useEquipmentType = (id: string) => {
   return useQuery({
     queryKey: equipmentKeys.type(id),
     queryFn: async () => {
-      const response = await equipmentService.getEquipmentType(id);
-      return response.data?.equipmentType;
+      const types = await equipmentService.getEquipmentTypes();
+      return types.find((type) => type.id === id);
     },
     enabled: !!id,
   });
@@ -197,8 +193,7 @@ export const useClientEquipments = (clientId?: string) => {
   return useQuery({
     queryKey: equipmentKeys.clientEquipments(clientId),
     queryFn: async () => {
-      const response = await equipmentService.getClientEquipments(clientId);
-      return response.data?.clientEquipments || [];
+      return equipmentService.getClientEquipments(clientId);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -208,8 +203,7 @@ export const useClientEquipment = (id: string) => {
   return useQuery({
     queryKey: equipmentKeys.clientEquipment(id),
     queryFn: async () => {
-      const response = await equipmentService.getClientEquipment(id);
-      return response.data?.clientEquipment;
+      return equipmentService.getClientEquipment(id);
     },
     enabled: !!id,
   });
@@ -250,33 +244,4 @@ export const useDeleteClientEquipment = () => {
 };
 
 // Validation import and calculation hooks
-export const useImportValidationData = () => {
-  return useMutation({
-    mutationFn: ({ validationId, file }: { validationId: string; file: File }) => 
-      equipmentService.importValidationData(validationId, file),
-  });
-};
-
-export const useValidationCycles = (validationId: string) => {
-  return useQuery({
-    queryKey: equipmentKeys.cycles(validationId),
-    queryFn: async () => {
-      const response = await equipmentService.getValidationCycles(validationId);
-      return response.data?.cycles || [];
-    },
-    enabled: !!validationId,
-  });
-};
-
-export const useCalculateValidationStatistics = () => {
-  return useMutation({
-    mutationFn: (validationId: string) => equipmentService.calculateStatistics(validationId),
-  });
-};
-
-export const useToggleDataPoint = () => {
-  return useMutation({
-    mutationFn: ({ validationId, dataPointId, selected }: { validationId: string; dataPointId: string; selected: boolean }) => 
-      equipmentService.toggleDataPoint(validationId, dataPointId, selected),
-  });
-};
+// Additional validation helpers can be implemented when the relevant APIs are exposed.

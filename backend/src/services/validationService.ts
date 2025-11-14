@@ -1,5 +1,51 @@
 import { AppError } from '../utils/errors';
 import { prisma } from '../lib/prisma.js';
+import { ValidationCycleType, type ValidationImportItem } from '@prisma/client';
+
+type ParameterRange = {
+  minTemperature: number;
+  maxTemperature: number;
+  minHumidity?: number;
+  maxHumidity?: number;
+};
+
+interface ValidationCyclePayload {
+  name: string;
+  cycleType: ValidationCycleType;
+  startAt: Date;
+  endAt: Date;
+  notes?: string | undefined;
+}
+
+interface ValidationImportItemPayload {
+  timestamp: Date;
+  temperature: number;
+  humidity?: number | undefined;
+  cycleName?: string | undefined;
+  note?: string | undefined;
+  fileName?: string | undefined;
+  rowNumber?: number | undefined;
+  isVisible?: boolean | undefined;
+}
+
+interface CreateValidationPayload {
+  suitcaseId: string;
+  clientId: string;
+  userId: string;
+  name: string;
+  description?: string | null;
+  validationNumber: string;
+  equipmentId?: string | undefined;
+  equipmentSerial?: string | undefined;
+  equipmentTag?: string | undefined;
+  equipmentPatrimony?: string | undefined;
+  startAt?: Date | undefined;
+  endAt?: Date | undefined;
+  parameters: ParameterRange;
+  sensorDataIds?: string[] | undefined;
+  cycles?: ValidationCyclePayload[] | undefined;
+  importedItems?: ValidationImportItemPayload[] | undefined;
+}
 
 export class ValidationService {
   private emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -359,39 +405,263 @@ export class ValidationService {
     };
   }
 
-  async createValidation(
-    suitcaseId: string,
-    clientId: string,
-    userId: string,
-    name: string,
-    description: string | undefined,
-    parameters: { minTemperature: number; maxTemperature: number; minHumidity?: number; maxHumidity?: number },
-    sensorDataIds: string[]
-  ): Promise<any> {
+  async createValidation(payload: CreateValidationPayload): Promise<any> {
+    const startEpochs = [
+      ...(payload.cycles?.map((cycle) => cycle.startAt.getTime()) ?? []),
+      ...(payload.importedItems?.map((item) => item.timestamp.getTime()) ?? []),
+    ];
+    const endEpochs = [
+      ...(payload.cycles?.map((cycle) => cycle.endAt.getTime()) ?? []),
+      ...(payload.importedItems?.map((item) => item.timestamp.getTime()) ?? []),
+    ];
+
+    const startAt = payload.startAt ?? (startEpochs.length ? new Date(Math.min(...startEpochs)) : undefined);
+    const endAt = payload.endAt ?? (endEpochs.length ? new Date(Math.max(...endEpochs)) : undefined);
+
     const validation = await prisma.validation.create({
       data: {
-        suitcaseId,
-        clientId,
-        userId,
-        name,
-        description: description || null,
-        minTemperature: parameters.minTemperature,
-        maxTemperature: parameters.maxTemperature,
-        minHumidity: parameters.minHumidity ?? null,
-        maxHumidity: parameters.maxHumidity ?? null,
+        suitcaseId: payload.suitcaseId,
+        clientId: payload.clientId,
+        userId: payload.userId,
+        name: payload.name,
+        description: payload.description || null,
+        validationNumber: payload.validationNumber,
+        equipmentId: payload.equipmentId ?? null,
+        equipmentSerial: payload.equipmentSerial ?? null,
+        equipmentTag: payload.equipmentTag ?? null,
+        equipmentPatrimony: payload.equipmentPatrimony ?? null,
+        startAt: startAt ?? null,
+        endAt: endAt ?? null,
+        minTemperature: payload.parameters.minTemperature,
+        maxTemperature: payload.parameters.maxTemperature,
+        minHumidity: payload.parameters.minHumidity ?? null,
+        maxHumidity: payload.parameters.maxHumidity ?? null,
       },
     });
-    await prisma.sensorData.updateMany({
-      where: { id: { in: sensorDataIds } },
-      data: { validationId: validation.id },
-    });
+
+    if (payload.sensorDataIds?.length) {
+      await prisma.sensorData.updateMany({
+        where: { id: { in: payload.sensorDataIds } },
+        data: { validationId: validation.id },
+      });
+    }
+
+    const createdCycles: { id: string; name: string }[] = [];
+
+    if (payload.cycles?.length) {
+      for (const cycle of payload.cycles) {
+        const createdCycle = await prisma.validationCycle.create({
+          data: {
+            validationId: validation.id,
+            name: cycle.name,
+            cycleType: cycle.cycleType,
+            startAt: cycle.startAt,
+            endAt: cycle.endAt,
+            notes: cycle.notes ?? null,
+          },
+        });
+        createdCycles.push(createdCycle);
+      }
+    }
+
+    if (payload.importedItems?.length) {
+      const cycleLookup = new Map<string, string>();
+      createdCycles.forEach((cycle) => cycleLookup.set(cycle.name, cycle.id));
+
+      const importData = payload.importedItems.map((item) => ({
+        validationId: validation.id,
+        cycleId: item.cycleName ? cycleLookup.get(item.cycleName) ?? null : null,
+        timestamp: item.timestamp,
+        temperature: item.temperature,
+        humidity: item.humidity ?? null,
+        fileName: item.fileName ?? null,
+        rowNumber: item.rowNumber ?? null,
+        note: item.note ?? null,
+        isVisible: item.isVisible ?? true,
+      }));
+
+      await prisma.validationImportItem.createMany({
+        data: importData,
+      });
+
+      const importedItems = await prisma.validationImportItem.findMany({
+        where: { validationId: validation.id },
+        orderBy: { timestamp: 'asc' },
+      });
+
+      const stats = this.buildStatisticsFromImportedItems(importedItems, payload.parameters);
+      if (stats) {
+        await prisma.validation.update({
+          where: { id: validation.id },
+          data: { statistics: stats },
+        });
+      }
+
+      for (const cycle of createdCycles) {
+        const itemsForCycle = importedItems.filter((item) => item.cycleId === cycle.id);
+        const duration = this.calculateUninterruptedDurationMs(itemsForCycle, payload.parameters);
+        await prisma.validationCycle.update({
+          where: { id: cycle.id },
+          data: { uninterruptedDuration: duration },
+        });
+      }
+    }
+
     return validation;
+  }
+
+  private calculateUninterruptedDurationMs(
+    items: ValidationImportItem[],
+    parameters: ParameterRange
+  ): number {
+    if (!items.length) return 0;
+
+    let longest = 0;
+    let windowStart: Date | null = null;
+    let lastTimestamp: Date | null = null;
+
+    const sortedItems = [...items].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+    for (const item of sortedItems) {
+      const isValid = this.isWithinAcceptance(item, parameters);
+      if (isValid) {
+        if (!windowStart) {
+          windowStart = item.timestamp;
+        }
+        lastTimestamp = item.timestamp;
+      } else if (windowStart && lastTimestamp) {
+        longest = Math.max(longest, lastTimestamp.getTime() - windowStart.getTime());
+        windowStart = null;
+        lastTimestamp = null;
+      }
+    }
+
+    if (windowStart && lastTimestamp) {
+      longest = Math.max(longest, lastTimestamp.getTime() - windowStart.getTime());
+    }
+
+    return longest;
+  }
+
+  private isWithinAcceptance(item: ValidationImportItem, parameters: ParameterRange): boolean {
+    const withinTemperature =
+      item.temperature >= parameters.minTemperature && item.temperature <= parameters.maxTemperature;
+
+    const humidityDefined =
+      parameters.minHumidity !== undefined && parameters.maxHumidity !== undefined;
+
+    const withinHumidity = humidityDefined
+      ? typeof item.humidity === 'number' && item.humidity >= parameters.minHumidity! && item.humidity <= parameters.maxHumidity!
+      : true;
+
+    return withinTemperature && withinHumidity;
+  }
+
+  private buildStatisticsFromImportedItems(
+    items: ValidationImportItem[],
+    parameters: ParameterRange
+  ): object | null {
+    if (!items.length) return null;
+
+    const totalReadings = items.length;
+    const sorted = [...items].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    const validReadings = items.filter((item) => this.isWithinAcceptance(item, parameters)).length;
+    const invalidReadings = totalReadings - validReadings;
+    const conformityPercentage = totalReadings ? (validReadings / totalReadings) * 100 : 0;
+
+    const temperatures = items.map((item) => item.temperature);
+    const tempMin = Math.min(...temperatures);
+    const tempMax = Math.max(...temperatures);
+    const tempAverage = temperatures.reduce((sum, value) => sum + value, 0) / totalReadings;
+    const tempStdDev = Math.sqrt(
+      temperatures.reduce((sum, value) => sum + Math.pow(value - tempAverage, 2), 0) / totalReadings
+    );
+    const tempOutOfRangeCount = items.filter(
+      (item) => item.temperature < parameters.minTemperature || item.temperature > parameters.maxTemperature
+    ).length;
+
+    const humidityValues = items
+      .filter((item) => typeof item.humidity === 'number')
+      .map((item) => item.humidity as number);
+
+    const humidityStats =
+      parameters.minHumidity !== undefined &&
+      parameters.maxHumidity !== undefined &&
+      humidityValues.length
+        ? (() => {
+            const min = Math.min(...humidityValues);
+            const max = Math.max(...humidityValues);
+            const sum = humidityValues.reduce((acc, value) => acc + value, 0);
+            const average = sum / humidityValues.length;
+            const standardDeviation = Math.sqrt(
+              humidityValues.reduce((acc, value) => acc + Math.pow(value - average, 2), 0) / humidityValues.length
+            );
+            const outOfRangeCount = humidityValues.filter(
+              (value) => value < parameters.minHumidity! || value > parameters.maxHumidity!
+            ).length;
+
+            return {
+              min,
+              max,
+              average,
+              standardDeviation,
+              outOfRangeCount,
+            };
+          })()
+        : undefined;
+
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    if (!first || !last) return null;
+
+    const timeRange = {
+      start: first.timestamp.toISOString(),
+      end: last.timestamp.toISOString(),
+      duration: Math.max(0, last.timestamp.getTime() - first.timestamp.getTime()),
+    };
+
+    const statistics: any = {
+      totalReadings,
+      validReadings,
+      invalidReadings,
+      conformityPercentage,
+      temperature: {
+        min: tempMin,
+        max: tempMax,
+        average: tempAverage,
+        standardDeviation: tempStdDev,
+        outOfRangeCount: tempOutOfRangeCount,
+      },
+      timeRange,
+    };
+
+    if (humidityStats) {
+      statistics.humidity = humidityStats;
+    }
+
+    return statistics;
   }
 
   async updateValidationApproval(id: string, isApproved: boolean, _userId: string): Promise<any> {
     return prisma.validation.update({
       where: { id },
       data: { isApproved },
+    });
+  }
+
+  async toggleImportItemVisibility(validationId: string, itemId: string, isVisible: boolean) {
+    const item = await prisma.validationImportItem.findUnique({
+      where: { id: itemId },
+      select: { id: true, validationId: true },
+    });
+
+    if (!item || item.validationId !== validationId) {
+      throw new AppError('Imported item not found for this validation', 404);
+    }
+
+    return prisma.validationImportItem.update({
+      where: { id: itemId },
+      data: { isVisible },
     });
   }
 

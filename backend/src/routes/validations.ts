@@ -27,6 +27,13 @@ router.post('/', requirePermission(Permission.VALIDATION_CREATE), validationCont
 // PUT /api/validations/:id/approval - Update validation approval
 router.put('/:id/approval', requirePermission(Permission.VALIDATION_APPROVE), validationController.updateApproval.bind(validationController));
 
+// PUT /api/validations/:validationId/imported-items/:itemId/visibility - Toggle visibility for imported data
+router.put(
+	'/:validationId/imported-items/:itemId/visibility',
+	requirePermission(Permission.VALIDATION_UPDATE),
+	validationController.toggleImportedItemVisibility.bind(validationController)
+);
+
 // DELETE /api/validations/:id - Delete validation
 router.delete('/:id', requirePermission(Permission.VALIDATION_DELETE), validationController.deleteValidation.bind(validationController));
 

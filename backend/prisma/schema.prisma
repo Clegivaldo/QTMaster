@@ -41,6 +41,7 @@ model Client {
   updatedAt   DateTime     @updatedAt
   reports     Report[]
   validations Validation[]
+  equipments  ClientEquipment[]
 
   @@index([name])
   @@index([email])
@@ -137,22 +138,138 @@ model Validation {
   maxHumidity    Float?
   isApproved     Boolean?
   statistics     Json?
+  validationNumber String?
+  equipmentId     String?
+  equipmentSerial String?
+  equipmentTag    String?
+  equipmentPatrimony String?
+  startAt        DateTime?
+  endAt          DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   reports        Report[]
   sensorData     SensorData[]
+  cycles         ValidationCycle[]
+  importedItems  ValidationImportItem[]
   client         Client       @relation(fields: [clientId], references: [id])
   suitcase       Suitcase     @relation(fields: [suitcaseId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
+  equipment      ClientEquipment? @relation(fields: [equipmentId], references: [id])
 
   @@index([clientId])
   @@index([userId])
   @@index([suitcaseId])
   @@index([isApproved])
+  @@index([validationNumber])
   @@index([createdAt])
   @@index([clientId, createdAt])
   @@index([userId, createdAt])
   @@map("validations")
+}
+
+model EquipmentItemType {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  models      EquipmentModel[]
+  equipments  ClientEquipment[]
+
+  @@map("equipment_item_types")
+}
+
+model EquipmentBrand {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  description String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  models      EquipmentModel[]
+  equipments  ClientEquipment[]
+
+  @@map("equipment_brands")
+}
+
+model EquipmentModel {
+  id          String            @id @default(cuid())
+  name        String
+  brandId     String
+  typeId      String
+  description String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  brand       EquipmentBrand    @relation(fields: [brandId], references: [id])
+  type        EquipmentItemType @relation(fields: [typeId], references: [id])
+  equipments  ClientEquipment[]
+
+  @@unique([brandId, name])
+  @@map("equipment_models")
+}
+
+model ClientEquipment {
+  id                String            @id @default(cuid())
+  clientId          String
+  equipmentTypeId   String
+  brandId           String
+  modelId           String
+  serialNumber      String
+  assetNumber       String?
+  tag               String?
+  acceptanceMinTemp Float?
+  acceptanceMaxTemp Float?
+  acceptanceMinHum  Float?
+  acceptanceMaxHum  Float?
+  acceptanceNotes   String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  client            Client            @relation(fields: [clientId], references: [id])
+  equipmentType     EquipmentItemType @relation(fields: [equipmentTypeId], references: [id])
+  brand             EquipmentBrand    @relation(fields: [brandId], references: [id])
+  model             EquipmentModel    @relation(fields: [modelId], references: [id])
+  validations       Validation[]
+
+  @@index([clientId])
+  @@index([serialNumber])
+  @@map("client_equipments")
+}
+
+model ValidationCycle {
+  id                    String              @id @default(cuid())
+  validationId          String
+  name                  String
+  cycleType             ValidationCycleType @default(NORMAL)
+  startAt               DateTime
+  endAt                 DateTime
+  uninterruptedDuration Int?
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  validation            Validation          @relation(fields: [validationId], references: [id], onDelete: Cascade)
+  importedItems         ValidationImportItem[]
+
+  @@index([validationId])
+  @@map("validation_cycles")
+}
+
+model ValidationImportItem {
+  id           String           @id @default(cuid())
+  validationId String
+  cycleId      String?
+  timestamp    DateTime
+  temperature  Float
+  humidity     Float?
+  fileName     String?
+  rowNumber    Int?
+  note         String?
+  isVisible    Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  validation   Validation       @relation(fields: [validationId], references: [id], onDelete: Cascade)
+  cycle        ValidationCycle? @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@index([validationId])
+  @@map("validation_import_items")
 }
 
 model ReportTemplate {
@@ -323,4 +440,12 @@ enum ReportStatus {
   DRAFT
   VALIDATED
   FINALIZED
+}
+
+enum ValidationCycleType {
+  EMPTY
+  FULL
+  OPEN_DOOR
+  POWER_OUTAGE
+  NORMAL
 }

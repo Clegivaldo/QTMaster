@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import { ValidationCycleType } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { validationService } from '../services/validationService.js';
 import { AuthenticatedRequest } from '../types/auth.js';
@@ -7,9 +8,47 @@ import { logger } from '../utils/logger.js';
 import { requireParam, stripUndefined } from '../utils/requestUtils.js';
 
 // Validation schemas
+const dateTimeString = (fieldName: string) => z
+  .string()
+  .refine((val) => !Number.isNaN(Date.parse(val)), `${fieldName} precisa ser uma data válida em ISO`)
+  .transform((val) => new Date(val));
+
+const optionalDateTime = (fieldName: string) => z
+  .string()
+  .optional()
+  .refine((val) => (val ? !Number.isNaN(Date.parse(val)) : true), `${fieldName} precisa ser uma data válida`) 
+  .transform((val) => (val ? new Date(val) : undefined));
+
+const cycleSchema = z.object({
+  name: z.string().min(1, 'Nome do ciclo é obrigatório'),
+  cycleType: z
+    .nativeEnum(ValidationCycleType)
+    .optional()
+    .default(ValidationCycleType.NORMAL),
+  startAt: dateTimeString('Data/hora de início'),
+  endAt: dateTimeString('Data/hora de fim'),
+  notes: z.string().optional(),
+});
+
+const importedItemSchema = z.object({
+  timestamp: dateTimeString('Timestamp'),
+  temperature: z.number(),
+  humidity: z.number().optional(),
+  cycleName: z.string().optional(),
+  note: z.string().optional(),
+  fileName: z.string().optional(),
+  rowNumber: z.number().int().optional(),
+  isVisible: z.boolean().optional(),
+});
+
 const createValidationSchema = z.object({
   suitcaseId: z.string().min(1, 'Suitcase ID is required'),
   clientId: z.string().min(1, 'Client ID is required'),
+  validationNumber: z.string().min(1, 'Número da validação é obrigatório'),
+  equipmentId: z.string().min(1, 'Equipamento é obrigatório'),
+  equipmentSerial: z.string().optional(),
+  equipmentTag: z.string().optional(),
+  equipmentPatrimony: z.string().optional(),
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
   description: z.string().optional().or(z.literal('')),
   parameters: z.object({
@@ -18,9 +57,11 @@ const createValidationSchema = z.object({
     minHumidity: z.number().optional(),
     maxHumidity: z.number().optional(),
   }),
-  sensorDataIds: z.array(z.string()).min(1, 'At least one sensor data point is required'),
-  startDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
-  endDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
+  sensorDataIds: z.array(z.string()).optional(),
+  cycles: z.array(cycleSchema).optional(),
+  importedItems: z.array(importedItemSchema).optional(),
+  startAt: optionalDateTime('Data/hora de início'),
+  endAt: optionalDateTime('Data/hora de finalização'),
 });
 
 const updateApprovalSchema = z.object({
@@ -180,6 +221,20 @@ export class ValidationController {
               },
             },
           },
+          equipment: {
+            include: {
+              brand: true,
+              model: true,
+              equipmentType: true,
+            },
+          },
+          cycles: {
+            include: {
+              importedItems: true,
+            },
+            orderBy: { startAt: 'asc' },
+          },
+          importedItems: true,
           reports: {
             select: {
               id: true,
@@ -291,23 +346,11 @@ export class ValidationController {
     try {
       const validatedData = createValidationSchema.parse(req.body);
 
-      // Check if suitcase exists
-      const suitcase = await prisma.suitcase.findUnique({
-        where: { id: validatedData.suitcaseId },
-      });
-
-      if (!suitcase) {
-        res.status(404).json({ error: 'Suitcase not found' });
-        return;
-      }
-
-      // Check if client exists
-      const client = await prisma.client.findUnique({
-        where: { id: validatedData.clientId },
-      });
-
-      if (!client) {
-        res.status(404).json({ error: 'Client not found' });
+      if (
+        (!validatedData.sensorDataIds || validatedData.sensorDataIds.length === 0) &&
+        (!validatedData.importedItems || validatedData.importedItems.length === 0)
+      ) {
+        res.status(400).json({ error: 'Informe pelo menos dados de sensores ou registros importados.' });
         return;
       }
 
@@ -318,25 +361,34 @@ export class ValidationController {
       }
 
       // Validate humidity parameters if provided
-      if (validatedData.parameters.minHumidity !== undefined && 
-          validatedData.parameters.maxHumidity !== undefined &&
-          validatedData.parameters.minHumidity >= validatedData.parameters.maxHumidity) {
+      if (
+        validatedData.parameters.minHumidity !== undefined &&
+        validatedData.parameters.maxHumidity !== undefined &&
+        validatedData.parameters.minHumidity >= validatedData.parameters.maxHumidity
+      ) {
         res.status(400).json({ error: 'Minimum humidity must be less than maximum humidity' });
         return;
       }
 
-      // Create validation
-      const validation = await validationService.createValidation(
-        validatedData.suitcaseId,
-        validatedData.clientId,
-        req.user!.id,
-        validatedData.name,
-        validatedData.description,
-        stripUndefined(validatedData.parameters) as any,
-        validatedData.sensorDataIds
-      );
+      const validation = await validationService.createValidation({
+        suitcaseId: validatedData.suitcaseId,
+        clientId: validatedData.clientId,
+        userId: req.user!.id,
+        name: validatedData.name,
+        description: validatedData.description || null,
+        validationNumber: validatedData.validationNumber,
+        equipmentId: validatedData.equipmentId,
+        equipmentSerial: validatedData.equipmentSerial,
+        equipmentTag: validatedData.equipmentTag,
+        equipmentPatrimony: validatedData.equipmentPatrimony,
+        startAt: validatedData.startAt,
+        endAt: validatedData.endAt,
+        parameters: stripUndefined(validatedData.parameters) as any,
+        sensorDataIds: validatedData.sensorDataIds,
+        cycles: validatedData.cycles,
+        importedItems: validatedData.importedItems,
+      });
 
-      // Get full validation data for response
       const fullValidation = await prisma.validation.findUnique({
         where: { id: validation.id },
         include: {
@@ -356,6 +408,26 @@ export class ValidationController {
             select: {
               id: true,
               name: true,
+            },
+          },
+          equipment: {
+            include: {
+              brand: true,
+              model: true,
+              equipmentType: true,
+            },
+          },
+          cycles: {
+            include: {
+              importedItems: true,
+            },
+            orderBy: { startAt: 'asc' },
+          },
+          importedItems: true,
+          _count: {
+            select: {
+              sensorData: true,
+              reports: true,
             },
           },
         },
@@ -399,6 +471,36 @@ export class ValidationController {
         error: error instanceof Error ? error.message : error, 
         validationId: req.params.id, 
         userId: req.user?.id 
+      });
+      res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+  }
+
+  async toggleImportedItemVisibility(req: AuthenticatedRequest, res: Response) {
+    try {
+      const validationId = requireParam(req, res, 'validationId');
+      if (!validationId) return;
+      const itemId = requireParam(req, res, 'itemId');
+      if (!itemId) return;
+
+      const { isVisible } = z.object({ isVisible: z.boolean() }).parse(req.body);
+
+      const item = await validationService.toggleImportItemVisibility(validationId, itemId, isVisible);
+
+      res.json({ success: true, data: { item } });
+      return;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Validation error', details: error.issues });
+        return;
+      }
+
+      logger.error('Toggle import visibility error:', {
+        error: error instanceof Error ? error.message : error,
+        validationId: req.params.validationId,
+        itemId: req.params.itemId,
+        userId: req.user?.id,
       });
       res.status(500).json({ error: 'Internal server error' });
       return;
