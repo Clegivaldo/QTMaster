@@ -132,7 +132,7 @@ export class ReportTemplateController {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
         return;
       }
@@ -232,7 +232,7 @@ export class ReportTemplateController {
       return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
+        res.status(400).json({ error: 'Validation error', details: error.issues });
         return;
       }
 
@@ -309,7 +309,7 @@ export class ReportTemplateController {
       return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
+        res.status(400).json({ error: 'Validation error', details: error.issues });
         return;
       }
 
@@ -455,7 +455,7 @@ export class ReportTemplateController {
           if (req.file) await fs.unlink(req.file.path).catch(() => {});
 
           if (error instanceof z.ZodError) {
-            res.status(400).json({ error: 'Validation error', details: error.errors });
+            res.status(400).json({ error: 'Validation error', details: error.issues });
             return;
           }
 

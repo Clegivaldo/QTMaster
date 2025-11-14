@@ -79,8 +79,8 @@ const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   );
 
   const containerClasses = clsx(
-    'fixed inset-0 z-50 overflow-y-auto',
-    isMobile ? 'flex items-end' : 'flex items-center justify-center p-4'
+    'fixed inset-0 z-50 overflow-y-auto min-h-screen',
+    isMobile ? 'flex items-end' : 'flex items-center justify-center p-4 min-h-screen'
   );
 
   const modalMarkup = (

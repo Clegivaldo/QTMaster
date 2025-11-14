@@ -6,7 +6,7 @@ class ApiService {
   public baseURL: string;
 
   constructor() {
-    this.baseURL = 'http://localhost:5000';
+    this.baseURL = 'http://localhost:3001';
     this.api = axios.create({
       baseURL: `${this.baseURL}/api`,
       timeout: 30000, // Aumentar timeout para 30 segundos

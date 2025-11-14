@@ -1,12 +1,10 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { AuthService } from '../services/authService.js';
+import { authService } from '../services/authService.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { logger, securityLogger } from '../utils/logger.js';
 import { AuditService } from '../services/auditService.js';
-
-const authService = new AuthService();
 
 // Validation schemas
 const loginSchema = z.object({
@@ -52,7 +50,7 @@ export class AuthController {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
         return;
       }
@@ -115,7 +113,7 @@ export class AuthController {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
         return;
       }
@@ -268,7 +266,7 @@ export class AuthController {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
         return;
       }

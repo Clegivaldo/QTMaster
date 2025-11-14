@@ -121,7 +121,7 @@ export class ValidationController {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
+        res.status(400).json({ error: 'Validation error', details: error.issues });
         return;
       }
 
@@ -365,7 +365,7 @@ export class ValidationController {
       return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
+        res.status(400).json({ error: 'Validation error', details: error.issues });
         return;
       }
 
@@ -391,7 +391,7 @@ export class ValidationController {
       return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
+        res.status(400).json({ error: 'Validation error', details: error.issues });
         return;
       }
 

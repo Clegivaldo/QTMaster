@@ -1,8 +1,6 @@
 import puppeteer from 'puppeteer';
 import { TemplateService } from './templateService';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 export interface ReportData {
   validation: {
@@ -215,7 +213,7 @@ export class ReportGenerationService {
     try {
       // Configuração otimizada para Docker com novo headless
       browser = await puppeteer.launch({
-        headless: 'new', // Usar novo modo headless
+        headless: true, // Usar modo headless
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -249,7 +247,7 @@ export class ReportGenerationService {
       });
       
       // Aguardar renderização
-      await page.waitForTimeout(500);
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       const pdfBuffer = await page.pdf({
         format: 'A4',
@@ -263,7 +261,7 @@ export class ReportGenerationService {
         timeout: 30000
       });
 
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error('❌ Erro na geração de PDF:', message);

@@ -4,6 +4,7 @@ import PageHeader from '@/components/Layout/PageHeader';
 import ClientTable from '@/components/ClientTable';
 import ClientForm from '@/components/ClientForm';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '@/hooks/useClients';
+import { useToast } from '@/hooks/useToast';
 import { Client, ClientFormData, ClientFilters } from '@/types/client';
 
 const Clients: React.FC = () => {
@@ -21,6 +22,7 @@ const Clients: React.FC = () => {
   const createMutation = useCreateClient();
   const updateMutation = useUpdateClient();
   const deleteMutation = useDeleteClient();
+  const { error: showErrorToast } = useToast();
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -35,6 +37,9 @@ const Clients: React.FC = () => {
       setShowForm(false);
     } catch (error) {
       console.error('Error creating client:', error);
+      // Try to show server message if available
+      const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
+      showErrorToast(serverMessage || 'Erro ao criar cliente', 'Erro');
     }
   };
 
@@ -46,6 +51,8 @@ const Clients: React.FC = () => {
       setEditingClient(null);
     } catch (error) {
       console.error('Error updating client:', error);
+      const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
+      showErrorToast(serverMessage || 'Erro ao atualizar cliente', 'Erro');
     }
   };
 

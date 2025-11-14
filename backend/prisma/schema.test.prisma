@@ -31,6 +31,12 @@ model Client {
   email       String?
   phone       String?
   address     String?
+  // Endereço detalhado
+  street      String?
+  neighborhood String?
+  city        String?
+  state       String?
+  complement  String?
   cnpj        String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

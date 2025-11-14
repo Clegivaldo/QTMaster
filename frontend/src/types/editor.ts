@@ -1,80 +1,5 @@
-// Editor Layout Profissional - Interfaces e Tipos TypeScript
+export type ElementType = 'text' | 'table' | 'chart' | 'image' | 'header' | 'footer' | 'shape';
 
-// Tipos básicos para elementos
-export type ElementType = 
-  | 'text'
-  | 'heading'
-  | 'image'
-  | 'table'
-  | 'chart'
-  | 'line'
-  | 'rectangle'
-  | 'circle'
-  | 'signature'
-  | 'barcode'
-  | 'qrcode';
-
-// Tipos para estilos
-export type FontWeight = 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900';
-export type FontStyle = 'normal' | 'italic' | 'oblique';
-export type TextDecoration = 'none' | 'underline' | 'overline' | 'line-through';
-export type TextAlign = 'left' | 'center' | 'right' | 'justify';
-export type BorderStyle = 'none' | 'solid' | 'dashed' | 'dotted' | 'double';
-export type PageSize = 'A4' | 'A3' | 'Letter' | 'Legal' | 'Custom';
-export type PageOrientation = 'portrait' | 'landscape';
-
-// Interfaces para espaçamento e bordas
-export interface Spacing {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-export interface BorderConfig {
-  width: number;
-  style: BorderStyle;
-  color: string;
-}
-
-export interface ShadowStyle {
-  offsetX: number;
-  offsetY: number;
-  blur: number;
-  spread: number;
-  color: string;
-}
-
-// Interface principal para estilos de elementos
-export interface ElementStyles {
-  // Typography
-  fontFamily?: string;
-  fontSize?: number;
-  fontWeight?: FontWeight;
-  fontStyle?: FontStyle;
-  textDecoration?: TextDecoration;
-  color?: string;
-  textAlign?: TextAlign;
-  lineHeight?: number;
-  letterSpacing?: number;
-  
-  // Layout
-  padding?: Spacing;
-  margin?: Spacing;
-  border?: BorderConfig;
-  borderRadius?: number;
-  backgroundColor?: string;
-  // Vertical alignment for text inside boxes: 'top' | 'middle' | 'bottom'
-  verticalAlign?: 'top' | 'middle' | 'bottom';
-  
-  // Advanced
-  opacity?: number;
-  rotation?: number;
-  shadow?: ShadowStyle;
-  zIndex?: number;
-}
-
-// Posição e tamanho
 export interface Position {
   x: number;
   y: number;
@@ -85,336 +10,389 @@ export interface Size {
   height: number;
 }
 
-// Dados específicos para diferentes tipos de elementos
-export interface ImageData {
-  src: string;
-  alt: string;
-  originalSize: Size;
-  aspectRatio?: number;
-}
-
-export interface TableData {
-  rows: number;
-  columns: number;
-  data: string[][];
-  headers?: string[];
-  columnWidths?: number[];
-  rowHeights?: number[];
-}
-
-export interface EditorChartData {
-  type: 'bar' | 'line' | 'pie' | 'area';
-  data: any[];
-  config: Record<string, any>;
-}
-
-export interface LineData {
-  startPoint: Position;
-  endPoint: Position;
-  thickness: number;
-  style: BorderConfig;
-}
-
-export interface ShapeData {
-  fillColor?: string;
-  strokeColor?: string;
-  strokeWidth?: number;
-}
-
-// Interface principal para elementos do template
-export interface TemplateElement {
+export interface BaseElement {
   id: string;
   type: ElementType;
-  content: string | ImageData | TableData | EditorChartData | LineData | ShapeData;
   position: Position;
   size: Size;
-  styles: ElementStyles;
+  rotation: number;
+  zIndex: number;
   locked: boolean;
   visible: boolean;
-  zIndex: number;
-  groupId?: string;
-  metadata?: Record<string, any>;
-  pageId?: string; // optional: id of the page this element belongs to
 }
 
-// Interfaces específicas para diferentes tipos de elementos
-export interface TextElement extends Omit<TemplateElement, 'content' | 'type'> {
-  type: 'text' | 'heading';
-  content: string;
+// Elemento de texto
+export interface TextElement extends BaseElement {
+  type: 'text';
+  properties: {
+    content: string;
+    fontSize: number;
+    fontFamily: string;
+    color: string;
+    backgroundColor: string;
+    textAlign: 'left' | 'center' | 'right' | 'justify';
+    fontWeight: 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900';
+    fontStyle: 'normal' | 'italic';
+    textDecoration: 'none' | 'underline' | 'line-through';
+    lineHeight: number;
+    padding: number;
+    borderRadius: number;
+    borderWidth: number;
+    borderColor: string;
+    shadow: boolean;
+    shadowColor?: string;
+    shadowBlur?: number;
+    shadowOffsetX?: number;
+    shadowOffsetY?: number;
+  };
 }
 
-export interface ImageElement extends Omit<TemplateElement, 'content' | 'type'> {
-  type: 'image';
-  content: ImageData;
-}
-
-export interface TableElement extends Omit<TemplateElement, 'content' | 'type'> {
+// Elemento de tabela
+export interface TableElement extends BaseElement {
   type: 'table';
-  content: TableData;
+  properties: {
+    dataSource: string; // Template variable, e.g., "{{sensorData}}"
+    columns: TableColumn[];
+    showHeader: boolean;
+    headerStyle: React.CSSProperties;
+    rowStyle: React.CSSProperties;
+    alternatingRowColors: boolean;
+    borderStyle: 'none' | 'grid' | 'horizontal' | 'vertical';
+    fontSize: number;
+    fontFamily: string;
+    maxRows: number;
+    pageBreak: boolean;
+  };
 }
 
-export interface ChartElement extends Omit<TemplateElement, 'content' | 'type'> {
+export interface TableColumn {
+  field: string;
+  header: string;
+  width?: number;
+  align?: 'left' | 'center' | 'right';
+  format?: 'text' | 'number' | 'date' | 'temperature' | 'humidity' | 'percentage' | 'currency';
+  decimalPlaces?: number;
+  dateFormat?: string;
+  currencySymbol?: string;
+}
+
+// Elemento de gráfico
+export interface ChartElement extends BaseElement {
   type: 'chart';
-  content: EditorChartData;
+  properties: {
+    chartType: 'line' | 'bar' | 'pie' | 'doughnut' | 'radar' | 'scatter' | 'area';
+    dataSource: string; // Template variable, e.g., "{{sensorData}}"
+    xAxis: string; // Field name for X-axis
+    yAxis: string | string[]; // Field name(s) for Y-axis
+    title: string;
+    width: string | number;
+    height: string | number;
+    colors: string[];
+    showLegend: boolean;
+    showGrid: boolean;
+    showLabels: boolean;
+    responsive: boolean;
+    animation: boolean;
+    legendPosition: 'top' | 'bottom' | 'left' | 'right';
+  };
 }
 
-export interface LineElement extends Omit<TemplateElement, 'content' | 'type'> {
-  type: 'line';
-  content: LineData;
+// Elemento de imagem
+export interface ImageElement extends BaseElement {
+  type: 'image';
+  properties: {
+    src: string;
+    alt: string;
+    width: string | number;
+    height: string | number;
+    objectFit: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
+    borderRadius: number;
+    borderWidth: number;
+    borderColor: string;
+    shadow: boolean;
+    shadowColor?: string;
+    shadowBlur?: number;
+    shadowOffsetX?: number;
+    shadowOffsetY?: number;
+  };
 }
 
-export interface ShapeElement extends Omit<TemplateElement, 'content' | 'type'> {
-  type: 'rectangle' | 'circle';
-  content: ShapeData;
+// Elemento de cabeçalho
+export interface HeaderElement extends BaseElement {
+  type: 'header';
+  properties: {
+    title: string;
+    subtitle?: string;
+    logo?: string;
+    logoPosition: 'left' | 'center' | 'right';
+    titlePosition: 'left' | 'center' | 'right';
+    backgroundColor: string;
+    textColor: string;
+    fontSize: number;
+    fontFamily: string;
+    padding: number;
+    borderBottomWidth: number;
+    borderBottomColor: string;
+    showLogo: boolean;
+    showDate: boolean;
+    showPageNumbers: boolean;
+  };
 }
 
-// Configurações globais do template
-export interface GlobalStyles {
-  fontFamily: string;
-  fontSize: number;
-  color: string;
+// Elemento de rodapé
+export interface FooterElement extends BaseElement {
+  type: 'footer';
+  properties: {
+    text: string;
+    backgroundColor: string;
+    textColor: string;
+    fontSize: number;
+    fontFamily: string;
+    padding: number;
+    borderTopWidth: number;
+    borderTopColor: string;
+    textAlign: 'left' | 'center' | 'right';
+    showDate: boolean;
+    showPageNumbers: boolean;
+    showCompanyInfo: boolean;
+    companyInfo?: string;
+  };
+}
+
+// Elemento de forma (retângulo, círculo, linha)
+export interface ShapeElement extends BaseElement {
+  type: 'shape';
+  properties: {
+    shapeType: 'rectangle' | 'circle' | 'line';
+    fillColor: string;
+    strokeColor: string;
+    strokeWidth: number;
+    borderRadius: number;
+    width: number;
+    height: number;
+    rotation: number;
+  };
+}
+
+// Tipos de elementos unidos
+export type EditorElement = 
+  | TextElement
+  | TableElement
+  | ChartElement
+  | ImageElement
+  | HeaderElement
+  | FooterElement
+  | ShapeElement;
+
+// Configurações do editor
+export interface EditorConfig {
+  pageSize: 'A4' | 'A3' | 'Letter' | 'Legal' | 'Custom';
+  orientation: 'portrait' | 'landscape';
+  margins: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  };
   backgroundColor: string;
-  lineHeight: number;
+  showGrid: boolean;
+  snapToGrid: boolean;
+  gridSize: number;
+  gridColor: string;
+  zoom: number;
+  theme: 'light' | 'dark';
 }
 
-export interface PageSettings {
-  size: PageSize;
-  orientation: PageOrientation;
-  margins: Spacing;
-  backgroundColor: string;
-  showMargins: boolean;
-  customSize?: Size;
-}
-
-export interface BackgroundImageSettings {
-  url: string;
-  repeat: 'repeat' | 'no-repeat' | 'repeat-x' | 'repeat-y';
-  opacity: number;
-  position: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-}
-
-// Interface principal do template
-export interface EditorTemplate {
+// Template completo
+export interface Template {
   id: string;
   name: string;
   description?: string;
   category: string;
-  
-  // Content
-  // Maintain a flat elements array for backward compatibility. Elements should include
-  // a `pageId` when associated with a specific page. The canonical per-page metadata
-  // is stored in `pages`.
-  elements: TemplateElement[];
-  pages: Page[];
-  globalStyles: GlobalStyles;
-  // Optional legacy top-level page settings (some tests and consumers use this)
-  pageSettings?: PageSettings;
-  
-  // Metadata
-  createdAt: any;
-  updatedAt: any;
-  createdBy: string;
-  version: number;
-  
-  // Settings
-  isPublic: boolean;
+  elements: EditorElement[];
+  config: EditorConfig;
+  globalStyles: {
+    fontFamily: string;
+    fontSize: number;
+    color: string;
+    backgroundColor: string;
+  };
   tags: string[];
   thumbnail?: string;
-  backgroundImage?: BackgroundImageSettings | null;
+  isPublic: boolean;
+  version: number;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Page and region types for multi-page support
-export interface Region {
-  height: number; // in mm
-  replicateAcrossPages?: boolean;
-  elements: TemplateElement[]; // elements that belong to header/footer region
-}
-
-export interface Page {
-  id: string;
-  name?: string;
-  elements: TemplateElement[];
-  pageSettings: PageSettings;
-  backgroundImage?: BackgroundImageSettings | null;
-  header?: Region | null;
-  footer?: Region | null;
-}
-
-// Estado do editor
-export interface EditorState {
-  // Template data
-  template: EditorTemplate;
-  
-  // Editor state
-  selectedElementIds: string[];
-  clipboard: TemplateElement[];
-  isDragging: boolean;
-  isResizing: boolean;
-  
-  // Canvas state
-  zoom: number;
-  panOffset: Position;
-  canvasSize: Size;
-  
-  // History
-  history: EditorTemplate[];
-  historyIndex: number;
-  maxHistorySize: number;
-  
-  // UI state
-  showGrid: boolean;
-  showRulers: boolean;
-  snapToGrid: boolean;
-  gridSize: number;
-  
-  // Modals and panels
-  showElementPalette: boolean;
-  showPropertiesPanel: boolean;
-  activeModal?: 'save' | 'load' | 'export' | 'settings';
-}
-
-// Props para componentes
-export interface EditorProps {
-  isOpen: boolean;
-  onClose: () => void;
-  templateId?: string;
-  onSave?: (template: EditorTemplate) => void;
-  onExport?: (template: EditorTemplate, format: ExportFormat) => void;
-}
-
-export interface CanvasProps {
-  elements: TemplateElement[];
-  selectedElementIds: string[];
-  zoom: number;
-  panOffset: Position;
-  onElementSelect: (elementId: string, multiSelect?: boolean) => void;
-  onElementMove: (elementId: string, newPosition: Position) => void;
-  onElementResize: (elementId: string, newSize: Size) => void;
-  onElementEdit: (elementId: string, newContent: any) => void;
-  showGrid?: boolean;
-  gridSize?: number;
-  snapToGrid?: (position: Position) => Position;
-  pageSettings?: any; // Configurações da página (tamanho, orientação, etc.)
-  backgroundImage?: any; // Imagem de fundo da página
-  onAddElement?: (type: ElementType, position?: Position) => void;
-  onPanChange?: (offset: Position) => void;
-  onWheel?: (e: WheelEvent) => void;
-  showRuler?: boolean;
-  // Optional page regions (header/footer) to render inside the canvas
-  pageRegions?: {
-    header?: any | null;
-    footer?: any | null;
-    pageNumberInfo?: { current: number; total: number };
-  };
-  // Optional callback to update page regions (header/footer) from canvas interactions
-  onUpdatePageRegions?: (header: any | null, footer: any | null) => void;
-  // Optional callback when user selects a page region (header/footer)
-  onRegionSelect?: (region: 'header' | 'footer' | null) => void;
-}
-
-export interface ElementPaletteProps {
-  onAddElement: (type: ElementType, position?: Position) => void;
-  isVisible: boolean;
-  onToggleVisibility: () => void;
-}
-
-export interface PropertiesPanelProps {
-  selectedElements: TemplateElement[];
-  onUpdateStyles: (elementIds: string[], styles: Partial<ElementStyles>) => void;
-  onUpdateContent: (elementId: string, content: any) => void;
-  onGroupElements?: () => void;
-  onUngroupElements?: () => void;
-  onBringToFront?: (elementId: string) => void;
-  onSendToBack?: (elementId: string) => void;
-  onBringForward?: (elementId: string) => void;
-  onSendBackward?: (elementId: string) => void;
-  canGroup?: boolean;
-  canUngroup?: boolean;
-  isVisible: boolean;
-  onToggleVisibility: () => void;
-  // Optional region selection (header/footer) to show region-specific properties
-  region?: {
-    type: 'header' | 'footer';
-    data: any;
-    onUpdate: (updates: any) => void;
-  } | undefined;
-}
-
-// Tipos para operações
-export type EditorAction = 
-  | { type: 'ADD_ELEMENT'; payload: { element: TemplateElement } }
-  | { type: 'REMOVE_ELEMENT'; payload: { elementId: string } }
-  | { type: 'UPDATE_ELEMENT'; payload: { elementId: string; updates: Partial<TemplateElement> } }
-  | { type: 'SELECT_ELEMENTS'; payload: { elementIds: string[] } }
-  | { type: 'MOVE_ELEMENT'; payload: { elementId: string; position: Position } }
-  | { type: 'RESIZE_ELEMENT'; payload: { elementId: string; size: Size } }
-  | { type: 'UPDATE_STYLES'; payload: { elementIds: string[]; styles: Partial<ElementStyles> } }
-  | { type: 'SET_ZOOM'; payload: { zoom: number } }
-  | { type: 'SET_PAN'; payload: { panOffset: Position } }
-  | { type: 'UNDO' }
-  | { type: 'REDO' }
-  | { type: 'CLEAR_HISTORY' };
-
-// Tipos para exportação
-export type ExportFormat = 'pdf' | 'png' | 'html' | 'json';
-
-export interface ExportOptions {
-  format: ExportFormat;
-  quality?: number;
-  dpi?: number;
-  includeMetadata?: boolean;
-}
-
-// Tipos para erros
-export enum EditorErrorType {
-  TEMPLATE_LOAD_FAILED = 'TEMPLATE_LOAD_FAILED',
-  TEMPLATE_SAVE_FAILED = 'TEMPLATE_SAVE_FAILED',
-  EXPORT_FAILED = 'EXPORT_FAILED',
-  INVALID_ELEMENT_DATA = 'INVALID_ELEMENT_DATA',
-  CANVAS_RENDER_ERROR = 'CANVAS_RENDER_ERROR',
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  VALIDATION_ERROR = 'VALIDATION_ERROR'
-}
-
-export interface EditorError {
-  type: EditorErrorType;
-  message: string;
-  details?: any;
-  recoverable: boolean;
-  timestamp: Date;
-}
-
-// Tipos para validação
-export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
-// Tipos para configurações do editor
-export interface EditorConfig {
-  maxElements: number;
-  maxHistorySize: number;
-  autoSaveInterval: number;
-  gridSize: number;
-  snapThreshold: number;
-  zoomLevels: number[];
-  defaultPageSettings: PageSettings;
-  defaultGlobalStyles: GlobalStyles;
-}
-
-// Tipos para eventos do editor
-export interface EditorEvent {
-  type: string;
-  timestamp: Date;
-  data?: any;
-}
-
-// Tipos para plugins/extensões (futuro)
-export interface EditorPlugin {
-  id: string;
+// Variáveis de template
+export interface TemplateVariable {
   name: string;
-  version: string;
-  elementTypes?: ElementType[];
-  hooks?: Record<string, Function>;
+  type: 'text' | 'number' | 'date' | 'array' | 'object' | 'boolean';
+  description: string;
+  example: any;
+  required?: boolean;
+  category: string;
+  path: string; // Caminho no objeto de dados (ex: "client.name")
+}
+
+// Dados de contexto para renderização
+export interface RenderContext {
+  client: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    cnpj?: string;
+    street?: string;
+    neighborhood?: string;
+    city?: string;
+    state?: string;
+    complement?: string;
+  };
+  validation: {
+    id: string;
+    name: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
+    duration: string;
+    minTemperature: number;
+    maxTemperature: number;
+    minHumidity?: number;
+    maxHumidity?: number;
+    isApproved?: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  statistics: {
+    temperature: {
+      min: number;
+      max: number;
+      average: number;
+      standardDeviation: number;
+      median?: number;
+      q1?: number;
+      q3?: number;
+    };
+    humidity?: {
+      min: number;
+      max: number;
+      average: number;
+      standardDeviation: number;
+      median?: number;
+      q1?: number;
+      q3?: number;
+    };
+    readingsCount: number;
+    duration: string;
+    outliers?: number;
+    dataQuality?: number;
+  };
+  sensorData: Array<{
+    id: string;
+    sensorId: string;
+    timestamp: Date;
+    temperature: number;
+    humidity?: number;
+    fileName: string;
+    rowNumber: number;
+    validationId?: string;
+  }>;
+  sensors: Array<{
+    id: string;
+    serialNumber: string;
+    model: string;
+    typeId: string;
+    calibrationDate?: Date;
+    position?: number;
+  }>;
+  currentDate: string;
+  currentTime: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  pageNumber: number;
+  totalPages: number;
+}
+
+// Configuração de exportação
+export interface ExportConfig {
+  format: 'pdf' | 'html' | 'docx';
+  quality: 'low' | 'medium' | 'high';
+  includeMetadata: boolean;
+  password?: string;
+  watermark?: string;
+  header?: string;
+  footer?: string;
+}
+
+// Elemento simplificado para Canvas (frontend)
+export interface CanvasElement {
+  id: string;
+  type: ElementType;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  content?: string;
+  config: ElementConfig;
+  properties?: Record<string, any>;
+}
+
+export interface ElementConfig {
+  title?: string;
+  subtitle?: string;
+  content?: string;
+  dataSource?: string;
+  chartType?: string;
+  text?: string;
+  showPageNumber?: boolean;
+  alt?: string;
+}
+
+// Tipos para drag-and-drop
+export interface DragItem {
+  id: string;
+  type: ElementType;
+  isNewElement: boolean;
+  element?: CanvasElement;
+}
+
+// Tipos para propriedades de elementos
+export interface ElementProperty {
+  name: string;
+  type: 'text' | 'number' | 'color' | 'select' | 'boolean' | 'textarea' | 'file';
+  label: string;
+  description?: string;
+  defaultValue?: any;
+  options?: Array<{ value: any; label: string }>;
+  min?: number;
+  max?: number;
+  step?: number;
+  required?: boolean;
+  group?: string;
+}
+
+// Resposta da API de templates
+export interface TemplateResponse {
+  success: boolean;
+  data?: Template;
+  error?: string;
+  message?: string;
+}
+
+// Lista de templates
+export interface TemplateListResponse {
+  success: boolean;
+  data: {
+    templates: Template[];
+    total: number;
+    page: number;
+    limit: number;
+    categories: string[];
+  };
+  error?: string;
 }

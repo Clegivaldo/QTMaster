@@ -1,11 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
-import { AuthService } from '../services/authService.js';
+import { authService } from '../services/authService.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { AuditService } from '../services/auditService.js';
 import { securityLogger } from '../utils/logger.js';
-
-const authService = new AuthService();
 
 // Rate limiting for login attempts
 export const loginRateLimit = rateLimit({
@@ -46,8 +44,7 @@ export const authenticate = async (
     
     const decoded = await authService.verifyToken(token);
 
-    // If using the simple test-token, don't require a DB lookup
-    if (token === 'test-token') {
+    if (token === 'test-token' && process.env.TEST_E2E === 'true' && process.env.NODE_ENV !== 'production') {
       req.user = {
         id: (decoded as any).userId,
         email: (decoded as any).email,

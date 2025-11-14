@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
+import { AuditService } from '../services/auditService.js';
 import { randomUUID } from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -69,7 +70,7 @@ const templateElementSchema = z.object({
   visible: z.boolean().optional(),
   zIndex: z.number().optional(),
   groupId: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
   pageId: z.string().optional() // Allow pageId for multi-page support
 }).passthrough(); // Allow additional unknown properties
 
@@ -199,7 +200,7 @@ export class EditorTemplateController {
         res.status(400).json({
           success: false,
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
         return;
       }
@@ -307,6 +308,17 @@ export class EditorTemplateController {
         data: createPayload
       });
 
+      // Log audit event
+      await AuditService.logDataCreation(
+        'template',
+        template.id,
+        authReq.user.id,
+        authReq.user.email,
+        req.ip || 'unknown',
+        { name: template.name, category: template.category },
+        req.get('User-Agent')
+      );
+
       res.status(201).json({
         success: true,
         data: {
@@ -333,7 +345,7 @@ export class EditorTemplateController {
         res.status(400).json({
           success: false,
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
         return;
       }
@@ -426,6 +438,18 @@ export class EditorTemplateController {
         data: updatePayload
       });
 
+      // Log audit event
+      await AuditService.logDataUpdate(
+        'template',
+        id,
+        authReq.user.id,
+        authReq.user.email,
+        req.ip || 'unknown',
+        { name: existingTemplate.name, version: existingTemplate.version },
+        { name: template.name, version: template.version },
+        req.get('User-Agent')
+      );
+
       res.json({
         success: true,
         data: {
@@ -454,11 +478,11 @@ export class EditorTemplateController {
       console.log('Error:', error);
       
       if (error instanceof z.ZodError) {
-        console.log('❌ Zod validation error:', JSON.stringify(error.errors, null, 2));
+        console.log('❌ Zod validation error:', JSON.stringify(error.issues, null, 2));
         res.status(400).json({
           success: false,
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
         return;
       }
@@ -515,6 +539,17 @@ export class EditorTemplateController {
       await prisma.editorTemplate.delete({
         where: { id }
       });
+
+      // Log audit event
+      await AuditService.logDataDeletion(
+        'template',
+        id,
+        authReq.user.id,
+        authReq.user.email,
+        req.ip || 'unknown',
+        { name: existingTemplate.name, category: existingTemplate.category },
+        req.get('User-Agent')
+      );
 
       res.json({
         success: true,
@@ -832,7 +867,7 @@ export class EditorTemplateController {
         res.status(400).json({
           success: false,
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
         return;
       }
@@ -934,7 +969,7 @@ export class EditorTemplateController {
           success: true,
           data: {
             isValid: false,
-            errors: error.errors.map(err => err.message),
+            errors: error.issues.map((err: any) => err.message),
             warnings: []
           },
         });

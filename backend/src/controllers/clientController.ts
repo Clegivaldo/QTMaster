@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { Prisma } from '@prisma/client';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
 import { requireParam, stripUndefined } from '../utils/requestUtils.js';
@@ -12,6 +13,11 @@ const createClientSchema = z.object({
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().optional().or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
+  street: z.string().optional().or(z.literal('')),
+  neighborhood: z.string().optional().or(z.literal('')),
+  city: z.string().optional().or(z.literal('')),
+  state: z.string().optional().or(z.literal('')),
+  complement: z.string().optional().or(z.literal('')),
   cnpj: z.string().optional().or(z.literal('')),
 });
 
@@ -80,7 +86,7 @@ export class ClientController {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
         return;
       }
@@ -158,6 +164,11 @@ export class ClientController {
         email: validatedData.email || null,
         phone: validatedData.phone || null,
         address: validatedData.address || null,
+        street: validatedData.street || null,
+        neighborhood: validatedData.neighborhood || null,
+        city: validatedData.city || null,
+        state: validatedData.state || null,
+        complement: validatedData.complement || null,
         cnpj: validatedData.cnpj || null,
       };
 
@@ -170,6 +181,20 @@ export class ClientController {
         if (existingClient) {
           res.status(400).json({
             error: 'Email já está em uso por outro cliente',
+          });
+          return;
+        }
+      }
+
+      // Check if CNPJ already exists (if provided)
+      if (clientData.cnpj) {
+        const existingByCnpj = await prisma.client.findFirst({
+          where: { cnpj: clientData.cnpj },
+        });
+
+        if (existingByCnpj) {
+          res.status(400).json({
+            error: 'CNPJ já está em uso por outro cliente',
           });
           return;
         }
@@ -189,8 +214,16 @@ export class ClientController {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
+        return;
+      }
+      // Prisma unique constraint error handling
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        // Determine which field caused the unique constraint
+        const target = (error.meta && (error.meta as any).target) || [];
+        const field = Array.isArray(target) ? target.join(', ') : String(target);
+        res.status(400).json({ error: `${field || 'Campo'} já está em uso` });
         return;
       }
 
@@ -233,6 +266,21 @@ export class ClientController {
       if (validatedData.address !== undefined) {
         clientData.address = validatedData.address === '' ? null : validatedData.address;
       }
+      if (validatedData.street !== undefined) {
+        clientData.street = validatedData.street === '' ? null : validatedData.street;
+      }
+      if (validatedData.neighborhood !== undefined) {
+        clientData.neighborhood = validatedData.neighborhood === '' ? null : validatedData.neighborhood;
+      }
+      if (validatedData.city !== undefined) {
+        clientData.city = validatedData.city === '' ? null : validatedData.city;
+      }
+      if (validatedData.state !== undefined) {
+        clientData.state = validatedData.state === '' ? null : validatedData.state;
+      }
+      if (validatedData.complement !== undefined) {
+        clientData.complement = validatedData.complement === '' ? null : validatedData.complement;
+      }
       if (validatedData.cnpj !== undefined) {
         clientData.cnpj = validatedData.cnpj === '' ? null : validatedData.cnpj;
       }
@@ -254,6 +302,23 @@ export class ClientController {
         }
       }
 
+      // Check if CNPJ already exists (if provided and different from current)
+      if (clientData.cnpj && clientData.cnpj !== existingClient.cnpj) {
+        const cnpjExists = await prisma.client.findFirst({
+          where: {
+            cnpj: clientData.cnpj,
+            id: { not: id },
+          },
+        });
+
+        if (cnpjExists) {
+          res.status(400).json({
+            error: 'CNPJ já está em uso por outro cliente',
+          });
+          return;
+        }
+      }
+
       const client = await prisma.client.update({
         where: { id },
         data: clientData,
@@ -269,8 +334,15 @@ export class ClientController {
       if (error instanceof z.ZodError) {
         res.status(400).json({
           error: 'Validation error',
-          details: error.errors,
+          details: error.issues,
         });
+        return;
+      }
+      // Prisma unique constraint error handling
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const target = (error.meta && (error.meta as any).target) || [];
+        const field = Array.isArray(target) ? target.join(', ') : String(target);
+        res.status(400).json({ error: `${field || 'Campo'} já está em uso` });
         return;
       }
 

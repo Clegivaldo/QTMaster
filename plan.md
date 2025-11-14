@@ -57,6 +57,37 @@ O sistema QT-Master é um projeto full-stack com backend em Node.js/Prisma e fro
 - Confirmar que desmarcar cabeçalho/rodapé remove a região da página atual
 - Testar arrastar/redimensionar header/footer e confirmar que não ultrapassa altura da página
 
+## Mudança: Modal "Novo Cliente" (implementada)
+
+- Objetivo: Mover CNPJ para o primeiro campo, adicionar botão de busca (ícone lupa) que consulta o CNPJ e preenche campos; separar endereço em campos (Rua, Bairro, Cidade, Estado, Complemento); remover inputs de Email e Telefone do modal.
+- Arquivos alterados:
+  - `frontend/src/components/ClientForm.tsx` — reordenação de campos, botão de busca com ícone, implementação de `fetchCNPJ` (consulta BrasilAPI) e novos campos de endereço.
+  - `frontend/src/types/client.ts` — adição de campos de endereço em `Client` e `ClientFormData` (`street`, `neighborhood`, `city`, `state`, `complement`).
+- Comportamento implementado:
+  - Botão lupa ao lado do campo CNPJ que chama `https://brasilapi.com.br/api/cnpj/v1/{cnpj}` e preenche `name`, `street`, `neighborhood`, `city`, `state`, `complement` quando disponível.
+  - Removidos visualmente os inputs de Email e Telefone do modal (mantidos nos tipos por compatibilidade).
+  - Campo `address` legado removido da UI (mantido no tipo para compatibilidade retroativa).
+
+## QA recomendado para o modal de Cliente
+- Abrir a tela `Clientes` e acionar "Novo Cliente".
+- Inserir um CNPJ válido (14 dígitos) e clicar na lupa — verificar preenchimento de campos.
+- Testar com CNPJ inválido e verificar mensagem de erro exibida abaixo do campo.
+- Criar cliente e confirmar payload enviado ao backend (inspecionar network ou logs do servidor).
+- Se desejar persistir os novos campos no backend, ajustar controller/model/prisma para aceitar e salvar esses campos.
+
+## Próximos passos (específicos para o modal de cliente)
+- [ ] Testes manuais/QA no ambiente local (abrir app e validar fluxo completo)
+- [ ] (Opcional) Adicionar máscara/validação front-end para CNPJ e melhorar UX de loading/erro
+- [ ] (Opcional) Atualizar `ClientTable` para exibir os campos de endereço resumidos (Rua / Cidade - UF)
+
+## DB / Prisma updates (nov 12, 2025)
+
+- [x] Atualizado `prisma/schema.prisma` com campos: `street`, `neighborhood`, `city`, `state`, `complement` no modelo `Client`.
+- [x] Adicionada migration SQL `prisma/migrations/20251112_add-client-address-fields/migration.sql` que adiciona as colunas no Postgres.
+- [x] Criado `prisma/seed.ts` para centralizar seeds (admin, sensor types, template, client CNPJ `10.520.565/0001-53`).
+- [x] Executado `prisma migrate deploy` localmente (marcando migração pré-existente como aplicada quando necessário) e rodado seed — cliente criado e atualizável via Prisma.
+
+
 ## O que foi feito (mudanças relevantes)
 - [x] Atualizado `frontend/tsconfig.json` para excluir arquivos de teste do build principal.
 - [x] Criado `frontend/tsconfig.tests.json` para validação de tipos apenas em tests.

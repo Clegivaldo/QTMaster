@@ -9,7 +9,7 @@ async function main() {
   // Create admin user
   const hashedPassword = await bcrypt.hash('admin123', 10);
   
-  const adminUser = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'admin@sistema.com' },
     update: {},
     create: {
@@ -20,13 +20,11 @@ async function main() {
     },
   });
 
-  console.log('✅ Admin user created:', adminUser.email);
-
-  // Create default sensor types
+  // Create default sensor types (minimal set)
   const sensorTypes = [
     {
       name: 'Tipo A - Temperatura/Umidade',
-      description: 'Sensor padrão para medição de temperatura e umidade',
+      description: 'Sensor padrão',
       dataConfig: {
         temperatureColumn: 'B',
         humidityColumn: 'C',
@@ -35,61 +33,42 @@ async function main() {
         dateFormat: 'DD/MM/YYYY HH:mm:ss'
       }
     },
-    {
-      name: 'Tipo B - Temperatura Only',
-      description: 'Sensor apenas para temperatura',
-      dataConfig: {
-        temperatureColumn: 'A',
-        humidityColumn: null,
-        timestampColumn: 'B',
-        startRow: 3,
-        dateFormat: 'YYYY-MM-DD HH:mm:ss'
-      }
-    },
-    {
-      name: 'Tipo C - Multi-sensor',
-      description: 'Sensor com múltiplos pontos de medição',
-      dataConfig: {
-        temperatureColumn: 'C',
-        humidityColumn: 'D',
-        timestampColumn: 'A',
-        startRow: 1,
-        dateFormat: 'MM/DD/YYYY HH:mm'
-      }
-    }
   ];
 
   for (const sensorType of sensorTypes) {
-    const existing = await prisma.sensorType.findFirst({
-      where: { name: sensorType.name }
-    });
-    
-    if (!existing) {
-      await prisma.sensorType.create({
-        data: sensorType,
-      });
-    }
+    const existing = await prisma.sensorType.findFirst({ where: { name: sensorType.name } });
+    if (!existing) await prisma.sensorType.create({ data: sensorType as any });
   }
 
-  console.log('✅ Sensor types created');
-
-  // Create default report template
-  const existingTemplate = await prisma.reportTemplate.findFirst({
-    where: { name: 'Template Padrão' }
-  });
-  
+  // Ensure default report template
+  const existingTemplate = await prisma.reportTemplate.findFirst({ where: { name: 'Template Padrão' } });
   if (!existingTemplate) {
     await prisma.reportTemplate.create({
       data: {
         name: 'Template Padrão',
-        description: 'Template padrão para laudos de qualificação térmica',
+        description: 'Template padrão',
         templatePath: '/templates/default.frx',
         isActive: true,
       },
     });
   }
 
-  console.log('✅ Default report template created');
+  // Ensure example client (CNPJ 10.520.565/0001-53)
+  const cnpj = '10.520.565/0001-53';
+  const existingClient = await prisma.client.findFirst({ where: { cnpj } });
+  if (!existingClient) {
+    await prisma.client.create({
+      data: {
+        name: 'Cliente Seed',
+        cnpj,
+        street: 'Rua Seed',
+        neighborhood: 'Bairro Seed',
+        city: 'Cidade Seed',
+        state: 'SS',
+        complement: 'Complemento Seed',
+      },
+    });
+  }
 
   console.log('🎉 Database seed completed!');
 }
@@ -103,3 +82,4 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
+

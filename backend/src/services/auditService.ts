@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { auditLogger, logAuditEvent } from '../utils/logger.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
 
 export interface AuditEvent {
   action: string;
@@ -24,16 +22,16 @@ export class AuditService {
       // Log to structured audit log
       logAuditEvent(event.action, {
         resource: event.resource,
-        resourceId: event.resourceId,
-        userId: event.userId,
-        userEmail: event.userEmail,
-        ip: event.ip,
-        userAgent: event.userAgent,
-        oldValues: event.oldValues,
-        newValues: event.newValues,
-        metadata: event.metadata,
+        resourceId: event.resourceId ?? null,
+        userId: event.userId ?? null,
+        userEmail: event.userEmail ?? null,
+        ip: event.ip ?? null,
+        userAgent: event.userAgent ?? null,
+        oldValues: event.oldValues ?? null,
+        newValues: event.newValues ?? null,
+        metadata: event.metadata ?? null,
         success: event.success,
-        errorMessage: event.errorMessage,
+        errorMessage: event.errorMessage ?? null,
       });
       
       // Store in database for queryable audit trail

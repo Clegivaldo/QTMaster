@@ -44,10 +44,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.login(credentials);
       
       if (response.data.success && response.data.data) {
-        const { user, accessToken, refreshToken } = response.data.data;
+        const { user, tokens } = response.data.data;
         
-        apiService.setAuthToken(accessToken);
-        apiService.setRefreshToken(refreshToken);
+        apiService.setAuthToken(tokens.accessToken);
+        apiService.setRefreshToken(tokens.refreshToken);
         setUser(user);
       } else {
         throw new Error(response.data.error || 'Login failed');

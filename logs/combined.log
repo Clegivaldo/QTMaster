@@ -148,3 +148,66 @@
 {"timestamp":"2025-11-10 15:25:27.416","level":"info","service":"laudo-termico-api","message":"Request completed","environment":"development","version":"1.0.0","requestId":"req_1762799127360_vhi3oavj4","method":"GET","url":"/api/users/profile","statusCode":304,"responseTime":55.99,"contentLength":0}
 {"timestamp":"2025-11-10 15:25:27.421","level":"info","service":"laudo-termico-api","message":"Incoming request","environment":"development","version":"1.0.0","requestId":"req_1762799127421_52kk61n4n","method":"GET","url":"/api/users/profile","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36","ip":"::1"}
 {"timestamp":"2025-11-10 15:25:27.426","level":"info","service":"laudo-termico-api","message":"Request completed","environment":"development","version":"1.0.0","requestId":"req_1762799127421_52kk61n4n","method":"GET","url":"/api/users/profile","statusCode":304,"responseTime":5.45,"contentLength":0}
+{"timestamp":"2025-11-12 15:53:38.730","level":"info","service":"laudo-termico-api","message":"🚀 Server running on port 5000","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 15:53:38.732","level":"info","service":"laudo-termico-api","message":"📊 Health check: http://localhost:5000/api/monitoring/health","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 15:53:38.732","level":"info","service":"laudo-termico-api","message":"🔍 Monitoring: http://localhost:5000/api/monitoring","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 15:53:38.732","level":"info","service":"laudo-termico-api","message":"🌍 Environment: development","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 15:53:38.751","level":"info","service":"laudo-termico-api","message":"Redis: Connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 15:53:38.790","level":"info","service":"laudo-termico-api","message":"🔴 Redis connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 15:53:38.859","level":"info","service":"laudo-termico-api","message":"Backup service initialized with daily backups at 2 AM","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 15:53:38.860","level":"info","service":"laudo-termico-api","message":"💾 Backup service initialized","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 15:53:58.118","level":"info","service":"laudo-termico-api","message":"SIGINT received, shutting down gracefully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:03:44.404","level":"info","service":"laudo-termico-api","message":"🚀 Server running on port 5000","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:03:44.406","level":"info","service":"laudo-termico-api","message":"📊 Health check: http://localhost:5000/api/monitoring/health","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:03:44.406","level":"info","service":"laudo-termico-api","message":"🔍 Monitoring: http://localhost:5000/api/monitoring","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:03:44.407","level":"info","service":"laudo-termico-api","message":"🌍 Environment: development","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:03:44.424","level":"info","service":"laudo-termico-api","message":"Redis: Connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:03:44.442","level":"info","service":"laudo-termico-api","message":"🔴 Redis connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:03:44.512","level":"info","service":"laudo-termico-api","message":"Backup service initialized with daily backups at 2 AM","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:03:44.512","level":"info","service":"laudo-termico-api","message":"💾 Backup service initialized","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:03:58.537","level":"info","service":"laudo-termico-api","message":"SIGINT received, shutting down gracefully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:04:53.182","level":"info","service":"laudo-termico-api","message":"🚀 Server running on port 5000","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:04:53.186","level":"info","service":"laudo-termico-api","message":"📊 Health check: http://localhost:5000/api/monitoring/health","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:04:53.187","level":"info","service":"laudo-termico-api","message":"🔍 Monitoring: http://localhost:5000/api/monitoring","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:04:53.187","level":"info","service":"laudo-termico-api","message":"🌍 Environment: development","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:04:53.205","level":"info","service":"laudo-termico-api","message":"Redis: Connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:04:53.233","level":"info","service":"laudo-termico-api","message":"🔴 Redis connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:04:53.315","level":"info","service":"laudo-termico-api","message":"Backup service initialized with daily backups at 2 AM","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:04:53.316","level":"info","service":"laudo-termico-api","message":"💾 Backup service initialized","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:05:15.043","level":"info","service":"laudo-termico-api","message":"SIGINT received, shutting down gracefully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:06:56.602","level":"info","service":"laudo-termico-api","message":"🚀 Server running on port 5000","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:06:56.604","level":"info","service":"laudo-termico-api","message":"📊 Health check: http://localhost:5000/api/monitoring/health","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:06:56.604","level":"info","service":"laudo-termico-api","message":"🔍 Monitoring: http://localhost:5000/api/monitoring","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:06:56.605","level":"info","service":"laudo-termico-api","message":"🌍 Environment: development","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:06:56.622","level":"info","service":"laudo-termico-api","message":"Redis: Connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:06:56.649","level":"info","service":"laudo-termico-api","message":"🔴 Redis connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:06:56.749","level":"info","service":"laudo-termico-api","message":"Backup service initialized with daily backups at 2 AM","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:06:56.750","level":"info","service":"laudo-termico-api","message":"💾 Backup service initialized","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:07:08.623","level":"info","service":"laudo-termico-api","message":"SIGINT received, shutting down gracefully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:07:59.405","level":"info","service":"laudo-termico-api","message":"🚀 Server running on port 5000","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:07:59.407","level":"info","service":"laudo-termico-api","message":"📊 Health check: http://localhost:5000/api/monitoring/health","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:07:59.408","level":"info","service":"laudo-termico-api","message":"🔍 Monitoring: http://localhost:5000/api/monitoring","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:07:59.408","level":"info","service":"laudo-termico-api","message":"🌍 Environment: development","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:07:59.425","level":"info","service":"laudo-termico-api","message":"Redis: Connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:07:59.441","level":"info","service":"laudo-termico-api","message":"🔴 Redis connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:07:59.508","level":"info","service":"laudo-termico-api","message":"Backup service initialized with daily backups at 2 AM","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:07:59.508","level":"info","service":"laudo-termico-api","message":"💾 Backup service initialized","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:08:20.559","level":"info","service":"laudo-termico-api","message":"SIGINT received, shutting down gracefully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:08:31.999","level":"info","service":"laudo-termico-api","message":"🚀 Server running on port 5000","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:08:32.001","level":"info","service":"laudo-termico-api","message":"📊 Health check: http://localhost:5000/api/monitoring/health","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:08:32.001","level":"info","service":"laudo-termico-api","message":"🔍 Monitoring: http://localhost:5000/api/monitoring","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:08:32.002","level":"info","service":"laudo-termico-api","message":"🌍 Environment: development","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:08:32.019","level":"info","service":"laudo-termico-api","message":"Redis: Connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:08:32.030","level":"info","service":"laudo-termico-api","message":"🔴 Redis connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:08:32.056","level":"info","service":"laudo-termico-api","message":"Backup service initialized with daily backups at 2 AM","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:08:32.057","level":"info","service":"laudo-termico-api","message":"💾 Backup service initialized","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:09:05.461","level":"info","service":"laudo-termico-api","message":"SIGINT received, shutting down gracefully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:09:37.488","level":"info","service":"laudo-termico-api","message":"🚀 Server running on port 5000","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:09:37.490","level":"info","service":"laudo-termico-api","message":"📊 Health check: http://localhost:5000/api/monitoring/health","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:09:37.491","level":"info","service":"laudo-termico-api","message":"🔍 Monitoring: http://localhost:5000/api/monitoring","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:09:37.492","level":"info","service":"laudo-termico-api","message":"🌍 Environment: development","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:09:37.510","level":"info","service":"laudo-termico-api","message":"Redis: Connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:09:37.531","level":"info","service":"laudo-termico-api","message":"🔴 Redis connected successfully","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:09:37.555","level":"info","service":"laudo-termico-api","message":"Backup service initialized with daily backups at 2 AM","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:09:37.556","level":"info","service":"laudo-termico-api","message":"💾 Backup service initialized","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-11-12 16:10:54.395","level":"info","service":"laudo-termico-api","message":"SIGINT received, shutting down gracefully","environment":"development","version":"1.0.0"}

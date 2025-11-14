@@ -4,6 +4,12 @@ export interface Client {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
+  // Endereço detalhado (opcional)
+  street?: string | null; // Rua
+  neighborhood?: string | null; // Bairro
+  city?: string | null; // Cidade
+  state?: string | null; // Estado (UF)
+  complement?: string | null; // Complemento
   cnpj?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -19,6 +25,12 @@ export interface ClientFormData {
   phone?: string;
   address?: string;
   cnpj?: string;
+  // Endereço detalhado
+  street?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  complement?: string;
 }
 
 export interface ClientsResponse {

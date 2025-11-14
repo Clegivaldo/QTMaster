@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { EditorTemplateController } from '../controllers/editorTemplateController.js';
 import { authenticate } from '../middleware/auth.js';
+import { requirePermission, Permission } from '../middleware/authorization.js';
 
 const router = Router();
 const editorTemplateController = new EditorTemplateController();
@@ -9,33 +10,33 @@ const editorTemplateController = new EditorTemplateController();
 router.use(authenticate);
 
 // GET /api/editor-templates - List templates with pagination and filters
-router.get('/', editorTemplateController.getTemplates.bind(editorTemplateController));
+router.get('/', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.getTemplates.bind(editorTemplateController));
 
 // GET /api/editor-templates/search - Search templates
-router.get('/search', editorTemplateController.searchTemplates.bind(editorTemplateController));
+router.get('/search', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.searchTemplates.bind(editorTemplateController));
 
 // POST /api/editor-templates/validate - Validate template data
-router.post('/validate', editorTemplateController.validateTemplate.bind(editorTemplateController));
+router.post('/validate', requirePermission(Permission.TEMPLATE_CREATE, Permission.TEMPLATE_UPDATE), editorTemplateController.validateTemplate.bind(editorTemplateController));
 
 // POST /api/editor-templates/export - Export template (without ID, for new templates)
-router.post('/export', editorTemplateController.exportTemplateData.bind(editorTemplateController));
+router.post('/export', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.exportTemplateData.bind(editorTemplateController));
 
 // GET /api/editor-templates/:id - Get single template
-router.get('/:id', editorTemplateController.getTemplate.bind(editorTemplateController));
+router.get('/:id', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.getTemplate.bind(editorTemplateController));
 
 // POST /api/editor-templates - Create new template
-router.post('/', editorTemplateController.createTemplate.bind(editorTemplateController));
+router.post('/', requirePermission(Permission.TEMPLATE_CREATE), editorTemplateController.createTemplate.bind(editorTemplateController));
 
 // PUT /api/editor-templates/:id - Update template
-router.put('/:id', editorTemplateController.updateTemplate.bind(editorTemplateController));
+router.put('/:id', requirePermission(Permission.TEMPLATE_UPDATE), editorTemplateController.updateTemplate.bind(editorTemplateController));
 
 // DELETE /api/editor-templates/:id - Delete template
-router.delete('/:id', editorTemplateController.deleteTemplate.bind(editorTemplateController));
+router.delete('/:id', requirePermission(Permission.TEMPLATE_DELETE), editorTemplateController.deleteTemplate.bind(editorTemplateController));
 
 // POST /api/editor-templates/:id/duplicate - Duplicate template
-router.post('/:id/duplicate', editorTemplateController.duplicateTemplate.bind(editorTemplateController));
+router.post('/:id/duplicate', requirePermission(Permission.TEMPLATE_CREATE), editorTemplateController.duplicateTemplate.bind(editorTemplateController));
 
 // POST /api/editor-templates/:id/export - Export template
-router.post('/:id/export', editorTemplateController.exportTemplate.bind(editorTemplateController));
+router.post('/:id/export', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.exportTemplate.bind(editorTemplateController));
 
 export default router;

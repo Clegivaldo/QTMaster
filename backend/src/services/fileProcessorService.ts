@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { parse as parseCSV } from 'csv-parse/sync';
 import { prisma } from '../lib/prisma.js';
 import { logger } from '../utils/logger.js';
+import * as fs from 'fs/promises';
 
 export interface ProcessingResult {
   fileName: string;
@@ -177,6 +178,12 @@ export class FileProcessorService {
         fileName: file.originalname,
         error: error instanceof Error ? error.message : error,
       });
+    } finally {
+      try {
+        if ((file as any).path) {
+          await fs.unlink((file as any).path).catch(() => {});
+        }
+      } catch {}
     }
 
     return result;
@@ -198,8 +205,14 @@ export class FileProcessorService {
 
   private async parseExcelFile(file: Express.Multer.File): Promise<any[][]> {
   const workbook = new ExcelJS.Workbook();
-  // Ensure buffer is a Node Buffer (ExcelJS expects Buffer)
-  const buf = Buffer.isBuffer(file.buffer) ? file.buffer : Buffer.from(file.buffer as any);
+  let buf: Buffer;
+  if (file.buffer) {
+    buf = Buffer.isBuffer(file.buffer) ? file.buffer : Buffer.from(file.buffer as any);
+  } else if ((file as any).path) {
+    buf = await fs.readFile((file as any).path);
+  } else {
+    throw new Error('Arquivo não possui buffer ou path válido');
+  }
   await workbook.xlsx.load(buf as any);
     
     const worksheet = workbook.getWorksheet(1); // Get first worksheet
@@ -220,7 +233,11 @@ export class FileProcessorService {
   }
 
   private parseCSVFile(file: Express.Multer.File): any[][] {
-    const content = file.buffer.toString('utf-8');
+    const content = file.buffer
+      ? file.buffer.toString('utf-8')
+      : (file as any).path
+        ? (require('fs').readFileSync((file as any).path, 'utf-8'))
+        : '';
     return parseCSV(content, {
       skip_empty_lines: true,
       relax_column_count: true,

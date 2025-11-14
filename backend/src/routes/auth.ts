@@ -3,7 +3,9 @@ import { AuthController } from '../controllers/authController.js';
 import { authenticate, loginRateLimit } from '../middleware/auth.js';
 
 // When running end-to-end tests, allow disabling the login rate limit
-const applyLoginRateLimit = process.env.TEST_E2E === 'true' ? ((req, res, next) => next()) : loginRateLimit;
+const applyLoginRateLimit = process.env.TEST_E2E === 'true'
+	? ((req: any, res: any, next: any) => next())
+	: loginRateLimit;
 
 const router = Router();
 const authController = new AuthController();

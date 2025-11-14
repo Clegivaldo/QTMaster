@@ -31,7 +31,12 @@ model Client {
   email       String?
   phone       String?
   address     String?
-  cnpj        String?
+  street      String?
+  neighborhood String?
+  city        String?
+  state       String?
+  complement  String?
+  cnpj        String?     @unique
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   reports     Report[]
@@ -191,22 +196,22 @@ model Report {
 }
 
 model EditorTemplate {
-  id            String   @id @default(cuid())
-  name          String
-  description   String?
-  category      String   @default("default")
-  elements      Json     // Array of template elements
-  globalStyles  Json     // Global styling configuration
-  pages         Json?    // Array of pages (optional)
-  pageSettings  Json?    // Page configuration (size, margins, etc.)
-  tags          String[] // Array of tags for categorization
-  thumbnail     String?  // Optional thumbnail image URL
-  isPublic      Boolean  @default(false)
-  createdBy     String   // User ID who created the template
-  version       Int      @default(1)
-  revision      Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  category     String   @default("default")
+  elements     Json
+  globalStyles Json
+  pages        Json?
+  pageSettings Json?
+  tags         String[]
+  thumbnail    String?
+  isPublic     Boolean  @default(false)
+  createdBy    String
+  version      Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  revision     Int      @default(0)
 
   @@index([createdBy])
   @@index([category])

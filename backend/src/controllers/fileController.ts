@@ -1,28 +1,51 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import multer from 'multer';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { fileProcessorService } from '../services/fileProcessorService.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
 import { requireParam } from '../utils/requestUtils.js';
 
-// Multer configuration for file uploads
-const storage = multer.memoryStorage();
+const uploadDir = path.join(os.tmpdir(), 'qt-master-uploads');
+try { fs.mkdirSync(uploadDir, { recursive: true }); } catch {}
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const timestamp = Date.now();
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    cb(null, `${timestamp}-${safeName}`);
+  }
+});
 const upload = multer({
   storage,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760'), // 10MB default
-    files: 120, // Maximum 120 files as per requirements
+    fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760'),
+    files: 120,
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     const allowedExtensions = ['.xlsx', '.xls', '.csv'];
-    const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
-    
-    if (allowedExtensions.includes(fileExtension)) {
-      cb(null, true);
-    } else {
+    const allowedMimes = new Set([
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'text/csv',
+      'application/csv',
+      'text/plain'
+    ]);
+    const ext = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+    if (!allowedExtensions.includes(ext)) {
       cb(new Error(`File type not allowed. Allowed types: ${allowedExtensions.join(', ')}`));
+      return;
     }
+    if (!allowedMimes.has(file.mimetype)) {
+      cb(new Error('Invalid MIME type'));
+      return;
+    }
+    cb(null, true);
   },
 });
 
@@ -114,7 +137,7 @@ export class FileController {
 
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
+        res.status(400).json({ error: 'Validation error', details: error.issues });
         return;
       }
 

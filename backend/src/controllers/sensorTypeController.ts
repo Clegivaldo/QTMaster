@@ -23,7 +23,7 @@ const createSensorTypeSchema = z.object({
 const updateSensorTypeSchema = createSensorTypeSchema.partial();
 
 export class SensorTypeController {
-  async getSensorTypes(req: Request, res: Response) {
+  async getSensorTypes(req: Request, res: Response): Promise<void> {
     try {
       const sensorTypes = await prisma.sensorType.findMany({
         orderBy: { name: 'asc' },
@@ -45,13 +45,14 @@ export class SensorTypeController {
       res.status(500).json({
         error: 'Internal server error',
       });
+      return;
     }
   }
 
-  async getSensorType(req: Request, res: Response) {
+  async getSensorType(req: Request, res: Response): Promise<void> {
     try {
-  const id = requireParam(req, res, 'id');
-  if (!id) return;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const sensorType = await prisma.sensorType.findUnique({
         where: { id },
@@ -83,15 +84,17 @@ export class SensorTypeController {
         success: true,
         data: { sensorType },
       });
+      return;
     } catch (error) {
       logger.error('Get sensor type error:', { error: error instanceof Error ? error.message : error, sensorTypeId: req.params.id });
       res.status(500).json({
         error: 'Internal server error',
       });
+      return;
     }
   }
 
-  async createSensorType(req: AuthenticatedRequest, res: Response) {
+  async createSensorType(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const validatedData = createSensorTypeSchema.parse(req.body);
 
@@ -121,7 +124,7 @@ export class SensorTypeController {
       return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
+        res.status(400).json({ error: 'Validation error', details: error.issues });
         return;
       }
 
@@ -131,10 +134,10 @@ export class SensorTypeController {
     }
   }
 
-  async updateSensorType(req: AuthenticatedRequest, res: Response) {
+  async updateSensorType(req: Request, res: Response): Promise<void> {
     try {
-  const id = requireParam(req, res, 'id');
-  if (!id) return;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
   const validatedData = updateSensorTypeSchema.parse(req.body);
 
       // Check if sensor type exists
@@ -152,7 +155,7 @@ export class SensorTypeController {
         const nameExists = await prisma.sensorType.findFirst({
           where: { 
             name: validatedData.name,
-            id: { not: id },
+            id: { not: id ?? '' },
           },
         });
 
@@ -162,15 +165,21 @@ export class SensorTypeController {
         }
       }
 
-      // Convert empty description to null
-      const sensorTypeData = stripUndefined({
-        ...validatedData,
-        description: validatedData.description === '' ? null : validatedData.description,
-      });
+      // Build update data with only defined properties
+      const updateData: Record<string, any> = {};
+      if (validatedData.name !== undefined) {
+        updateData.name = validatedData.name;
+      }
+      if (validatedData.description !== undefined) {
+        updateData.description = validatedData.description === '' ? null : validatedData.description;
+      }
+      if (validatedData.dataConfig !== undefined) {
+        updateData.dataConfig = validatedData.dataConfig;
+      }
 
       const sensorType = await prisma.sensorType.update({
         where: { id },
-        data: sensorTypeData as any,
+        data: updateData,
       });
 
       logger.info('Sensor type updated:', { sensorTypeId: sensorType.id, name: sensorType.name, userId: req.user?.id });
@@ -179,7 +188,7 @@ export class SensorTypeController {
       return;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation error', details: error.errors });
+        res.status(400).json({ error: 'Validation error', details: error.issues });
         return;
       }
 
@@ -189,10 +198,10 @@ export class SensorTypeController {
     }
   }
 
-  async deleteSensorType(req: AuthenticatedRequest, res: Response) {
+  async deleteSensorType(req: Request, res: Response): Promise<void> {
     try {
-  const id = requireParam(req, res, 'id');
-  if (!id) return;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       // Check if sensor type exists
       const existingSensorType = await prisma.sensorType.findUnique({

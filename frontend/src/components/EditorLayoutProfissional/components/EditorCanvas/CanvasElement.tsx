@@ -302,6 +302,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
   return (
     <div
       ref={elementRef}
+      data-element-id={element.id}
       style={{
         ...getElementStyles(),
         transform: isDragging ? 
