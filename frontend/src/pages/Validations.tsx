@@ -8,11 +8,16 @@ import {
   Clock,
   Calendar,
   Thermometer,
-  Droplets
+  Droplets,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
-import { useValidations } from '@/hooks/useValidations';
+import { useValidations, useCreateValidation, useUpdateValidationApproval, useDeleteValidation } from '@/hooks/useValidations';
 import { Validation, ValidationFilters } from '@/types/validation';
+import ValidationForm from '@/components/ValidationForm';
+import { useSuitcases } from '@/hooks/useSuitcases';
+import { useClients } from '@/hooks/useClients';
 
 const Validations: React.FC = () => {
   const [filters, setFilters] = useState<ValidationFilters>({
@@ -21,14 +26,56 @@ const Validations: React.FC = () => {
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
+  const [showForm, setShowForm] = useState(false);
+  const [editingValidation, setEditingValidation] = useState<Validation | null>(null);
+  const [deletingValidation, setDeletingValidation] = useState<Validation | null>(null);
 
   const { data, isLoading, error } = useValidations(filters);
+  const createMutation = useCreateValidation();
+  const updateApprovalMutation = useUpdateValidationApproval();
+  const deleteMutation = useDeleteValidation();
+  const { data: suitcasesData } = useSuitcases();
+  const { data: clientsData } = useClients();
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const search = formData.get('search') as string;
     setFilters({ ...filters, search: search || undefined, page: 1 });
+  };
+
+  const handleCreateValidation = async (data: any) => {
+    try {
+      await createMutation.mutateAsync(data);
+      setShowForm(false);
+    } catch (error) {
+      console.error('Error creating validation:', error);
+      const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
+      alert(serverMessage || 'Erro ao criar validação');
+    }
+  };
+
+  const handleApproveValidation = async (validationId: string, isApproved: boolean) => {
+    if (!confirm(`Tem certeza que deseja ${isApproved ? 'aprovar' : 'reprovar'} esta validação?`)) return;
+    
+    try {
+      await updateApprovalMutation.mutateAsync({ id: validationId, isApproved });
+    } catch (error) {
+      console.error('Error updating validation approval:', error);
+      alert('Erro ao atualizar status da validação');
+    }
+  };
+
+  const handleDeleteValidation = async () => {
+    if (!deletingValidation) return;
+    
+    try {
+      await deleteMutation.mutateAsync(deletingValidation.id);
+      setDeletingValidation(null);
+    } catch (error) {
+      console.error('Error deleting validation:', error);
+      alert('Erro ao excluir validação');
+    }
   };
 
   const getStatusIcon = (validation: Validation) => {
@@ -73,7 +120,7 @@ const Validations: React.FC = () => {
         description="Gerencie as validações de temperatura e umidade"
         actions={
           <button 
-            onClick={() => {/* TODO: Open validation form */}}
+            onClick={() => setShowForm(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -263,12 +310,40 @@ const Validations: React.FC = () => {
                       {validation._count?.sensorData || 0} dados • {validation._count?.reports || 0} relatórios
                     </span>
                     <div className="flex space-x-2">
-                      <button className="text-primary-600 hover:text-primary-900 font-medium">
-                        Ver Gráficos
-                      </button>
-                      <button className="text-gray-600 hover:text-gray-900 font-medium">
-                        Detalhes
-                      </button>
+                      <button 
+                          onClick={() => alert('Funcionalidade de gráficos será implementada em breve')}
+                          className="text-primary-600 hover:text-primary-900 font-medium"
+                        >
+                          Ver Gráficos
+                        </button>
+                        <button 
+                          onClick={() => setEditingValidation(validation)}
+                          className="text-gray-600 hover:text-gray-900 font-medium"
+                        >
+                          Detalhes
+                        </button>
+                        {validation.isApproved === null && (
+                          <>
+                            <button 
+                              onClick={() => handleApproveValidation(validation.id, true)}
+                              className="text-green-600 hover:text-green-900 font-medium"
+                            >
+                              Aprovar
+                            </button>
+                            <button 
+                              onClick={() => handleApproveValidation(validation.id, false)}
+                              className="text-red-600 hover:text-red-900 font-medium"
+                            >
+                              Reprovar
+                            </button>
+                          </>
+                        )}
+                        <button 
+                          onClick={() => setDeletingValidation(validation)}
+                          className="text-red-600 hover:text-red-900 font-medium"
+                        >
+                          Excluir
+                        </button>
                     </div>
                   </div>
                 </div>

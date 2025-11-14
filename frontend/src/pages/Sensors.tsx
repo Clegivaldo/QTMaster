@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Search, AlertTriangle } from 'lucide-react';
+import { Plus, Search, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
-import { useSensors, useSensorTypes } from '@/hooks/useSensors';
+import { useSensors, useSensorTypes, useCreateSensor, useUpdateSensor, useDeleteSensor } from '@/hooks/useSensors';
+import { useCreateSensorType, useUpdateSensorType, useDeleteSensorType } from '@/hooks/useSensors';
 import { SensorFilters } from '@/types/sensor';
+import SensorForm from '@/components/SensorForm';
+import SensorTypeForm from '@/components/SensorTypeForm';
 
 const Sensors: React.FC = () => {
   const [filters, setFilters] = useState<SensorFilters>({
@@ -12,15 +15,98 @@ const Sensors: React.FC = () => {
     sortOrder: 'asc',
   });
   const [activeTab, setActiveTab] = useState<'sensors' | 'types'>('sensors');
+  const [showSensorForm, setShowSensorForm] = useState(false);
+  const [showSensorTypeForm, setShowSensorTypeForm] = useState(false);
+  const [editingSensor, setEditingSensor] = useState<any>(null);
+  const [editingSensorType, setEditingSensorType] = useState<any>(null);
+  const [deletingSensorType, setDeletingSensorType] = useState<any>(null);
 
   const { data: sensorsData, isLoading: sensorsLoading, error: sensorsError } = useSensors(filters);
   const { data: sensorTypes, isLoading: typesLoading, error: typesError } = useSensorTypes();
+  
+  const createSensorMutation = useCreateSensor();
+  const updateSensorMutation = useUpdateSensor();
+  const deleteSensorMutation = useDeleteSensor();
+  const createSensorTypeMutation = useCreateSensorType();
+  const updateSensorTypeMutation = useUpdateSensorType();
+  const deleteSensorTypeMutation = useDeleteSensorType();
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const search = formData.get('search') as string;
     setFilters({ ...filters, search: search || undefined, page: 1 });
+  };
+
+  const handleCreateSensor = async (data: any) => {
+    try {
+      await createSensorMutation.mutateAsync(data);
+      setShowSensorForm(false);
+    } catch (error) {
+      console.error('Error creating sensor:', error);
+      const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
+      alert(serverMessage || 'Erro ao criar sensor');
+    }
+  };
+
+  const handleUpdateSensor = async (data: any) => {
+    if (!editingSensor) return;
+    
+    try {
+      await updateSensorMutation.mutateAsync({ id: editingSensor.id, data });
+      setEditingSensor(null);
+    } catch (error) {
+      console.error('Error updating sensor:', error);
+      const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
+      alert(serverMessage || 'Erro ao atualizar sensor');
+    }
+  };
+
+  const handleDeleteSensor = async (sensorId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este sensor?')) return;
+    
+    try {
+      await deleteSensorMutation.mutateAsync(sensorId);
+    } catch (error) {
+      console.error('Error deleting sensor:', error);
+      alert('Erro ao excluir sensor');
+    }
+  };
+
+  const handleCreateSensorType = async (data: any) => {
+    try {
+      await createSensorTypeMutation.mutateAsync(data);
+      setShowSensorTypeForm(false);
+    } catch (error) {
+      console.error('Error creating sensor type:', error);
+      const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
+      alert(serverMessage || 'Erro ao criar tipo de sensor');
+    }
+  };
+
+  const handleUpdateSensorType = async (data: any) => {
+    if (!editingSensorType) return;
+    
+    try {
+      await updateSensorTypeMutation.mutateAsync({ id: editingSensorType.id, data });
+      setEditingSensorType(null);
+    } catch (error) {
+      console.error('Error updating sensor type:', error);
+      const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
+      alert(serverMessage || 'Erro ao atualizar tipo de sensor');
+    }
+  };
+
+  const handleDeleteSensorType = async () => {
+    if (!deletingSensorType) return;
+    
+    try {
+      await deleteSensorTypeMutation.mutateAsync(deletingSensorType.id);
+      setDeletingSensorType(null);
+    } catch (error) {
+      console.error('Error deleting sensor type:', error);
+      alert('Erro ao excluir tipo de sensor');
+    }
   };
 
   return (
@@ -30,7 +116,7 @@ const Sensors: React.FC = () => {
         description="Gerencie os sensores e tipos de sensores"
         actions={
           <button 
-            onClick={() => {/* TODO: Open sensor form */}}
+            onClick={() => setShowSensorForm(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -134,17 +220,47 @@ const Sensors: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="text-center py-12">
-                <div className="text-gray-400 text-lg mb-4">
-                  Interface de sensores em desenvolvimento
-                </div>
-                <p className="text-gray-600">
-                  A tabela de sensores será implementada em breve.
-                </p>
-                <div className="mt-4 text-sm text-gray-500">
-                  <p>Sensores encontrados: {sensorsData?.sensors.length || 0}</p>
-                  <p>Total: {sensorsData?.pagination.total || 0}</p>
-                </div>
+              <div className="space-y-4">
+                {sensorsData?.sensors.map((sensor) => (
+                  <div key={sensor.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <div className="h-6 w-6 text-blue-600 font-bold text-xs">{sensor.type?.name?.charAt(0) || 'S'}</div>
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {sensor.serialNumber}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {sensor.model} • {sensor.type?.name}
+                          </p>
+                          {sensor.calibrationDate && (
+                            <p className="text-xs text-gray-400">
+                              Calibrado em: {new Date(sensor.calibrationDate).toLocaleDateString('pt-BR')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setEditingSensor(sensor)}
+                          className="text-primary-600 hover:text-primary-900 p-2 rounded hover:bg-primary-50"
+                          title="Editar sensor"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSensor(sensor.id)}
+                          className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50"
+                          title="Excluir sensor"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -203,10 +319,14 @@ const Sensors: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <button className="text-primary-600 hover:text-primary-900 text-sm">
+                        <button
+                          onClick={() => setEditingSensorType(type)}
+                          className="text-primary-600 hover:text-primary-900 text-sm"
+                        >
                           Editar
                         </button>
                         <button 
+                          onClick={() => setDeletingSensorType(type)}
                           className="text-red-600 hover:text-red-900 text-sm"
                           disabled={(type._count?.sensors || 0) > 0}
                         >
@@ -228,6 +348,106 @@ const Sensors: React.FC = () => {
             )}
           </div>
         </>
+      )}
+
+      {/* Create Sensor Form Modal */}
+      {showSensorForm && (
+        <SensorForm
+          sensorTypes={sensorTypes || []}
+          onSubmit={handleCreateSensor}
+          onCancel={() => setShowSensorForm(false)}
+          onCreateType={() => {
+            setShowSensorForm(false);
+            setShowSensorTypeForm(true);
+          }}
+          isLoading={createSensorMutation.isLoading}
+        />
+      )}
+
+      {/* Edit Sensor Form Modal */}
+      {editingSensor && (
+        <SensorForm
+          sensor={editingSensor}
+          sensorTypes={sensorTypes || []}
+          onSubmit={handleUpdateSensor}
+          onCancel={() => setEditingSensor(null)}
+          onCreateType={() => {
+            setEditingSensor(null);
+            setShowSensorTypeForm(true);
+          }}
+          isLoading={updateSensorMutation.isLoading}
+        />
+      )}
+
+      {/* Create Sensor Type Form Modal */}
+      {showSensorTypeForm && (
+        <SensorTypeForm
+          onSubmit={handleCreateSensorType}
+          onCancel={() => setShowSensorTypeForm(false)}
+          isLoading={createSensorTypeMutation.isLoading}
+        />
+      )}
+
+      {/* Edit Sensor Type Form Modal */}
+      {editingSensorType && (
+        <SensorTypeForm
+          sensorType={editingSensorType}
+          onSubmit={handleUpdateSensorType}
+          onCancel={() => setEditingSensorType(null)}
+          isLoading={updateSensorTypeMutation.isLoading}
+        />
+      )}
+
+      {/* Delete Sensor Type Confirmation Modal */}
+      {deletingSensorType && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Excluir Tipo de Sensor
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Tem certeza que deseja excluir o tipo de sensor <strong>{deletingSensorType.name}</strong>? 
+                        Esta ação não pode ser desfeita.
+                      </p>
+                      {(deletingSensorType._count?.sensors || 0) > 0 && (
+                        <p className="mt-2 text-sm text-red-600">
+                          Atenção: Este tipo de sensor possui {deletingSensorType._count.sensors} sensores associados.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleDeleteSensorType}
+                  disabled={deleteSensorTypeMutation.isLoading}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleteSensorTypeMutation.isLoading ? 'Excluindo...' : 'Excluir'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeletingSensorType(null)}
+                  disabled={deleteSensorTypeMutation.isLoading}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

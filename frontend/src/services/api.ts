@@ -17,6 +17,10 @@ class ApiService {
       },
     });
 
+    // Ensure cookies (httpOnly session cookies) are sent on cross-site requests
+    // when using a proxy or same-origin requests via the frontend server.
+    this.api.defaults.withCredentials = true;
+
     this.setupInterceptors();
   }
 

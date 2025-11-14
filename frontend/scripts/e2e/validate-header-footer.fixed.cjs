@@ -15,7 +15,7 @@ const puppeteer = require('puppeteer');
     const refreshToken = process.env.TEST_REFRESH_TOKEN || accessToken;
 
     // If no TEST_ACCESS_TOKEN but TEST_EMAIL/TEST_PASSWORD are provided, try direct API login to obtain a token
-    const apiBase = process.env.API_BASE || 'http://localhost:5000/api';
+    const apiBase = process.env.API_BASE || 'http://localhost:3001/api';
     if (!accessToken && process.env.TEST_EMAIL && process.env.TEST_PASSWORD) {
       try {
         console.log('Attempting API login to', apiBase + '/auth/login');

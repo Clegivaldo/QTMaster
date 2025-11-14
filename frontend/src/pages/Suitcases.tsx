@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, Search, Package, AlertTriangle, Edit, Trash2, Calendar } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
-import { useSuitcases, useDeleteSuitcase } from '@/hooks/useSuitcases';
+import { useSuitcases, useDeleteSuitcase, useCreateSuitcase, useUpdateSuitcase } from '@/hooks/useSuitcases';
 import { Suitcase, SuitcaseFilters } from '@/types/suitcase';
+import SuitcaseForm from '@/components/SuitcaseForm';
+import { useSensors } from '@/hooks/useSensors';
 
 const Suitcases: React.FC = () => {
   const [filters, setFilters] = useState<SuitcaseFilters>({
@@ -12,9 +14,14 @@ const Suitcases: React.FC = () => {
     sortOrder: 'asc',
   });
   const [deletingSuitcase, setDeletingSuitcase] = useState<Suitcase | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingSuitcase, setEditingSuitcase] = useState<Suitcase | null>(null);
 
   const { data, isLoading, error } = useSuitcases(filters);
   const deleteMutation = useDeleteSuitcase();
+  const createMutation = useCreateSuitcase();
+  const updateMutation = useUpdateSuitcase();
+  const { data: sensorsData } = useSensors();
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,6 +41,30 @@ const Suitcases: React.FC = () => {
     }
   };
 
+  const handleCreateSuitcase = async (data: any) => {
+    try {
+      await createMutation.mutateAsync(data);
+      setShowForm(false);
+    } catch (error) {
+      console.error('Error creating suitcase:', error);
+      const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
+      alert(serverMessage || 'Erro ao criar maleta');
+    }
+  };
+
+  const handleUpdateSuitcase = async (data: any) => {
+    if (!editingSuitcase) return;
+    
+    try {
+      await updateMutation.mutateAsync({ id: editingSuitcase.id, data });
+      setEditingSuitcase(null);
+    } catch (error) {
+      console.error('Error updating suitcase:', error);
+      const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
+      alert(serverMessage || 'Erro ao atualizar maleta');
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
@@ -45,8 +76,8 @@ const Suitcases: React.FC = () => {
         description="Gerencie as maletas de sensores"
         actions={
           <button 
-            onClick={() => {/* TODO: Open suitcase form */}}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            onClick={() => setShowForm(true)}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <Plus className="h-4 w-4 mr-2" />
             Nova Maleta
@@ -131,7 +162,7 @@ const Suitcases: React.FC = () => {
                     </div>
                     <div className="flex space-x-1">
                       <button
-                        onClick={() => {/* TODO: Edit suitcase */}}
+                        onClick={() => setEditingSuitcase(suitcase)}
                         className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50"
                         title="Editar maleta"
                       >
@@ -189,7 +220,10 @@ const Suitcases: React.FC = () => {
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       {suitcase._count?.validations || 0} validações
                     </span>
-                    <button className="text-primary-600 hover:text-primary-900 font-medium">
+                    <button 
+                      onClick={() => setEditingSuitcase(suitcase)}
+                      className="text-primary-600 hover:text-primary-900 font-medium"
+                    >
                       Ver detalhes
                     </button>
                   </div>
@@ -274,6 +308,27 @@ const Suitcases: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Create Form Modal */}
+      {showForm && (
+        <SuitcaseForm
+          onSubmit={handleCreateSuitcase}
+          onCancel={() => setShowForm(false)}
+          isLoading={createMutation.isLoading}
+          availableSensors={sensorsData?.sensors || []}
+        />
+      )}
+
+      {/* Edit Form Modal */}
+      {editingSuitcase && (
+        <SuitcaseForm
+          suitcase={editingSuitcase}
+          onSubmit={handleUpdateSuitcase}
+          onCancel={() => setEditingSuitcase(null)}
+          isLoading={updateMutation.isLoading}
+          availableSensors={sensorsData?.sensors || []}
+        />
       )}
     </>
   );

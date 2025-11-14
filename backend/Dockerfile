@@ -65,12 +65,13 @@ RUN adduser -S nodejs -u 1001
 RUN chown -R nodejs:nodejs /app
 USER nodejs
 
-# Expose port
+# Expose port (documented default); the container reads $PORT at runtime
+ENV PORT=5000
 EXPOSE 5000
 
-# Health check
+# Health check uses the PORT env var so it can follow configured port
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD node -e "const p=process.env.PORT||5000; require('http').get(`http://localhost:${p}/api/health`, (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start the application
 CMD ["npm", "start"]

@@ -32,6 +32,39 @@ const LoginForm: React.FC = () => {
     setValue('password', 'admin123');
   };
 
+  const testBackendConnection = async () => {
+    try {
+      setError('');
+      console.log('Testando conexão com backend...');
+      
+      const apiBase = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiBase}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'admin@sistema.com',
+          password: 'admin123'
+        }),
+        credentials: 'include'
+      });
+
+      console.log('Status da resposta:', response.status);
+      const data = await response.json();
+      console.log('Dados da resposta:', data);
+      
+      if (response.ok) {
+        alert('✅ Conexão com backend bem-sucedida!');
+      } else {
+        setError(`Erro do backend: ${JSON.stringify(data)}`);
+      }
+    } catch (err: any) {
+      console.error('Erro de conexão:', err);
+      setError(`Erro de conexão: ${err.message}`);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
@@ -161,6 +194,16 @@ const LoginForm: React.FC = () => {
                 <div className="flex items-center justify-center">
                   <User className="h-5 w-5 mr-2" />
                   Usar Credenciais Demo
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={testBackendConnection}
+                className="w-full bg-green-100 text-green-700 py-3 px-4 rounded-xl font-medium hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 border border-green-300"
+              >
+                <div className="flex items-center justify-center">
+                  🧪 Testar Conexão Backend
                 </div>
               </button>
             </div>

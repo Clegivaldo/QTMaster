@@ -44,13 +44,14 @@ services:
       dockerfile: Dockerfile
     container_name: laudo-backend
     restart: unless-stopped
+    env_file:
+      - ./backend/.env
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://laudo_user:laudo_password@postgres:5432/laudo_db
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
       JWT_EXPIRES_IN: 8h
-      PORT: 5000
       FRONTEND_URL: http://localhost:3000
       # FastReport System Environment Variables
       TEMPLATE_EDITOR_ENABLED: true
@@ -59,7 +60,7 @@ services:
       REPORT_GENERATION_TIMEOUT: 30000
       MAX_CONCURRENT_REPORTS: 5
     ports:
-      - "5000:5000"
+      - "3001:3001"
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/templates:/app/templates
@@ -78,7 +79,7 @@ services:
     networks:
       - laudo-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -91,8 +92,8 @@ services:
     container_name: laudo-frontend
     restart: unless-stopped
     environment:
-      REACT_APP_API_URL: http://localhost:5000/api
-      REACT_APP_TEMPLATE_EDITOR_URL: http://localhost:5000/api/template-editor
+      REACT_APP_API_URL: http://localhost:3001/api
+      REACT_APP_TEMPLATE_EDITOR_URL: http://localhost:3001/api/template-editor
       REACT_APP_ENVIRONMENT: development
     ports:
       - "3000:80"
