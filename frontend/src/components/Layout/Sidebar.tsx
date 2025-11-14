@@ -11,7 +11,8 @@ import {
   Settings,
   X,
   ChevronRight,
-  Layout
+  Layout,
+  Wrench
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppVersion } from '@/hooks/useAppVersion';
@@ -35,6 +36,11 @@ const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Clientes', href: '/clients', icon: Users },
   { name: 'Sensores', href: '/sensors', icon: Thermometer },
+  { name: 'Tipos de Sensor', href: '/sensor-types', icon: Thermometer },
+  { name: 'Equipamentos', href: '/equipment-types', icon: Wrench },
+  { name: 'Marcas', href: '/brands', icon: Wrench },
+  { name: 'Modelos', href: '/models', icon: Wrench },
+  { name: 'Equip. Clientes', href: '/client-equipments', icon: Wrench },
   { name: 'Maletas', href: '/suitcases', icon: Package },
   { name: 'Importar Dados', href: '/import', icon: Upload },
   { name: 'Validações', href: '/validations', icon: BarChart3 },

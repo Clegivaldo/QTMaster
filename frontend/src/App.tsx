@@ -13,6 +13,11 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
 const Clients = React.lazy(() => import('@/pages/Clients'));
 const Sensors = React.lazy(() => import('@/pages/Sensors'));
+const SensorTypes = React.lazy(() => import('@/pages/SensorTypes'));
+const EquipmentTypes = React.lazy(() => import('@/pages/EquipmentTypes'));
+const Brands = React.lazy(() => import('@/pages/Brands'));
+const Models = React.lazy(() => import('@/pages/Models'));
+const ClientEquipments = React.lazy(() => import('@/pages/ClientEquipments'));
 const Suitcases = React.lazy(() => import('@/pages/Suitcases'));
 const ImportData = React.lazy(() => import('@/pages/ImportData'));
 const Validations = React.lazy(() => import('@/pages/Validations'));
@@ -90,6 +95,11 @@ const AppRoutes: React.FC = () => {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/clients" element={<Clients />} />
                   <Route path="/sensors" element={<Sensors />} />
+                  <Route path="/sensor-types" element={<SensorTypes />} />
+                  <Route path="/equipment-types" element={<EquipmentTypes />} />
+                  <Route path="/brands" element={<Brands />} />
+                  <Route path="/models" element={<Models />} />
+                  <Route path="/client-equipments" element={<ClientEquipments />} />
                   <Route path="/suitcases" element={<Suitcases />} />
                   <Route path="/import" element={<ImportData />} />
                   <Route path="/validations" element={<Validations />} />
