@@ -6,6 +6,13 @@ import { logger } from '../utils/logger';
 import { redisService } from './redisService';
 import { templateEngineService } from './templateEngineService';
 
+interface RetryOptions {
+  maxRetries: number;
+  initialDelay: number;
+  maxDelay: number;
+  backoffMultiplier: number;
+}
+
 interface PDFGenerationOptions {
   format?: 'A4' | 'A3' | 'Letter' | 'Legal';
   orientation?: 'portrait' | 'landscape';
@@ -41,6 +48,12 @@ export class PDFGenerationService {
   private browser: Browser | null = null;
   private templateCache = new Map<string, handlebars.TemplateDelegate>();
   private readonly MAX_CACHE_SIZE = 50;
+  private readonly RETRY_OPTIONS: RetryOptions = {
+    maxRetries: 3,
+    initialDelay: 1000,
+    maxDelay: 10000,
+    backoffMultiplier: 2,
+  };
   private readonly DEFAULT_OPTIONS: PDFGenerationOptions = {
     format: 'A4',
     orientation: 'portrait',
@@ -98,12 +111,29 @@ export class PDFGenerationService {
     data: any,
     options: Partial<PDFGenerationOptions> = {}
   ): Promise<Buffer> {
+    // Validar dados antes da renderização
+    this.validateRenderData(data);
+
+    // Tentar gerar PDF com retry logic
+    return this.retryOperation(
+      async () => this.generatePDFInternal(templateContent, data, options),
+      'generatePDF'
+    );
+  }
+
+  private async generatePDFInternal(
+    templateContent: string,
+    data: any,
+    options: Partial<PDFGenerationOptions> = {}
+  ): Promise<Buffer> {
     if (!this.browser) {
       await this.initialize();
     }
 
     const startTime = Date.now();
     const finalOptions = { ...this.DEFAULT_OPTIONS, ...options };
+
+    let page = null;
 
     try {
       // Renderizar template HTML
@@ -113,53 +143,53 @@ export class PDFGenerationService {
       const styledHTML = await this.addStyles(html, finalOptions);
 
       // Criar nova página
-      const page = await this.browser!.newPage();
+      page = await this.browser!.newPage();
 
-      try {
-        // Configurar viewport
-        await page.setViewport({
-          width: 1200,
-          height: 800,
-          deviceScaleFactor: 1,
-        });
+      // Configurar viewport
+      await page.setViewport({
+        width: 1200,
+        height: 800,
+        deviceScaleFactor: 1,
+      });
 
-        // Definir conteúdo da página
-        await page.setContent(styledHTML, {
-          waitUntil: 'networkidle0',
-          timeout: 30000,
-        });
+      // Definir conteúdo da página
+      await page.setContent(styledHTML, {
+        waitUntil: 'networkidle0',
+        timeout: 30000,
+      });
 
-        // Aguardar carregamento de fontes e imagens
-        await page.evaluateHandle('document.fonts.ready');
+      // Aguardar carregamento de fontes e imagens
+      await page.evaluateHandle('document.fonts.ready');
 
-        // Gerar PDF
-        const pdfBuffer = await page.pdf({
-          format: finalOptions.format ?? 'A4',
-          landscape: finalOptions.orientation === 'landscape',
-          margin: finalOptions.margin ?? { top: '20px', bottom: '20px', left: '20px', right: '20px' },
-          printBackground: finalOptions.printBackground ?? true,
-          displayHeaderFooter: finalOptions.displayHeaderFooter ?? false,
-          headerTemplate: finalOptions.header?.template || '',
-          footerTemplate: finalOptions.footer?.template || '',
-          preferCSSPageSize: finalOptions.preferCSSPageSize ?? false,
-          scale: finalOptions.scale ?? 1,
-        });
+      // Gerar PDF
+      const pdfBuffer = await page.pdf({
+        format: finalOptions.format ?? 'A4',
+        landscape: finalOptions.orientation === 'landscape',
+        margin: finalOptions.margin ?? { top: '20px', bottom: '20px', left: '20px', right: '20px' },
+        printBackground: finalOptions.printBackground ?? true,
+        displayHeaderFooter: finalOptions.displayHeaderFooter ?? false,
+        headerTemplate: finalOptions.header?.template || '',
+        footerTemplate: finalOptions.footer?.template || '',
+        preferCSSPageSize: finalOptions.preferCSSPageSize ?? false,
+        scale: finalOptions.scale ?? 1,
+      });
 
-        const processingTime = Date.now() - startTime;
-        logger.info(`PDF gerado com sucesso em ${processingTime}ms`, {
-          size: pdfBuffer.length,
-          format: finalOptions.format,
-          orientation: finalOptions.orientation,
-        });
+      const processingTime = Date.now() - startTime;
+      logger.info(`PDF gerado com sucesso em ${processingTime}ms`, {
+        size: pdfBuffer.length,
+        format: finalOptions.format,
+        orientation: finalOptions.orientation,
+      });
 
-        return Buffer.from(pdfBuffer);
-      } finally {
-        await page.close();
-      }
+      return Buffer.from(pdfBuffer);
     } catch (error) {
       logger.error('Erro ao gerar PDF', error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       throw new Error(`Falha ao gerar PDF: ${errorMsg}`);
+    } finally {
+      if (page) {
+        await page.close().catch((err) => logger.warn('Erro ao fechar página', err));
+      }
     }
   }
 
@@ -582,6 +612,96 @@ export class PDFGenerationService {
       if (!text) return '';
       return text.toString().charAt(0).toUpperCase() + text.toString().slice(1).toLowerCase();
     });
+  }
+
+  private async retryOperation<T>(
+    operation: () => Promise<T>,
+    operationName: string
+  ): Promise<T> {
+    let lastError: Error | null = null;
+    let delay = this.RETRY_OPTIONS.initialDelay;
+
+    for (let attempt = 1; attempt <= this.RETRY_OPTIONS.maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        if (attempt === this.RETRY_OPTIONS.maxRetries) {
+          logger.error(`${operationName} falhou após ${attempt} tentativas`, {
+            error: lastError.message,
+            attempts: attempt,
+          });
+          break;
+        }
+
+        logger.warn(`${operationName} falhou (tentativa ${attempt}/${this.RETRY_OPTIONS.maxRetries})`, {
+          error: lastError.message,
+          nextRetryIn: delay,
+        });
+
+        // Aguardar antes de tentar novamente
+        await new Promise((resolve) => setTimeout(resolve, delay));
+
+        // Aumentar delay para próxima tentativa (exponential backoff)
+        delay = Math.min(
+          delay * this.RETRY_OPTIONS.backoffMultiplier,
+          this.RETRY_OPTIONS.maxDelay
+        );
+
+        // Verificar se browser ainda está ativo, caso contrário reinicializar
+        if (this.browser && !this.browser.isConnected()) {
+          logger.warn('Browser desconectado, reinicializando...');
+          await this.close();
+          await this.initialize();
+        }
+      }
+    }
+
+    throw lastError || new Error(`${operationName} falhou após múltiplas tentativas`);
+  }
+
+  private validateRenderData(data: any): void {
+    if (data === null || data === undefined) {
+      throw new Error('Dados de renderização não podem ser nulos');
+    }
+
+    // Validar estrutura básica de dados
+    if (typeof data === 'object') {
+      // Verificar se há propriedades circulares
+      try {
+        JSON.stringify(data);
+      } catch (error) {
+        throw new Error('Dados contêm referências circulares');
+      }
+
+      // Validar tipos de dados críticos
+      if ('validation' in data && data.validation) {
+        if (!data.validation.id) {
+          throw new Error('Validação deve ter um ID');
+        }
+      }
+
+      if ('client' in data && data.client) {
+        if (!data.client.name && !data.client.companyName) {
+          logger.warn('Cliente sem nome ou razão social');
+        }
+      }
+
+      if ('sensors' in data && data.sensors) {
+        if (!Array.isArray(data.sensors)) {
+          throw new Error('Sensores devem ser um array');
+        }
+
+        data.sensors.forEach((sensor: any, index: number) => {
+          if (!sensor.id) {
+            throw new Error(`Sensor na posição ${index} não tem ID`);
+          }
+        });
+      }
+    }
+
+    logger.debug('Dados de renderização validados com sucesso');
   }
 
   private getDefaultReportOptions(): PDFGenerationOptions {

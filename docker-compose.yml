@@ -64,8 +64,12 @@ services:
       - ./backend/uploads:/app/uploads
       - ./backend/templates:/app/templates
       - ./backend/public:/app/public
+      - ./backend/signatures:/app/signatures
+      - ./backend/certificates:/app/certificates
       - reports_data:/app/uploads/reports
       - gallery_data:/app/public/images/gallery
+      - signatures_data:/app/signatures
+      - certificates_data:/app/certificates
     depends_on:
       postgres:
         condition: service_healthy
@@ -105,6 +109,10 @@ volumes:
   reports_data:
     driver: local
   gallery_data:
+    driver: local
+  signatures_data:
+    driver: local
+  certificates_data:
     driver: local
 
 networks:

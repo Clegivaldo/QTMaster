@@ -16,8 +16,10 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build the application
-RUN npm run build
+# Build the application (compile TypeScript only for backend)
+# The project `build` script runs `tsc && vite build` which is intended
+# for the frontend; in the backend image we only need to compile TypeScript.
+RUN npm run build:backend
 
 # Production stage
 FROM node:18-alpine AS production
@@ -53,7 +55,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 
 # Create necessary directories
-RUN mkdir -p uploads uploads/reports templates public/images/gallery
+RUN mkdir -p uploads uploads/reports templates public/images/gallery signatures certificates
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs

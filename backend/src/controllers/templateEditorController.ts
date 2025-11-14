@@ -66,7 +66,7 @@ export class TemplateEditorController {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor Visual de Templates - FastReport</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/node_modules/chart.js/dist/chart.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.19/interact.min.js"></script>
 
     <style>

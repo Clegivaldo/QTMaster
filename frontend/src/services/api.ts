@@ -6,9 +6,11 @@ class ApiService {
   public baseURL: string;
 
   constructor() {
-    this.baseURL = 'http://localhost:3001';
+    // Use a relative API path so the frontend can be served from any host
+    // and the reverse proxy (nginx) will forward `/api` requests to the backend.
+    this.baseURL = '';
     this.api = axios.create({
-      baseURL: `${this.baseURL}/api`,
+      baseURL: `/api`,
       timeout: 30000, // Aumentar timeout para 30 segundos
       headers: {
         'Content-Type': 'application/json',

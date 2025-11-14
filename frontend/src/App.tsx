@@ -22,6 +22,8 @@ const EditorLayout = React.lazy(() => import('@/pages/EditorLayout'));
 const Profile = React.lazy(() => import('@/pages/Profile'));
 const Settings = React.lazy(() => import('@/pages/Settings'));
 const Unauthorized = React.lazy(() => import('@/pages/Unauthorized'));
+const SharedReport = React.lazy(() => import('@/pages/SharedReport'));
+const ReportDetails = React.lazy(() => import('@/pages/ReportDetails'));
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -43,6 +45,16 @@ const AppRoutes: React.FC = () => {
       <Route 
         path="/unauthorized" 
         element={<Unauthorized />} 
+      />
+      
+      {/* Public Routes */}
+      <Route 
+        path="/shared/:token" 
+        element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <SharedReport />
+          </Suspense>
+        } 
       />
       
       {/* Editor Layout - Full screen, no sidebar/header */}
@@ -82,6 +94,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="/import" element={<ImportData />} />
                   <Route path="/validations" element={<Validations />} />
                   <Route path="/reports" element={<Reports />} />
+                  <Route path="/reports/:id" element={<ReportDetails />} />
                   <Route path="/templates" element={<Templates />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route 

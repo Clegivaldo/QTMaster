@@ -30,14 +30,16 @@ interface RenderContext {
 }
 
 export class TemplateEngineService {
-  private templateCache = new Map<string, handlebars.TemplateDelegate>();
+  private templateCache = new Map<string, { template: handlebars.TemplateDelegate; timestamp: number; hits: number }>();
   private variableCache = new Map<string, TemplateVariable[]>();
-  private readonly CACHE_TTL = 3600; // 1 hora
+  private readonly CACHE_TTL = 3600; // 1 hora em segundos
   private readonly MAX_CACHE_SIZE = 100;
+  private cacheStats = { hits: 0, misses: 0, evictions: 0 };
 
   constructor(private options: TemplateEngineOptions = {}) {
     this.setupDefaultHelpers();
     this.setupCustomHelpers();
+    this.startCacheCleanupJob();
   }
 
   async renderTemplate(
@@ -281,8 +283,30 @@ export class TemplateEngineService {
     
     // Verificar cache
     if (options.cache && this.templateCache.has(cacheKey)) {
-      const compiledTemplate = this.templateCache.get(cacheKey)!;
-      return compiledTemplate(context);
+      const cached = this.templateCache.get(cacheKey)!;
+      
+      // Verificar se o cache expirou
+      const now = Date.now();
+      if (now - cached.timestamp > this.CACHE_TTL * 1000) {
+        // Cache expirado, remover
+        this.templateCache.delete(cacheKey);
+        this.cacheStats.evictions++;
+      } else {
+        // Cache válido, incrementar hits e retornar
+        cached.hits++;
+        cached.timestamp = now; // Atualizar timestamp (LRU)
+        this.cacheStats.hits++;
+        logger.debug(`Template cache hit: ${cacheKey.slice(0, 30)}...`, {
+          hits: cached.hits,
+          age: Math.round((now - cached.timestamp) / 1000),
+        });
+        return cached.template(context);
+      }
+    }
+
+    // Cache miss
+    if (options.cache) {
+      this.cacheStats.misses++;
     }
 
     // Compilar template
@@ -301,14 +325,30 @@ export class TemplateEngineService {
     // Armazenar no cache se habilitado
     if (options.cache) {
       if (this.templateCache.size >= this.MAX_CACHE_SIZE) {
-        // Limpar cache antigo (FIFO)
-        const firstKey = this.templateCache.keys().next().value;
-        if (firstKey !== undefined) {
-          this.templateCache.delete(firstKey);
+        // Implementar LRU: remover o item menos recentemente usado
+        let oldestKey: string | null = null;
+        let oldestTimestamp = Infinity;
+        
+        for (const [key, value] of this.templateCache.entries()) {
+          if (value.timestamp < oldestTimestamp) {
+            oldestTimestamp = value.timestamp;
+            oldestKey = key;
+          }
+        }
+        
+        if (oldestKey) {
+          this.templateCache.delete(oldestKey);
+          this.cacheStats.evictions++;
+          logger.debug(`Template cache eviction (LRU): ${oldestKey.slice(0, 30)}...`);
         }
       }
       
-      this.templateCache.set(cacheKey, compiledTemplate);
+      this.templateCache.set(cacheKey, {
+        template: compiledTemplate,
+        timestamp: Date.now(),
+        hits: 0,
+      });
+      logger.debug(`Template compiled and cached: ${cacheKey.slice(0, 30)}...`);
     }
 
     // Renderizar
@@ -602,9 +642,61 @@ export class TemplateEngineService {
     }
   }
 
+  private startCacheCleanupJob(): void {
+    // Limpar cache expirado a cada 10 minutos
+    setInterval(() => {
+      this.cleanExpiredCache();
+    }, 10 * 60 * 1000);
+  }
+
+  private cleanExpiredCache(): void {
+    const now = Date.now();
+    let expiredCount = 0;
+
+    for (const [key, value] of this.templateCache.entries()) {
+      if (now - value.timestamp > this.CACHE_TTL * 1000) {
+        this.templateCache.delete(key);
+        expiredCount++;
+      }
+    }
+
+    if (expiredCount > 0) {
+      this.cacheStats.evictions += expiredCount;
+      logger.info(`Limpeza automática de cache: ${expiredCount} templates expirados removidos`);
+    }
+  }
+
+  getCacheStats(): {
+    size: number;
+    maxSize: number;
+    hits: number;
+    misses: number;
+    evictions: number;
+    hitRate: string;
+  } {
+    const total = this.cacheStats.hits + this.cacheStats.misses;
+    const hitRate = total > 0 
+      ? `${((this.cacheStats.hits / total) * 100).toFixed(2)}%` 
+      : '0%';
+
+    return {
+      size: this.templateCache.size,
+      maxSize: this.MAX_CACHE_SIZE,
+      hits: this.cacheStats.hits,
+      misses: this.cacheStats.misses,
+      evictions: this.cacheStats.evictions,
+      hitRate,
+    };
+  }
+
   async clearCache(): Promise<void> {
+    const previousSize = this.templateCache.size;
+    
     this.templateCache.clear();
     this.variableCache.clear();
+    this.cacheStats = { hits: 0, misses: 0, evictions: 0 };
+    
+    logger.info(`Cache limpo: ${previousSize} templates removidos`);
     
     // Limpar cache do Redis (se o método existir)
     // TODO: Implementar deletePattern no redisService

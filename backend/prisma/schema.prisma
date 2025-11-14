@@ -169,20 +169,25 @@ model ReportTemplate {
 }
 
 model Report {
-  id           String         @id @default(cuid())
-  validationId String
-  templateId   String
-  userId       String
-  clientId     String
-  name         String
-  status       ReportStatus   @default(DRAFT)
-  pdfPath      String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  client       Client         @relation(fields: [clientId], references: [id])
-  template     ReportTemplate @relation(fields: [templateId], references: [id])
-  user         User           @relation(fields: [userId], references: [id])
-  validation   Validation     @relation(fields: [validationId], references: [id])
+  id                String               @id @default(cuid())
+  validationId      String
+  templateId        String
+  userId            String
+  clientId          String
+  name              String
+  status            ReportStatus         @default(DRAFT)
+  pdfPath           String?
+  digitalSignature  String?
+  signedAt          DateTime?
+  signedBy          String?
+  certificateInfo   Json?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  client            Client               @relation(fields: [clientId], references: [id])
+  template          ReportTemplate       @relation(fields: [templateId], references: [id])
+  user              User                 @relation(fields: [userId], references: [id])
+  validation        Validation           @relation(fields: [validationId], references: [id])
+  sharedLinks       ReportSharedLink[]
 
   @@index([clientId])
   @@index([userId])
@@ -192,26 +197,66 @@ model Report {
   @@index([createdAt])
   @@index([clientId, status])
   @@index([userId, createdAt])
+  @@index([signedAt])
   @@map("reports")
 }
 
+model ReportSharedLink {
+  id          String    @id @default(cuid())
+  reportId    String
+  token       String    @unique
+  expiresAt   DateTime
+  maxAccess   Int?
+  accessCount Int       @default(0)
+  password    String?
+  allowedIPs  String[]
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  lastAccess  DateTime?
+  isActive    Boolean   @default(true)
+  report      Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  accesses    SharedLinkAccess[]
+
+  @@index([token])
+  @@index([reportId])
+  @@index([expiresAt])
+  @@index([isActive])
+  @@index([createdBy])
+  @@map("report_shared_links")
+}
+
+model SharedLinkAccess {
+  id        String           @id @default(cuid())
+  linkId    String
+  ip        String
+  userAgent String?
+  timestamp DateTime         @default(now())
+  success   Boolean
+  link      ReportSharedLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId])
+  @@index([timestamp])
+  @@map("shared_link_accesses")
+}
+
 model EditorTemplate {
-  id           String   @id @default(cuid())
+  id           String                  @id @default(cuid())
   name         String
   description  String?
-  category     String   @default("default")
+  category     String                  @default("default")
   elements     Json
   globalStyles Json
   pages        Json?
   pageSettings Json?
   tags         String[]
   thumbnail    String?
-  isPublic     Boolean  @default(false)
+  isPublic     Boolean                 @default(false)
   createdBy    String
-  version      Int      @default(1)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  revision     Int      @default(0)
+  version      Int                     @default(1)
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  revision     Int                     @default(0)
+  versions     EditorTemplateVersion[]
 
   @@index([createdBy])
   @@index([category])
@@ -221,6 +266,29 @@ model EditorTemplate {
   @@index([createdBy, isPublic])
   @@index([category, isPublic])
   @@map("editor_templates")
+}
+
+model EditorTemplateVersion {
+  id           String         @id @default(cuid())
+  templateId   String
+  version      Int
+  name         String
+  description  String?
+  elements     Json
+  globalStyles Json
+  pages        Json?
+  pageSettings Json?
+  changeLog    String?
+  createdBy    String
+  createdAt    DateTime       @default(now())
+  template     EditorTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, version])
+  @@index([templateId])
+  @@index([version])
+  @@index([createdAt])
+  @@index([templateId, version])
+  @@map("editor_template_versions")
 }
 
 model AuditLog {

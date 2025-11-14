@@ -13,7 +13,9 @@ import monitoringRoutes from './monitoring';
 
 import templateEditorRoutes from './templateEditor';
 import editorTemplatesRoutes from './editorTemplates';
+import templateVersionsRoutes from './templateVersions';
 import uploadsRoutes from './uploads';
+import reportSecurityRoutes from './reportSecurity';
 import { EditorTemplateController } from '../controllers/editorTemplateController.js';
 
 const router = Router();
@@ -36,6 +38,8 @@ router.use('/template-editor', templateEditorRoutes);
 const editorTemplateController = new EditorTemplateController();
 router.post('/editor-templates/:id/export-public', (req, res) => editorTemplateController.exportTemplatePublic(req, res));
 router.use('/editor-templates', editorTemplatesRoutes);
+router.use('/templates', templateVersionsRoutes);
+router.use('/reports', reportSecurityRoutes);
 router.use('/uploads', uploadsRoutes);
 
 // Legacy health check route (kept for backward compatibility)
