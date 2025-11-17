@@ -112,7 +112,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                         id="clientId"
                         value={formData.clientId}
                         onChange={(e) => handleChange('clientId', e.target.value)}
-                        className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
+                        className={`mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
                           errors.clientId ? 'border-red-300' : ''
                         }`}
                         disabled={isLoading}
@@ -137,7 +137,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                         id="equipmentId"
                         value={formData.equipmentId}
                         onChange={(e) => handleChange('equipmentId', e.target.value)}
-                        className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
+                        className={`mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
                           errors.equipmentId ? 'border-red-300' : ''
                         }`}
                         disabled={isLoading}
@@ -163,7 +163,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                         id="certificateNumber"
                         value={formData.certificateNumber}
                         onChange={(e) => handleChange('certificateNumber', e.target.value)}
-                        className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
+                        className={`mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
                           errors.certificateNumber ? 'border-red-300' : ''
                         }`}
                         placeholder="Ex: CERT-2024-001"
@@ -183,7 +183,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                         id="name"
                         value={formData.name}
                         onChange={(e) => handleChange('name', e.target.value)}
-                        className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
+                        className={`mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
                           errors.name ? 'border-red-300' : ''
                         }`}
                         placeholder="Ex: Validação Câmara Fria 01"
@@ -203,7 +203,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                         rows={3}
                         value={formData.description}
                         onChange={(e) => handleChange('description', e.target.value)}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                        className="mt-1 block w-full h-24 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
                         placeholder="Descreva os objetivos desta validação..."
                         disabled={isLoading}
                       />

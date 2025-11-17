@@ -171,22 +171,31 @@ const ClientEquipments: React.FC = () => {
               <form onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
-                const data = {
-                  clientId: formData.get('clientId'),
-                  equipmentTypeId: formData.get('equipmentTypeId'),
-                  brandId: formData.get('brandId'),
-                  modelId: formData.get('modelId'),
-                  serialNumber: formData.get('serialNumber'),
-                  assetNumber: formData.get('assetNumber'),
-                  tag: formData.get('tag'),
-                  acceptanceMinTemp: formData.get('acceptanceMinTemp'),
-                  acceptanceMaxTemp: formData.get('acceptanceMaxTemp'),
-                  acceptanceMinHum: formData.get('acceptanceMinHum'),
-                  acceptanceMaxHum: formData.get('acceptanceMaxHum'),
-                  acceptanceNotes: formData.get('acceptanceNotes'),
+                // Build payload matching ClientEquipmentFormData
+                const acceptanceMinTemp = formData.get('acceptanceMinTemp');
+                const acceptanceMaxTemp = formData.get('acceptanceMaxTemp');
+                const acceptanceMinHum = formData.get('acceptanceMinHum');
+                const acceptanceMaxHum = formData.get('acceptanceMaxHum');
+
+                const payload: any = {
+                  clientId: String(formData.get('clientId') || ''),
+                  equipmentTypeId: String(formData.get('equipmentTypeId') || ''),
+                  brandId: String(formData.get('brandId') || ''),
+                  modelId: String(formData.get('modelId') || ''),
+                  serialNumber: String(formData.get('serialNumber') || ''),
+                  assetNumber: formData.get('assetNumber') ? String(formData.get('assetNumber')) : undefined,
+                  tag: formData.get('tag') ? String(formData.get('tag')) : undefined,
+                  acceptanceConditions: {
+                    minTemperature: acceptanceMinTemp ? Number(acceptanceMinTemp) : 2,
+                    maxTemperature: acceptanceMaxTemp ? Number(acceptanceMaxTemp) : 8,
+                    minHumidity: acceptanceMinHum ? Number(acceptanceMinHum) : undefined,
+                    maxHumidity: acceptanceMaxHum ? Number(acceptanceMaxHum) : undefined,
+                  },
+                  notes: formData.get('acceptanceNotes') ? String(formData.get('acceptanceNotes')) : undefined,
                 };
-                console.log('ClientEquipments: form submit', data);
-                editingEquipment ? handleUpdate(data) : handleCreate(data);
+
+                console.log('ClientEquipments: form submit payload', payload);
+                editingEquipment ? handleUpdate(payload) : handleCreate(payload);
               }}>
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
                   <div className="sm:flex sm:items-start">
@@ -194,7 +203,7 @@ const ClientEquipments: React.FC = () => {
                       <h3 className="text-lg font-medium text-gray-900 mb-4">
                         {editingEquipment ? 'Editar Equipamento' : 'Novo Equipamento'}
                       </h3>
-                      <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label htmlFor="clientId" className="mobile-form-label">
                             Cliente *
@@ -214,6 +223,7 @@ const ClientEquipments: React.FC = () => {
                             ))}
                           </select>
                         </div>
+
                         <div>
                           <label htmlFor="equipmentTypeId" className="mobile-form-label">
                             Tipo de Equipamento *
@@ -233,6 +243,7 @@ const ClientEquipments: React.FC = () => {
                             ))}
                           </select>
                         </div>
+
                         <div>
                           <label htmlFor="brandId" className="mobile-form-label">
                             Marca *
@@ -252,6 +263,7 @@ const ClientEquipments: React.FC = () => {
                             ))}
                           </select>
                         </div>
+
                         <div>
                           <label htmlFor="modelId" className="mobile-form-label">
                             Modelo *
@@ -271,6 +283,7 @@ const ClientEquipments: React.FC = () => {
                             ))}
                           </select>
                         </div>
+
                         <div>
                           <label htmlFor="serialNumber" className="mobile-form-label">
                             Número de Série *
@@ -284,6 +297,7 @@ const ClientEquipments: React.FC = () => {
                             className="mobile-form-input h-10 w-full"
                           />
                         </div>
+
                         <div>
                           <label htmlFor="assetNumber" className="mobile-form-label">
                             Número do Patrimônio
@@ -296,6 +310,7 @@ const ClientEquipments: React.FC = () => {
                             className="mobile-form-input h-10 w-full"
                           />
                         </div>
+
                         <div>
                           <label htmlFor="tag" className="mobile-form-label">
                             Tag
