@@ -2,6 +2,12 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { sensorService } from '@/services/sensorService';
 import { SensorTypeFormData, SensorFormData, SensorFilters } from '@/types/sensor';
 
+function resolveIdAndData(arg: any) {
+  if (!arg || !('id' in arg)) throw new Error('Invalid update payload: missing id');
+  const { id, data, ...rest } = arg;
+  return { id, data: data ?? rest };
+}
+
 // Query keys
 export const sensorKeys = {
   all: ['sensors'] as const,
@@ -51,8 +57,10 @@ export const useUpdateSensorType = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<SensorTypeFormData> }) =>
-      sensorService.updateSensorType(id, data),
+    mutationFn: (payload: any) => {
+      const { id, data } = resolveIdAndData(payload);
+      return sensorService.updateSensorType(id, data as Partial<SensorTypeFormData>);
+    },
     onSuccess: (response, variables) => {
       queryClient.setQueryData(
         sensorKeys.type(variables.id),
@@ -114,8 +122,10 @@ export const useUpdateSensor = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<SensorFormData> }) =>
-      sensorService.updateSensor(id, data),
+    mutationFn: (payload: any) => {
+      const { id, data } = resolveIdAndData(payload);
+      return sensorService.updateSensor(id, data as Partial<SensorFormData>);
+    },
     onSuccess: (response, variables) => {
       queryClient.setQueryData(
         sensorKeys.detail(variables.id),

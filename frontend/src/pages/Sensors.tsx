@@ -53,11 +53,14 @@ const Sensors: React.FC = () => {
     }
   };
 
-  const handleDeleteSensor = async (sensorId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este sensor?')) return;
+  const [deletingSensor, setDeletingSensor] = useState<any>(null);
+
+  const handleDeleteSensor = async () => {
+    if (!deletingSensor) return;
     
     try {
-      await deleteSensorMutation.mutateAsync(sensorId);
+      await deleteSensorMutation.mutateAsync(deletingSensor.id);
+      setDeletingSensor(null);
     } catch (error) {
       console.error('Error deleting sensor:', error);
       alert('Erro ao excluir sensor');
@@ -175,7 +178,7 @@ const Sensors: React.FC = () => {
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteSensor(sensor.id)}
+                          onClick={() => setDeletingSensor(sensor)}
                           className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50"
                           title="Excluir sensor"
                         >
@@ -208,6 +211,53 @@ const Sensors: React.FC = () => {
           onCancel={() => setEditingSensor(null)}
           isLoading={updateSensorMutation.isLoading}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingSensor && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Excluir Sensor
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Tem certeza que deseja excluir o sensor <strong>{deletingSensor.serialNumber}</strong>? 
+                        Esta ação não pode ser desfeita.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleDeleteSensor}
+                  disabled={deleteSensorMutation.isLoading}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleteSensorMutation.isLoading ? 'Excluindo...' : 'Excluir'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeletingSensor(null)}
+                  disabled={deleteSensorMutation.isLoading}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

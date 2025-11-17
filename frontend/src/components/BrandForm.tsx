@@ -51,7 +51,7 @@ const BrandForm: React.FC<BrandFormProps> = ({
                   },
                 })}
                 type="text"
-                className="mobile-form-input"
+                className="mobile-form-input h-10 w-full"
                 placeholder="Ex: Thermo King, Carrier"
               />
               {errors.name && (
@@ -67,7 +67,7 @@ const BrandForm: React.FC<BrandFormProps> = ({
               <textarea
                 {...register('description')}
                 rows={3}
-                className="mobile-form-input"
+                className="mobile-form-input h-24 w-full"
                 placeholder="Descrição da marca (opcional)"
               />
             </div>

@@ -8,16 +8,14 @@ import {
   Clock,
   Calendar,
   Thermometer,
-  Droplets,
-  Edit,
-  Trash2
+  Droplets
 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
 import { useValidations, useCreateValidation, useUpdateValidationApproval, useDeleteValidation } from '@/hooks/useValidations';
 import { Validation, ValidationFilters } from '@/types/validation';
-import ValidationForm from '@/components/ValidationForm';
-import { useSuitcases } from '@/hooks/useSuitcases';
-import { useClients } from '@/hooks/useClients';
+
+import ValidationCreationModal, { ValidationCreationData } from '@/components/ValidationCreationModal';
+
 
 const Validations: React.FC = () => {
   const [filters, setFilters] = useState<ValidationFilters>({
@@ -26,16 +24,14 @@ const Validations: React.FC = () => {
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
-  const [showForm, setShowForm] = useState(false);
-  const [editingValidation, setEditingValidation] = useState<Validation | null>(null);
+  const [showCreationModal, setShowCreationModal] = useState(false);
   const [deletingValidation, setDeletingValidation] = useState<Validation | null>(null);
 
   const { data, isLoading, error } = useValidations(filters);
   const createMutation = useCreateValidation();
   const updateApprovalMutation = useUpdateValidationApproval();
   const deleteMutation = useDeleteValidation();
-  const { data: suitcasesData } = useSuitcases();
-  const { data: clientsData } = useClients();
+  
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -44,10 +40,25 @@ const Validations: React.FC = () => {
     setFilters({ ...filters, search: search || undefined, page: 1 });
   };
 
-  const handleCreateValidation = async (data: any) => {
+  const handleCreateValidation = async (data: ValidationCreationData) => {
     try {
-      await createMutation.mutateAsync(data);
-      setShowForm(false);
+      // Transformar os dados do modal de criação para o formato esperado pelo backend
+      const validationData = {
+        name: data.name,
+        description: data.description,
+        clientId: data.clientId,
+        suitcaseId: '', // Será preenchido posteriormente
+        parameters: {
+          minTemperature: 2,
+          maxTemperature: 8,
+          minHumidity: undefined,
+          maxHumidity: undefined,
+        },
+        sensorDataIds: [], // Será preenchido quando importar dados dos sensores
+      };
+      
+      await createMutation.mutateAsync(validationData);
+      setShowCreationModal(false);
     } catch (error) {
       console.error('Error creating validation:', error);
       const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
@@ -120,7 +131,7 @@ const Validations: React.FC = () => {
         description="Gerencie as validações de temperatura e umidade"
         actions={
           <button 
-            onClick={() => setShowForm(true)}
+            onClick={() => setShowCreationModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -317,7 +328,7 @@ const Validations: React.FC = () => {
                           Ver Gráficos
                         </button>
                         <button 
-                          onClick={() => setEditingValidation(validation)}
+                          onClick={() => alert('Funcionalidade de detalhes será implementada em breve')}
                           className="text-gray-600 hover:text-gray-900 font-medium"
                         >
                           Detalhes
@@ -395,6 +406,58 @@ const Validations: React.FC = () => {
           <p>• Gráficos mostram dados ao longo do tempo com limites visuais</p>
         </div>
       </div>
+
+      {/* Create Validation Modal */}
+      {showCreationModal && (
+        <ValidationCreationModal
+          isOpen={showCreationModal}
+          onClose={() => setShowCreationModal(false)}
+          onSubmit={handleCreateValidation}
+          isLoading={createMutation.isLoading}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingValidation && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="sm:flex sm:items-start">
+              <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Confirmar Exclusão
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Tem certeza que deseja excluir a validação "{deletingValidation.name}"? 
+                    Esta ação não pode ser desfeita e todos os dados associados serão perdidos.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={handleDeleteValidation}
+                disabled={deleteMutation.isLoading}
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleteMutation.isLoading ? 'Excluindo...' : 'Excluir'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeletingValidation(null)}
+                disabled={deleteMutation.isLoading}
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:w-auto sm:text-sm disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

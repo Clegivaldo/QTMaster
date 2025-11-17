@@ -8,6 +8,12 @@ import {
 } from '../types/template';
 import { useNotification } from './useNotification';
 
+function resolveIdAndData(arg: any) {
+  if (!arg || !('id' in arg)) throw new Error('Invalid update payload: missing id');
+  const { id, data, ...rest } = arg;
+  return { id, data: data ?? rest };
+}
+
 export const useTemplates = (params?: TemplateQueryParams) => {
   return useQuery({
     queryKey: ['templates', params],
@@ -68,11 +74,13 @@ export const useUpdateTemplate = () => {
   const { showSuccess, showError } = useNotification();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTemplateData }) =>
-      templateService.updateTemplate(id, data),
-    onSuccess: (_, { id }: { id: string; data: UpdateTemplateData }) => {
+    mutationFn: (payload: any) => {
+      const { id, data } = resolveIdAndData(payload);
+      return templateService.updateTemplate(id, data as UpdateTemplateData);
+    },
+    onSuccess: (_, variables: any) => {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
-      queryClient.invalidateQueries({ queryKey: ['template', id] });
+      queryClient.invalidateQueries({ queryKey: ['template', variables.id] });
       showSuccess('Template atualizado com sucesso!');
     },
     onError: (error: any) => {

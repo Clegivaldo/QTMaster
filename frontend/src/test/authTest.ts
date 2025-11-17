@@ -2,16 +2,17 @@
 export const testAuth = async () => {
   try {
     console.log('Testando autenticação...');
-    
-    const apiBase = import.meta.env.VITE_API_URL || '/api';
+    const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || '/api';
+    const email = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_DEMO_EMAIL) || 'admin@laudo.com';
+    const password = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_DEMO_PASSWORD) || 'admin123';
     const response = await fetch(`${apiBase}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: 'admin@sistema.com',
-        password: 'admin123'
+        email,
+        password
       }),
       credentials: 'include'
     });

@@ -111,7 +111,7 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
                 {...register('clientId', {
                   required: 'Cliente é obrigatório',
                 })}
-                className="mobile-form-input"
+                className="mobile-form-input h-10 w-full"
               >
                 <option value="">Selecione um cliente</option>
                 {clients.map((client) => (
@@ -145,7 +145,7 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
                 {...register('equipmentTypeId', {
                   required: 'Tipo de equipamento é obrigatório',
                 })}
-                className="mobile-form-input"
+                className="mobile-form-input h-10 w-full"
               >
                 <option value="">Selecione um tipo</option>
                 {equipmentTypes.map((type) => (
@@ -179,7 +179,7 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
                 {...register('brandId', {
                   required: 'Marca é obrigatória',
                 })}
-                className="mobile-form-input"
+                className="mobile-form-input h-10 w-full"
               >
                 <option value="">Selecione uma marca</option>
                 {brands.map((brand) => (
@@ -213,7 +213,7 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
                 {...register('modelId', {
                   required: 'Modelo é obrigatório',
                 })}
-                className="mobile-form-input"
+                className="mobile-form-input h-10 w-full"
                 disabled={!watchedBrandId}
               >
                 <option value="">Selecione um modelo</option>
@@ -246,7 +246,7 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
                     },
                   })}
                   type="text"
-                  className="mobile-form-input"
+                  className="mobile-form-input h-10 w-full"
                   placeholder="SN123456789"
                 />
                 {errors.serialNumber && (
@@ -261,7 +261,7 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
                 <input
                   {...register('assetNumber')}
                   type="text"
-                  className="mobile-form-input"
+                  className="mobile-form-input h-10 w-full"
                   placeholder="Número do patrimônio"
                 />
               </div>
@@ -273,7 +273,7 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
                 <input
                   {...register('tag')}
                   type="text"
-                  className="mobile-form-input"
+                  className="mobile-form-input h-10 w-full"
                   placeholder="TAG do equipamento"
                 />
               </div>
@@ -380,7 +380,7 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
               <textarea
                 {...register('notes')}
                 rows={3}
-                className="mobile-form-input"
+                className="mobile-form-input h-24 w-full"
                 placeholder="Observações adicionais sobre o equipamento..."
               />
             </div>

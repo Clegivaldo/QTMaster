@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import LoginForm from '../LoginForm';
 import { AuthProvider } from '../../contexts/AuthContext';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 
 // Mock the auth service
@@ -44,9 +45,11 @@ const renderWithProviders = (component: React.ReactElement) => {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        {component}
-      </AuthProvider>
+      <MemoryRouter>
+        <AuthProvider>
+          {component}
+        </AuthProvider>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 };

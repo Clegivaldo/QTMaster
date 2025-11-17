@@ -95,7 +95,7 @@ const EquipmentModelForm: React.FC<EquipmentModelFormProps> = ({
                 {...register('brandId', {
                   required: 'Marca é obrigatória',
                 })}
-                className="mobile-form-input"
+                className="mobile-form-input h-10 w-full"
               >
                 <option value="">Selecione uma marca</option>
                 {brands.map((brand) => (
@@ -123,7 +123,7 @@ const EquipmentModelForm: React.FC<EquipmentModelFormProps> = ({
                   },
                 })}
                 type="text"
-                className="mobile-form-input"
+                className="mobile-form-input h-10 w-full"
                 placeholder="Ex: C700, Ultra Freezer, Pharma 500"
               />
               {errors.name && (
@@ -139,7 +139,7 @@ const EquipmentModelForm: React.FC<EquipmentModelFormProps> = ({
               <textarea
                 {...register('description')}
                 rows={3}
-                className="mobile-form-input"
+                className="mobile-form-input h-24 w-full"
                 placeholder="Descrição detalhada do modelo (opcional)"
               />
             </div>

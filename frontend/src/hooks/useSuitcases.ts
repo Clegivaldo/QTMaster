@@ -2,6 +2,12 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { suitcaseService } from '@/services/suitcaseService';
 import { SuitcaseFormData, SuitcaseFilters } from '@/types/suitcase';
 
+function resolveIdAndData(arg: any) {
+  if (!arg || !('id' in arg)) throw new Error('Invalid update payload: missing id');
+  const { id, data, ...rest } = arg;
+  return { id, data: data ?? rest };
+}
+
 // Query keys
 export const suitcaseKeys = {
   all: ['suitcases'] as const,
@@ -54,8 +60,10 @@ export const useUpdateSuitcase = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<SuitcaseFormData> }) =>
-      suitcaseService.updateSuitcase(id, data),
+    mutationFn: (payload: any) => {
+      const { id, data } = resolveIdAndData(payload);
+      return suitcaseService.updateSuitcase(id, data as Partial<SuitcaseFormData>);
+    },
     onSuccess: (response, variables) => {
       // Update the suitcase in cache
       queryClient.setQueryData(

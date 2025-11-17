@@ -38,8 +38,9 @@ const ClientEquipments: React.FC = () => {
   };
 
   const handleUpdate = async (data: any) => {
+    console.log('ClientEquipments: handleUpdate called', { id: editingEquipment?.id, data });
     try {
-      await updateMutation.mutateAsync({ id: editingEquipment.id, ...data });
+      await updateMutation.mutateAsync({ id: editingEquipment.id, data });
       setEditingEquipment(null);
     } catch (error) {
       console.error('Error updating client equipment:', error);
@@ -70,8 +71,8 @@ const ClientEquipments: React.FC = () => {
         title="Equipamentos de Clientes"
         description="Gerencie os equipamentos dos clientes"
         actions={
-          <button
-            onClick={() => setShowForm(true)}
+            <button
+              onClick={() => { console.log('ClientEquipments: New button clicked'); setShowForm(true); }}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <Plus className="h-5 w-5 mr-2" />
@@ -90,7 +91,7 @@ const ClientEquipments: React.FC = () => {
             <input
               name="search"
               type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="mobile-form-input h-10 w-full pl-10"
               placeholder="Buscar por número de série ou cliente..."
               defaultValue={filters.search}
             />
@@ -134,14 +135,14 @@ const ClientEquipments: React.FC = () => {
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => setEditingEquipment(equipment)}
+                        onClick={() => { console.log('ClientEquipments: Edit clicked', equipment); setEditingEquipment(equipment); }}
                         className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Editar
                       </button>
                       <button
-                        onClick={() => setDeletingEquipment(equipment)}
+                        onClick={() => { console.log('ClientEquipments: Delete clicked', equipment); setDeletingEquipment(equipment); }}
                         className="inline-flex items-center px-3 py-1 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
@@ -163,12 +164,10 @@ const ClientEquipments: React.FC = () => {
 
       {/* Create/Edit Form Modal */}
       {(showForm || editingEquipment) && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {editingEquipment ? 'Editar Equipamento' : 'Novo Equipamento'}
-              </h3>
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" />
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <form onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
@@ -186,139 +185,149 @@ const ClientEquipments: React.FC = () => {
                   acceptanceMaxHum: formData.get('acceptanceMaxHum'),
                   acceptanceNotes: formData.get('acceptanceNotes'),
                 };
+                console.log('ClientEquipments: form submit', data);
                 editingEquipment ? handleUpdate(data) : handleCreate(data);
               }}>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">
-                      Cliente *
-                    </label>
-                    <select
-                      name="clientId"
-                      id="clientId"
-                      required
-                      defaultValue={editingEquipment?.clientId || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="">Selecione um cliente</option>
-                      {clients?.clients?.map((client: any) => (
-                        <option key={client.id} value={client.id}>
-                          {client.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="equipmentTypeId" className="block text-sm font-medium text-gray-700">
-                      Tipo de Equipamento *
-                    </label>
-                    <select
-                      name="equipmentTypeId"
-                      id="equipmentTypeId"
-                      required
-                      defaultValue={editingEquipment?.equipmentTypeId || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="">Selecione um tipo</option>
-                      {types?.map((type: any) => (
-                        <option key={type.id} value={type.id}>
-                          {type.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="brandId" className="block text-sm font-medium text-gray-700">
-                      Marca *
-                    </label>
-                    <select
-                      name="brandId"
-                      id="brandId"
-                      required
-                      defaultValue={editingEquipment?.brandId || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="">Selecione uma marca</option>
-                      {brands?.map((brand: any) => (
-                        <option key={brand.id} value={brand.id}>
-                          {brand.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="modelId" className="block text-sm font-medium text-gray-700">
-                      Modelo *
-                    </label>
-                    <select
-                      name="modelId"
-                      id="modelId"
-                      required
-                      defaultValue={editingEquipment?.modelId || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="">Selecione um modelo</option>
-                      {models?.map((model: any) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="serialNumber" className="block text-sm font-medium text-gray-700">
-                      Número de Série *
-                    </label>
-                    <input
-                      type="text"
-                      name="serialNumber"
-                      id="serialNumber"
-                      required
-                      defaultValue={editingEquipment?.serialNumber || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="assetNumber" className="block text-sm font-medium text-gray-700">
-                      Número do Patrimônio
-                    </label>
-                    <input
-                      type="text"
-                      name="assetNumber"
-                      id="assetNumber"
-                      defaultValue={editingEquipment?.assetNumber || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="tag" className="block text-sm font-medium text-gray-700">
-                      Tag
-                    </label>
-                    <input
-                      type="text"
-                      name="tag"
-                      id="tag"
-                      defaultValue={editingEquipment?.tag || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    />
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        {editingEquipment ? 'Editar Equipamento' : 'Novo Equipamento'}
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="clientId" className="mobile-form-label">
+                            Cliente *
+                          </label>
+                          <select
+                            name="clientId"
+                            id="clientId"
+                            required
+                            defaultValue={editingEquipment?.clientId || ''}
+                            className="mobile-form-input h-10 w-full"
+                          >
+                            <option value="">Selecione um cliente</option>
+                            {clients?.clients?.map((client: any) => (
+                              <option key={client.id} value={client.id}>
+                                {client.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="equipmentTypeId" className="mobile-form-label">
+                            Tipo de Equipamento *
+                          </label>
+                          <select
+                            name="equipmentTypeId"
+                            id="equipmentTypeId"
+                            required
+                            defaultValue={editingEquipment?.equipmentTypeId || ''}
+                            className="mobile-form-input h-10 w-full"
+                          >
+                            <option value="">Selecione um tipo</option>
+                            {types?.map((type: any) => (
+                              <option key={type.id} value={type.id}>
+                                {type.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="brandId" className="mobile-form-label">
+                            Marca *
+                          </label>
+                          <select
+                            name="brandId"
+                            id="brandId"
+                            required
+                            defaultValue={editingEquipment?.brandId || ''}
+                            className="mobile-form-input h-10 w-full"
+                          >
+                            <option value="">Selecione uma marca</option>
+                            {brands?.map((brand: any) => (
+                              <option key={brand.id} value={brand.id}>
+                                {brand.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="modelId" className="mobile-form-label">
+                            Modelo *
+                          </label>
+                          <select
+                            name="modelId"
+                            id="modelId"
+                            required
+                            defaultValue={editingEquipment?.modelId || ''}
+                            className="mobile-form-input h-10 w-full"
+                          >
+                            <option value="">Selecione um modelo</option>
+                            {models?.map((model: any) => (
+                              <option key={model.id} value={model.id}>
+                                {model.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="serialNumber" className="mobile-form-label">
+                            Número de Série *
+                          </label>
+                          <input
+                            type="text"
+                            name="serialNumber"
+                            id="serialNumber"
+                            required
+                            defaultValue={editingEquipment?.serialNumber || ''}
+                            className="mobile-form-input h-10 w-full"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="assetNumber" className="mobile-form-label">
+                            Número do Patrimônio
+                          </label>
+                          <input
+                            type="text"
+                            name="assetNumber"
+                            id="assetNumber"
+                            defaultValue={editingEquipment?.assetNumber || ''}
+                            className="mobile-form-input h-10 w-full"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="tag" className="mobile-form-label">
+                            Tag
+                          </label>
+                          <input
+                            type="text"
+                            name="tag"
+                            id="tag"
+                            defaultValue={editingEquipment?.tag || ''}
+                            className="mobile-form-input h-10 w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="flex justify-end space-x-3 mt-6">
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="submit"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    {editingEquipment ? 'Atualizar' : 'Criar'}
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
                       setShowForm(false);
                       setEditingEquipment(null);
                     }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >
                     Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700"
-                  >
-                    {editingEquipment ? 'Atualizar' : 'Criar'}
                   </button>
                 </div>
               </form>
@@ -329,27 +338,34 @@ const ClientEquipments: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {deletingEquipment && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Confirmar Exclusão</h3>
-              <p className="text-sm text-gray-500 mb-4">
-                Tem certeza que deseja excluir o equipamento "{deletingEquipment.serialNumber}"?
-                Esta ação não pode ser desfeita.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setDeletingEquipment(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
-                >
-                  Excluir
-                </button>
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" />
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
+                <div className="sm:flex sm:items-start">
+                  <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Confirmar Exclusão</h3>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Tem certeza que deseja excluir o equipamento "{deletingEquipment.serialNumber}"?
+                      Esta ação não pode ser desfeita.
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        onClick={() => setDeletingEquipment(null)}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

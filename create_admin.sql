@@ -1,0 +1,2 @@
+INSERT INTO users (id, email, password, name, role, "createdAt", "updatedAt") 
+VALUES (gen_random_uuid(), 'admin@laudo.com', '$2a$10$ZrdijgIKNhvwi7mt9LCs1OjGqfrQf9vj4LkDP6rwHpyh5zjidbSUe', 'Administrador', 'ADMIN', NOW(), NOW());

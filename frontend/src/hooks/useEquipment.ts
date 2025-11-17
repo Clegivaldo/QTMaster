@@ -7,6 +7,12 @@ import {
   ClientEquipmentFormData 
 } from '@/types/equipment';
 
+function resolveIdAndData(arg: any) {
+  if (!arg || !('id' in arg)) throw new Error('Invalid update payload: missing id');
+  const { id, data, ...rest } = arg;
+  return { id, data: data ?? rest };
+}
+
 // Query keys
 export const equipmentKeys = {
   all: ['equipment'] as const,
@@ -56,9 +62,17 @@ export const useCreateBrand = () => {
 export const useUpdateBrand = () => {
   const queryClient = useQueryClient();
 
+  function resolveIdAndData(arg: any) {
+    if (!arg || !('id' in arg)) throw new Error('Invalid update payload: missing id');
+    const { id, data, ...rest } = arg;
+    return { id, data: data ?? rest };
+  }
+
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: BrandFormData }) => 
-      equipmentService.updateBrand(id, data),
+    mutationFn: (payload: any) => {
+      const { id, data } = resolveIdAndData(payload);
+      return equipmentService.updateBrand(id, data as BrandFormData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(equipmentKeys.brands());
     },
@@ -113,8 +127,10 @@ export const useUpdateEquipmentModel = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: EquipmentModelFormData }) => 
-      equipmentService.updateModel(id, data),
+    mutationFn: (payload: any) => {
+      const { id, data } = resolveIdAndData(payload);
+      return equipmentService.updateModel(id, data as EquipmentModelFormData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(equipmentKeys.models());
     },
@@ -169,8 +185,10 @@ export const useUpdateEquipmentType = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: EquipmentTypeFormData }) => 
-      equipmentService.updateEquipmentType(id, data),
+    mutationFn: (payload: any) => {
+      const { id, data } = resolveIdAndData(payload);
+      return equipmentService.updateEquipmentType(id, data as EquipmentTypeFormData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(equipmentKeys.types());
     },
@@ -224,8 +242,10 @@ export const useUpdateClientEquipment = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ClientEquipmentFormData }) => 
-      equipmentService.updateClientEquipment(id, data),
+    mutationFn: (payload: any) => {
+      const { id, data } = resolveIdAndData(payload);
+      return equipmentService.updateClientEquipment(id, data as ClientEquipmentFormData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(equipmentKeys.clientEquipments());
     },

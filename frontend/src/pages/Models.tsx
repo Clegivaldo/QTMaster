@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, AlertTriangle, Edit, Trash2 } from 'lucide-react';
+import { Plus, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
 import { useEquipmentModels, useCreateEquipmentModel, useUpdateEquipmentModel, useDeleteEquipmentModel, useBrands, useEquipmentTypes } from '@/hooks/useEquipment';
 
@@ -27,8 +27,15 @@ const Models: React.FC = () => {
   };
 
   const handleUpdate = async (data: any) => {
+    console.log('Models: handleUpdate called', { id: editingModel?.id, data });
+    const id = editingModel?.id ?? (data?.id as string);
+    if (!id) {
+      console.error('Models: missing id for update', { editingModel, data });
+      alert('ID do modelo não encontrado para atualização');
+      return;
+    }
     try {
-      await updateMutation.mutateAsync({ id: editingModel.id, ...data });
+      await updateMutation.mutateAsync({ id, data });
       setEditingModel(null);
     } catch (error) {
       console.error('Error updating model:', error);
@@ -54,7 +61,7 @@ const Models: React.FC = () => {
         description="Gerencie os modelos de equipamentos"
         actions={
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => { console.log('Models: New button clicked'); setShowForm(true); }}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <Plus className="h-5 w-5 mr-2" />
@@ -99,14 +106,14 @@ const Models: React.FC = () => {
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => setEditingModel(model)}
+                        onClick={() => { console.log('Models: Edit clicked', model); setEditingModel(model); }}
                         className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Editar
                       </button>
                       <button
-                        onClick={() => setDeletingModel(model)}
+                        onClick={() => { console.log('Models: Delete clicked', model); setDeletingModel(model); }}
                         className="inline-flex items-center px-3 py-1 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
@@ -128,12 +135,10 @@ const Models: React.FC = () => {
 
       {/* Create/Edit Form Modal */}
       {(showForm || editingModel) && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {editingModel ? 'Editar Modelo' : 'Novo Modelo'}
-              </h3>
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <form onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
@@ -143,89 +148,101 @@ const Models: React.FC = () => {
                   typeId: formData.get('typeId'),
                   description: formData.get('description'),
                 };
+                console.log('Models: form submit', data);
                 editingModel ? handleUpdate(data) : handleCreate(data);
               }}>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                      Nome *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      id="name"
-                      required
-                      defaultValue={editingModel?.name || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="brandId" className="block text-sm font-medium text-gray-700">
-                      Marca *
-                    </label>
-                    <select
-                      name="brandId"
-                      id="brandId"
-                      required
-                      defaultValue={editingModel?.brandId || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="">Selecione uma marca</option>
-                      {brands?.map((brand: any) => (
-                        <option key={brand.id} value={brand.id}>
-                          {brand.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="typeId" className="block text-sm font-medium text-gray-700">
-                      Tipo *
-                    </label>
-                    <select
-                      name="typeId"
-                      id="typeId"
-                      required
-                      defaultValue={editingModel?.typeId || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="">Selecione um tipo</option>
-                      {types?.map((type: any) => (
-                        <option key={type.id} value={type.id}>
-                          {type.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                      Descrição
-                    </label>
-                    <textarea
-                      name="description"
-                      id="description"
-                      rows={3}
-                      defaultValue={editingModel?.description || ''}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                    />
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                        {editingModel ? 'Editar Modelo' : 'Novo Modelo'}
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="name" className="mobile-form-label">
+                            Nome *
+                          </label>
+                          <input
+                            type="text"
+                            name="name"
+                            id="name"
+                            required
+                            defaultValue={editingModel?.name || ''}
+                            className="mobile-form-input h-10 w-full"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="brandId" className="mobile-form-label">
+                            Marca *
+                          </label>
+                          <select
+                            name="brandId"
+                            id="brandId"
+                            required
+                            defaultValue={editingModel?.brandId || ''}
+                            className="mobile-form-input h-10 w-full"
+                          >
+                            <option value="">Selecione uma marca</option>
+                            {brands?.map((brand: any) => (
+                              <option key={brand.id} value={brand.id}>
+                                {brand.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="typeId" className="mobile-form-label">
+                            Tipo *
+                          </label>
+                          <select
+                            name="typeId"
+                            id="typeId"
+                            required
+                            defaultValue={editingModel?.typeId || ''}
+                            className="mobile-form-input h-10 w-full"
+                          >
+                            <option value="">Selecione um tipo</option>
+                            {types?.map((type: any) => (
+                              <option key={type.id} value={type.id}>
+                                {type.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="description" className="mobile-form-label">
+                            Descrição
+                          </label>
+                          <textarea
+                            name="description"
+                            id="description"
+                            rows={3}
+                            defaultValue={editingModel?.description || ''}
+                            className="mobile-form-input h-24 w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="flex justify-end space-x-3 mt-6">
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="submit"
+                    disabled={createMutation.isLoading || updateMutation.isLoading}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {editingModel ? 'Atualizar' : 'Criar'}
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
                       setShowForm(false);
                       setEditingModel(null);
                     }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    disabled={createMutation.isLoading || updateMutation.isLoading}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
                   >
                     Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700"
-                  >
-                    {editingModel ? 'Atualizar' : 'Criar'}
                   </button>
                 </div>
               </form>
@@ -236,26 +253,44 @@ const Models: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {deletingModel && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Confirmar Exclusão</h3>
-              <p className="text-sm text-gray-500 mb-4">
-                Tem certeza que deseja excluir o modelo "{deletingModel.name}"?
-                Esta ação não pode ser desfeita.
-              </p>
-              <div className="flex justify-end space-x-3">
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Excluir Modelo
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Tem certeza que deseja excluir o modelo <strong>{deletingModel.name}</strong>? 
+                        Esta ação não pode ser desfeita.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button
-                  onClick={() => setDeletingModel(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isLoading}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancelar
+                  {deleteMutation.isLoading ? 'Excluindo...' : 'Excluir'}
                 </button>
                 <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
+                  type="button"
+                  onClick={() => setDeletingModel(null)}
+                  disabled={deleteMutation.isLoading}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
                 >
-                  Excluir
+                  Cancelar
                 </button>
               </div>
             </div>

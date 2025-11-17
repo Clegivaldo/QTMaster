@@ -61,7 +61,7 @@ const SensorTypeForm: React.FC<SensorTypeFormProps> = ({
                   },
                 })}
                 type="text"
-                className="mobile-form-input"
+                className="mobile-form-input h-10 w-full"
                 placeholder="Ex: Temperatura e Umidade"
               />
               {errors.name && (
@@ -77,7 +77,7 @@ const SensorTypeForm: React.FC<SensorTypeFormProps> = ({
               <textarea
                 {...register('description')}
                 rows={3}
-                className="mobile-form-input"
+                className="mobile-form-input h-24 w-full"
                 placeholder="Descrição opcional do tipo de sensor"
               />
             </div>
@@ -100,7 +100,7 @@ const SensorTypeForm: React.FC<SensorTypeFormProps> = ({
                       required: 'Coluna de temperatura é obrigatória',
                     })}
                     type="text"
-                    className="mobile-form-input"
+                    className="mobile-form-input h-10 w-full"
                     placeholder="Ex: Temperatura, Temp, T"
                   />
                   {errors.dataConfig?.temperatureColumn && (
@@ -118,7 +118,7 @@ const SensorTypeForm: React.FC<SensorTypeFormProps> = ({
                   <input
                     {...register('dataConfig.humidityColumn')}
                     type="text"
-                    className="mobile-form-input"
+                    className="mobile-form-input h-10 w-full"
                     placeholder="Ex: Umidade, Hum, U (opcional)"
                   />
                 </div>
@@ -133,7 +133,7 @@ const SensorTypeForm: React.FC<SensorTypeFormProps> = ({
                       required: 'Coluna de timestamp é obrigatória',
                     })}
                     type="text"
-                    className="mobile-form-input"
+                    className="mobile-form-input h-10 w-full"
                     placeholder="Ex: Data, Timestamp, Date"
                   />
                   {errors.dataConfig?.timestampColumn && (
@@ -158,7 +158,7 @@ const SensorTypeForm: React.FC<SensorTypeFormProps> = ({
                     })}
                     type="number"
                     min="1"
-                    className="mobile-form-input"
+                    className="mobile-form-input h-10 w-full"
                     defaultValue="1"
                   />
                   {errors.dataConfig?.startRow && (
@@ -177,7 +177,7 @@ const SensorTypeForm: React.FC<SensorTypeFormProps> = ({
                     {...register('dataConfig.dateFormat', {
                       required: 'Formato de data é obrigatório',
                     })}
-                    className="mobile-form-input"
+                    className="mobile-form-input h-10 w-full"
                   >
                     <option value="DD/MM/YYYY HH:mm:ss">DD/MM/YYYY HH:mm:ss</option>
                     <option value="MM/DD/YYYY HH:mm:ss">MM/DD/YYYY HH:mm:ss</option>
@@ -201,7 +201,7 @@ const SensorTypeForm: React.FC<SensorTypeFormProps> = ({
                     {...register('dataConfig.separator', {
                       required: 'Separador é obrigatório',
                     })}
-                    className="mobile-form-input"
+                    className="mobile-form-input h-10 w-full"
                   >
                     <option value=",">Vírgula (,)</option>
                     <option value=";">Ponto e vírgula (;)</option>

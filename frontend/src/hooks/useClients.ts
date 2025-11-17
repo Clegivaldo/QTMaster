@@ -2,6 +2,12 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { clientService } from '@/services/clientService';
 import { ClientFormData, ClientFilters } from '@/types/client';
 
+function resolveIdAndData(arg: any) {
+  if (!arg || !('id' in arg)) throw new Error('Invalid update payload: missing id');
+  const { id, data, ...rest } = arg;
+  return { id, data: data ?? rest };
+}
+
 // Query keys
 export const clientKeys = {
   all: ['clients'] as const,
@@ -54,8 +60,10 @@ export const useUpdateClient = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ClientFormData> }) =>
-      clientService.updateClient(id, data),
+    mutationFn: (payload: any) => {
+      const { id, data } = resolveIdAndData(payload);
+      return clientService.updateClient(id, data as Partial<ClientFormData>);
+    },
     onSuccess: (response, variables) => {
       // Update the client in cache
       queryClient.setQueryData(

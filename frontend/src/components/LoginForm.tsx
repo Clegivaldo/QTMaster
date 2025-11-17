@@ -27,9 +27,12 @@ const LoginForm: React.FC = () => {
     }
   };
 
+  const DEMO_EMAIL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_DEMO_EMAIL) || 'admin@laudo.com';
+  const DEMO_PASSWORD = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_DEMO_PASSWORD) || 'admin123';
+
   const fillDemoCredentials = () => {
-    setValue('email', 'admin@sistema.com');
-    setValue('password', 'admin123');
+    setValue('email', DEMO_EMAIL);
+    setValue('password', DEMO_PASSWORD);
   };
 
   const testBackendConnection = async () => {
@@ -37,15 +40,15 @@ const LoginForm: React.FC = () => {
       setError('');
       console.log('Testando conexão com backend...');
       
-      const apiBase = import.meta.env.VITE_API_URL || '/api';
+      const apiBase = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || '/api';
       const response = await fetch(`${apiBase}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: 'admin@sistema.com',
-          password: 'admin123'
+          email: DEMO_EMAIL,
+          password: DEMO_PASSWORD
         }),
         credentials: 'include'
       });
