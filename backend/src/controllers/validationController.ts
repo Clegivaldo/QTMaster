@@ -363,13 +363,8 @@ export class ValidationController {
     try {
       const validatedData = createValidationSchema.parse(req.body);
 
-      if (
-        (!validatedData.sensorDataIds || validatedData.sensorDataIds.length === 0) &&
-        (!validatedData.importedItems || validatedData.importedItems.length === 0)
-      ) {
-        res.status(400).json({ error: 'Informe pelo menos dados de sensores ou registros importados.' });
-        return;
-      }
+      // It's valid to create a validation without sensor data/imported items.
+      // Sensor data and suitcase associations will be added later during import.
 
       // Validate temperature parameters
       if (validatedData.parameters.minTemperature >= validatedData.parameters.maxTemperature) {
