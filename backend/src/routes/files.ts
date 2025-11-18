@@ -21,6 +21,12 @@ router.post('/upload', (req, res, next) => {
 // GET /api/files/processing-status/:jobId - Get processing status
 router.get('/processing-status/:jobId', fileController.getProcessingStatus.bind(fileController));
 
+// GET /api/files/processing-status/:jobId/progress - Get real-time progress
+router.get('/processing-status/:jobId/progress', fileController.getJobProgress.bind(fileController));
+
+// GET /api/files/processing-status/:jobId/file/:fileName - Get detailed file processing results
+router.get('/processing-status/:jobId/file/:fileName', fileController.getFileProcessingDetails.bind(fileController));
+
 // GET /api/files/history - Get processing history
 router.get('/history', fileController.getProcessingHistory.bind(fileController));
 

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ValidationCycleType } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { validationService } from '../services/validationService.js';
+import type { ParameterRange } from '../services/validationService.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
 import { requireParam, stripUndefined } from '../utils/requestUtils.js';
@@ -42,7 +43,7 @@ const importedItemSchema = z.object({
 });
 
 const createValidationSchema = z.object({
-  suitcaseId: z.string().min(1, 'Suitcase ID is required'),
+  suitcaseId: z.string().optional(),
   clientId: z.string().min(1, 'Client ID is required'),
   validationNumber: z.string().min(1, 'Número da validação é obrigatório'),
   equipmentId: z.string().min(1, 'Equipamento é obrigatório'),
@@ -66,6 +67,10 @@ const createValidationSchema = z.object({
 
 const updateApprovalSchema = z.object({
   isApproved: z.boolean(),
+});
+
+const updateHiddenSensorsSchema = z.object({
+  hiddenSensorIds: z.array(z.string()),
 });
 
 const querySchema = z.object({
@@ -302,6 +307,11 @@ export class ValidationController {
       const id = requireParam(req, res, 'id');
       if (!id) return;
 
+      // Obter sensores selecionados do query parameter
+      const selectedSensorIds = req.query.selectedSensorIds 
+        ? (req.query.selectedSensorIds as string).split(',')
+        : undefined;
+
       const validation = await prisma.validation.findUnique({
         where: { id },
         select: {
@@ -309,11 +319,7 @@ export class ValidationController {
           maxTemperature: true,
           minHumidity: true,
           maxHumidity: true,
-          sensorData: {
-            select: {
-              id: true,
-            },
-          },
+          hiddenSensorIds: true,
         },
       });
 
@@ -322,15 +328,26 @@ export class ValidationController {
         return;
       }
 
-      const parameters = stripUndefined({
+      const parameters: ParameterRange = {
         minTemperature: validation.minTemperature,
         maxTemperature: validation.maxTemperature,
-        minHumidity: validation.minHumidity ?? undefined,
-        maxHumidity: validation.maxHumidity ?? undefined,
-      }) as any;
+        ...(validation.minHumidity !== null && { minHumidity: validation.minHumidity }),
+        ...(validation.maxHumidity !== null && { maxHumidity: validation.maxHumidity }),
+      };
 
-      const sensorDataIds = validation.sensorData.map(sd => sd.id);
-  const chartData = await validationService.getChartData(sensorDataIds, parameters as any);
+      // Get sensor data IDs for this validation
+      const sensorData = await prisma.sensorData.findMany({
+        where: { validationId: id },
+        select: { id: true },
+      });
+      
+      const sensorDataIds = sensorData.map(sd => sd.id);
+      const chartData = await validationService.getChartData(
+        sensorDataIds, 
+        parameters as any, 
+        selectedSensorIds,
+        validation.hiddenSensorIds
+      );
 
       res.json({ success: true, data: { chartData, parameters } });
       return;
@@ -504,6 +521,134 @@ export class ValidationController {
       });
       res.status(500).json({ error: 'Internal server error' });
       return;
+    }
+  }
+
+  async updateHiddenSensors(req: AuthenticatedRequest, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+      
+      const { hiddenSensorIds } = updateHiddenSensorsSchema.parse(req.body);
+
+      const validation = await prisma.validation.update({
+        where: { id },
+        data: { hiddenSensorIds },
+      });
+
+      res.json({ success: true, data: { validation } });
+      return;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Validation error', details: error.issues });
+        return;
+      }
+
+      logger.error('Update hidden sensors error:', { 
+        error: error instanceof Error ? error.message : error, 
+        validationId: req.params.id, 
+        userId: req.user?.id 
+      });
+      res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+  }
+
+  async getAcceptanceWindows(req: Request, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+
+      const validation = await prisma.validation.findUnique({
+        where: { id },
+        include: {
+          cycles: {
+            include: {
+              importedItems: {
+                orderBy: { timestamp: 'asc' }
+              }
+            }
+          },
+          importedItems: {
+            orderBy: { timestamp: 'asc' }
+          }
+        }
+      });
+
+      if (!validation) {
+        res.status(404).json({ error: 'Validation not found' });
+        return;
+      }
+
+      const parameters: ParameterRange = {
+        minTemperature: validation.minTemperature,
+        maxTemperature: validation.maxTemperature,
+      };
+      
+      // Add humidity parameters only if they exist
+      if (validation.minHumidity !== null && validation.minHumidity !== undefined) {
+        parameters.minHumidity = validation.minHumidity;
+      }
+      if (validation.maxHumidity !== null && validation.maxHumidity !== undefined) {
+        parameters.maxHumidity = validation.maxHumidity;
+      }
+
+      // Calcular janelas para cada ciclo
+      const cycleWindows = validation.cycles.map(cycle => {
+        const windows = validationService.calculateAcceptanceWindows(
+          cycle.importedItems,
+          parameters
+        );
+
+        return {
+          cycleId: cycle.id,
+          cycleName: cycle.name,
+          cycleType: cycle.cycleType,
+          windows: windows.map(window => ({
+            start: window.start.toISOString(),
+            end: window.end.toISOString(),
+            duration: window.duration,
+            durationFormatted: validationService.formatDuration(window.duration)
+          })),
+          totalAcceptanceTime: windows.reduce((sum, window) => sum + window.duration, 0),
+          totalAcceptanceTimeFormatted: validationService.formatDuration(
+            windows.reduce((sum, window) => sum + window.duration, 0)
+          )
+        };
+      });
+
+      // Calcular janelas para todos os dados (sem filtro de ciclo)
+      const allWindows = validationService.calculateAcceptanceWindows(
+        validation.importedItems,
+        parameters
+      );
+
+      res.json({
+        success: true,
+        data: {
+          cycles: cycleWindows,
+          overall: {
+            windows: allWindows.map(window => ({
+              start: window.start.toISOString(),
+              end: window.end.toISOString(),
+              duration: window.duration,
+              durationFormatted: validationService.formatDuration(window.duration)
+            })),
+            totalAcceptanceTime: allWindows.reduce((sum, window) => sum + window.duration, 0),
+            totalAcceptanceTimeFormatted: validationService.formatDuration(
+              allWindows.reduce((sum, window) => sum + window.duration, 0)
+            )
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Get acceptance windows error:', { 
+        error: error instanceof Error ? error.message : error, 
+        validationId: req.params.id 
+      });
+      res.status(500).json({
+        error: 'Internal server error',
+      });
     }
   }
 

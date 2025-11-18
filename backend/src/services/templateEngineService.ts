@@ -24,6 +24,8 @@ interface RenderContext {
   statistics: any;
   sensorData: any[];
   sensors: any[];
+  cycles: any[];
+  importedItems: any[];
   currentDate: string;
   currentTime: string;
   user: any;
@@ -152,6 +154,16 @@ export class TemplateEngineService {
           sensorData: {
             orderBy: { timestamp: 'asc' },
           },
+          cycles: {
+            include: {
+              importedItems: {
+                orderBy: { timestamp: 'asc' }
+              }
+            }
+          },
+          importedItems: {
+            orderBy: { timestamp: 'asc' }
+          },
           user: {
             select: { id: true, name: true, email: true },
           },
@@ -191,9 +203,15 @@ export class TemplateEngineService {
           id: validation.id,
           name: validation.name,
           description: validation.description,
-          startDate: validation.createdAt.toISOString().split('T')[0],
-          endDate: validation.updatedAt.toISOString().split('T')[0],
-          duration: this.calculateDuration(validation.createdAt, validation.updatedAt),
+          startDate: validation.startAt 
+            ? validation.startAt.toISOString().split('T')[0] 
+            : validation.createdAt.toISOString().split('T')[0],
+          endDate: validation.endAt 
+            ? validation.endAt.toISOString().split('T')[0] 
+            : validation.updatedAt.toISOString().split('T')[0],
+          duration: validation.startAt && validation.endAt
+            ? this.calculateDuration(validation.startAt, validation.endAt)
+            : this.calculateDuration(validation.createdAt, validation.updatedAt),
           minTemperature: validation.minTemperature,
           maxTemperature: validation.maxTemperature,
           minHumidity: validation.minHumidity,
@@ -201,10 +219,15 @@ export class TemplateEngineService {
           isApproved: validation.isApproved,
           createdAt: validation.createdAt,
           updatedAt: validation.updatedAt,
+          startAt: validation.startAt,
+          endAt: validation.endAt,
+          hiddenSensorIds: validation.hiddenSensorIds || [],
         },
         statistics,
         sensorData: validation.sensorData,
         sensors,
+        cycles: validation.cycles || [],
+        importedItems: validation.importedItems || [],
         currentDate: new Date().toLocaleDateString('pt-BR'),
         currentTime: new Date().toLocaleTimeString('pt-BR'),
         user: validation.user,

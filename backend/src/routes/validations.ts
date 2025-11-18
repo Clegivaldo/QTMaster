@@ -18,6 +18,9 @@ router.get('/:id', requirePermission(Permission.VALIDATION_READ), validationCont
 // GET /api/validations/:id/chart-data - Get chart data for validation
 router.get('/:id/chart-data', requirePermission(Permission.VALIDATION_READ), validationController.getChartData.bind(validationController));
 
+// GET /api/validations/:id/acceptance-windows - Get acceptance windows for validation
+router.get('/:id/acceptance-windows', requirePermission(Permission.VALIDATION_READ), validationController.getAcceptanceWindows.bind(validationController));
+
 // GET /api/validations/suitcase/:suitcaseId/sensor-data - Get sensor data for validation
 router.get('/suitcase/:suitcaseId/sensor-data', requirePermission(Permission.VALIDATION_READ), validationController.getSensorDataForValidation.bind(validationController));
 
@@ -26,6 +29,9 @@ router.post('/', requirePermission(Permission.VALIDATION_CREATE), validationCont
 
 // PUT /api/validations/:id/approval - Update validation approval
 router.put('/:id/approval', requirePermission(Permission.VALIDATION_APPROVE), validationController.updateApproval.bind(validationController));
+
+// PUT /api/validations/:id/hidden-sensors - Update hidden sensors
+router.put('/:id/hidden-sensors', requirePermission(Permission.VALIDATION_UPDATE), validationController.updateHiddenSensors.bind(validationController));
 
 // PUT /api/validations/:validationId/imported-items/:itemId/visibility - Toggle visibility for imported data
 router.put(

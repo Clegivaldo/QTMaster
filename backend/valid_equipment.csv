@@ -1,0 +1,3 @@
+Equipamento;Marca;Modelo;Número de Série;Data de Calibração;Validade;Status;Temperatura Mínima (°C);Temperatura Máxima (°C);Umidade Mínima (%);Umidade Máxima (%);Localização;Observações
+Termômetro Digital;Testo;Testo 110;SN12345;2024-01-15;2025-01-15;Valido;-20;250;0;100;Laboratório Principal;Calibrado conforme norma ISO
+Higrômetro Digital;Oregon Scientific;THGN801;SN67890;2024-02-10;2025-02-10;Valido;-10;60;10;95;Sala de Testes;Com certificado de calibração

@@ -4,7 +4,7 @@ import multer from 'multer';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { fileProcessorService } from '../services/fileProcessorService.js';
+import { enhancedFileProcessorService } from '../services/enhancedFileProcessorService.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { logger } from '../utils/logger.js';
 import { requireParam } from '../utils/requestUtils.js';
@@ -110,8 +110,8 @@ export class FileController {
         return;
       }
 
-      // Start file processing job
-      const jobId = await fileProcessorService.processFiles(
+      // Start enhanced file processing job with robust error handling
+      const jobId = await enhancedFileProcessorService.processFiles(
         files,
         suitcaseId,
         req.user!.id
@@ -168,22 +168,25 @@ export class FileController {
   const jobId = requireParam(req, res, 'jobId');
   if (!jobId) return;
 
-      const job = await fileProcessorService.getJobStatus(jobId);
+      const job = await enhancedFileProcessorService.getJobStatus(jobId);
 
       if (!job) {
         res.status(404).json({ error: 'Job not found' });
         return;
       }
 
-      // Calculate progress
+      // Calculate progress - enhanced service provides more detailed progress
       const totalFiles = job.files.length;
       const processedFiles = job.results.length;
-      const progress = totalFiles > 0 ? Math.round((processedFiles / totalFiles) * 100) : 0;
+      const progress = job.totalProgress || (totalFiles > 0 ? Math.round((processedFiles / totalFiles) * 100) : 0);
 
-      // Calculate statistics
+      // Calculate detailed statistics
       const successfulFiles = job.results.filter(r => r.success).length;
       const failedFiles = job.results.filter(r => !r.success).length;
       const totalRecords = job.results.reduce((sum, r) => sum + r.recordsProcessed, 0);
+      const totalFailedRecords = job.results.reduce((sum, r) => sum + r.recordsFailed, 0);
+      const totalWarnings = job.results.reduce((sum, r) => sum + r.warnings.length, 0);
+      const totalErrors = job.results.reduce((sum, r) => sum + r.errors.length, 0);
 
       res.json({
         success: true,
@@ -197,8 +200,26 @@ export class FileController {
             successfulFiles,
             failedFiles,
             totalRecords,
+            totalFailedRecords,
+            totalWarnings,
+            totalErrors,
+            averageProcessingTime: job.results.length > 0 
+              ? Math.round(job.results.reduce((sum, r) => sum + r.processingTime, 0) / job.results.length)
+              : 0,
           },
-          results: job.results,
+          results: job.results.map(result => ({
+            fileName: result.fileName,
+            success: result.success,
+            recordsProcessed: result.recordsProcessed,
+            recordsFailed: result.recordsFailed,
+            sensorId: result.sensorId,
+            sensorSerialNumber: result.sensorSerialNumber,
+            processingTime: result.processingTime,
+            errorCount: result.errors.length,
+            warningCount: result.warnings.length,
+            errors: result.errors.slice(0, 5), // Limit to first 5 errors for brevity
+            warnings: result.warnings.slice(0, 5), // Limit to first 5 warnings for brevity
+          })),
           createdAt: job.createdAt,
           completedAt: job.completedAt,
         },
@@ -207,6 +228,96 @@ export class FileController {
 
     } catch (error) {
       logger.error('Get processing status error:', {
+        error: error instanceof Error ? error.message : error,
+        jobId: req.params.jobId,
+      });
+
+      res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+  }
+
+  async getFileProcessingDetails(req: Request, res: Response) {
+    try {
+      const jobId = requireParam(req, res, 'jobId');
+      const fileName = requireParam(req, res, 'fileName');
+      if (!jobId || !fileName) return;
+
+      const job = await enhancedFileProcessorService.getJobStatus(jobId);
+
+      if (!job) {
+        res.status(404).json({ error: 'Job not found' });
+        return;
+      }
+
+      // Find the specific file result
+      const fileResult = job.results.find(r => r.fileName === decodeURIComponent(fileName));
+
+      if (!fileResult) {
+        res.status(404).json({ error: 'File result not found' });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          jobId: job.id,
+          fileName: fileResult.fileName,
+          success: fileResult.success,
+          recordsProcessed: fileResult.recordsProcessed,
+          recordsFailed: fileResult.recordsFailed,
+          sensorId: fileResult.sensorId,
+          sensorSerialNumber: fileResult.sensorSerialNumber,
+          processingTime: fileResult.processingTime,
+          errors: fileResult.errors,
+          warnings: fileResult.warnings,
+          detailedErrors: fileResult.detailedErrors || [],
+        },
+      });
+      return;
+
+    } catch (error) {
+      logger.error('Get file processing details error:', {
+        error: error instanceof Error ? error.message : error,
+        jobId: req.params.jobId,
+        fileName: req.params.fileName,
+      });
+
+      res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+  }
+
+  async getJobProgress(req: Request, res: Response) {
+    try {
+      const jobId = requireParam(req, res, 'jobId');
+      if (!jobId) return;
+
+      const job = await enhancedFileProcessorService.getJobStatus(jobId);
+      const progress = await enhancedFileProcessorService.getJobProgress(jobId);
+
+      if (!job) {
+        res.status(404).json({ error: 'Job not found' });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          jobId: job.id,
+          status: job.status,
+          progress: job.totalProgress,
+          currentFile: progress?.currentFile || null,
+          processed: progress?.processed || job.results.length,
+          total: progress?.total || job.files.length,
+          percentage: progress?.percentage || job.totalProgress,
+          lastUpdated: new Date().toISOString(),
+        },
+      });
+      return;
+
+    } catch (error) {
+      logger.error('Get job progress error:', {
         error: error instanceof Error ? error.message : error,
         jobId: req.params.jobId,
       });

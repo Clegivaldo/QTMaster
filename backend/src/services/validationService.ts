@@ -2,7 +2,7 @@ import { AppError } from '../utils/errors';
 import { prisma } from '../lib/prisma.js';
 import { ValidationCycleType, type ValidationImportItem } from '@prisma/client';
 
-type ParameterRange = {
+export type ParameterRange = {
   minTemperature: number;
   maxTemperature: number;
   minHumidity?: number;
@@ -29,7 +29,7 @@ interface ValidationImportItemPayload {
 }
 
 interface CreateValidationPayload {
-  suitcaseId: string;
+  suitcaseId?: string;
   clientId: string;
   userId: string;
   name: string;
@@ -391,17 +391,74 @@ export class ValidationService {
     });
   }
 
-  async getChartData(sensorDataIds: string[], parameters: any): Promise<any> {
+  async getChartData(sensorDataIds: string[], parameters: any, selectedSensorIds?: string[], hiddenSensorIds?: string[]): Promise<any> {
+    // Buscar dados dos sensores com informações do sensor
     const data = await prisma.sensorData.findMany({
-      where: { id: { in: sensorDataIds } },
+      where: { 
+        id: { in: sensorDataIds },
+        ...(selectedSensorIds && selectedSensorIds.length > 0 && {
+          sensorId: { in: selectedSensorIds }
+        })
+      },
       orderBy: { timestamp: 'asc' },
-      select: { timestamp: true, temperature: true, humidity: true },
+      select: { 
+        id: true,
+        sensorId: true,
+        timestamp: true, 
+        temperature: true, 
+        humidity: true,
+        sensor: {
+          select: {
+            id: true,
+            serialNumber: true
+          }
+        }
+      },
     });
+
+    // Filtrar sensores ocultos
+    const visibleData = hiddenSensorIds && hiddenSensorIds.length > 0
+      ? data.filter(item => !hiddenSensorIds.includes(item.sensorId))
+      : data;
+
+    // Agrupar dados por sensor
+    const sensorDataMap = new Map<string, any[]>();
+    
+    visibleData.forEach(item => {
+      const sensorId = item.sensorId;
+      if (!sensorDataMap.has(sensorId)) {
+        sensorDataMap.set(sensorId, []);
+      }
+      
+      // Calcular validação para cada ponto
+      const isTemperatureValid = item.temperature >= parameters.minTemperature && 
+                                item.temperature <= parameters.maxTemperature;
+      
+      const isHumidityValid = parameters.minHumidity !== undefined && 
+                             parameters.maxHumidity !== undefined &&
+                             item.humidity !== null && item.humidity !== undefined
+        ? item.humidity >= parameters.minHumidity && item.humidity <= parameters.maxHumidity
+        : true;
+
+      sensorDataMap.get(sensorId)!.push({
+        timestamp: item.timestamp.toISOString(),
+        temperature: item.temperature,
+        humidity: item.humidity,
+        isTemperatureValid,
+        isHumidityValid
+      });
+    });
+
+    // Converter para formato esperado pelo frontend
+    const chartData = Array.from(sensorDataMap.entries()).map(([sensorId, sensorData]) => ({
+      sensorId,
+      serialNumber: visibleData.find(d => d.sensorId === sensorId)?.sensor?.serialNumber || sensorId,
+      data: sensorData
+    }));
+
     return {
-      labels: data.map(d => d.timestamp),
-      temperature: data.map(d => d.temperature),
-      humidity: data.map(d => d.humidity ?? undefined).filter(v => v !== undefined),
-      thresholds: parameters,
+      chartData,
+      parameters
     };
   }
 
@@ -420,7 +477,7 @@ export class ValidationService {
 
     const validation = await prisma.validation.create({
       data: {
-        suitcaseId: payload.suitcaseId,
+        suitcaseId: payload.suitcaseId ?? null,
         clientId: payload.clientId,
         userId: payload.userId,
         name: payload.name,
@@ -516,31 +573,74 @@ export class ValidationService {
   ): number {
     if (!items.length) return 0;
 
-    let longest = 0;
+    const windows = this.calculateAcceptanceWindows(items, parameters);
+    return windows.length > 0 ? Math.max(...windows.map(w => w.duration)) : 0;
+  }
+
+  calculateAcceptanceWindows(
+    items: ValidationImportItem[],
+    parameters: ParameterRange
+  ): Array<{
+    start: Date;
+    end: Date;
+    duration: number;
+    startIndex: number;
+    endIndex: number;
+  }> {
+    if (!items.length) return [];
+
+    const windows: Array<{
+      start: Date;
+      end: Date;
+      duration: number;
+      startIndex: number;
+      endIndex: number;
+    }> = [];
+
     let windowStart: Date | null = null;
-    let lastTimestamp: Date | null = null;
+    let windowEnd: Date | null = null;
+    let startIndex = -1;
 
     const sortedItems = [...items].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
-    for (const item of sortedItems) {
+    for (let i = 0; i < sortedItems.length; i++) {
+      const item = sortedItems[i];
+      if (!item) continue; // Skip undefined items
+      
       const isValid = this.isWithinAcceptance(item, parameters);
+      
       if (isValid) {
         if (!windowStart) {
           windowStart = item.timestamp;
+          startIndex = i;
         }
-        lastTimestamp = item.timestamp;
-      } else if (windowStart && lastTimestamp) {
-        longest = Math.max(longest, lastTimestamp.getTime() - windowStart.getTime());
+        windowEnd = item.timestamp;
+      } else if (windowStart && windowEnd) {
+        windows.push({
+          start: windowStart,
+          end: windowEnd,
+          duration: windowEnd.getTime() - windowStart.getTime(),
+          startIndex,
+          endIndex: i - 1
+        });
         windowStart = null;
-        lastTimestamp = null;
+        windowEnd = null;
+        startIndex = -1;
       }
     }
 
-    if (windowStart && lastTimestamp) {
-      longest = Math.max(longest, lastTimestamp.getTime() - windowStart.getTime());
+    // Adicionar última janela se necessário
+    if (windowStart && windowEnd) {
+      windows.push({
+        start: windowStart,
+        end: windowEnd,
+        duration: windowEnd.getTime() - windowStart.getTime(),
+        startIndex,
+        endIndex: sortedItems.length - 1
+      });
     }
 
-    return longest;
+    return windows;
   }
 
   private isWithinAcceptance(item: ValidationImportItem, parameters: ParameterRange): boolean {
@@ -620,6 +720,14 @@ export class ValidationService {
       duration: Math.max(0, last.timestamp.getTime() - first.timestamp.getTime()),
     };
 
+    // Calcular janelas de conformidade
+    const acceptanceWindows = this.calculateAcceptanceWindows(items, parameters);
+    const longestWindow = acceptanceWindows.length > 0 
+      ? acceptanceWindows.reduce((prev, current) => 
+          prev.duration > current.duration ? prev : current
+        )
+      : null;
+
     const statistics: any = {
       totalReadings,
       validReadings,
@@ -633,6 +741,18 @@ export class ValidationService {
         outOfRangeCount: tempOutOfRangeCount,
       },
       timeRange,
+      acceptanceWindows: acceptanceWindows.map(window => ({
+        start: window.start.toISOString(),
+        end: window.end.toISOString(),
+        duration: window.duration,
+        durationFormatted: this.formatDuration(window.duration)
+      })),
+      longestAcceptanceWindow: longestWindow ? {
+        start: longestWindow.start.toISOString(),
+        end: longestWindow.end.toISOString(),
+        duration: longestWindow.duration,
+        durationFormatted: this.formatDuration(longestWindow.duration)
+      } : null
     };
 
     if (humidityStats) {
@@ -640,6 +760,23 @@ export class ValidationService {
     }
 
     return statistics;
+  }
+
+  formatDuration(milliseconds: number): string {
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    } else {
+      return `${seconds}s`;
+    }
   }
 
   async updateValidationApproval(id: string, isApproved: boolean, _userId: string): Promise<any> {

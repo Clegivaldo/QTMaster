@@ -47,7 +47,8 @@ const Validations: React.FC = () => {
         name: data.name,
         description: data.description,
         clientId: data.clientId,
-        suitcaseId: '', // Será preenchido posteriormente
+        validationNumber: data.certificateNumber,
+        equipmentId: data.equipmentId,
         parameters: {
           minTemperature: 2,
           maxTemperature: 8,

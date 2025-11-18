@@ -1,0 +1,5 @@
+Equipamento;Marca;Modelo;Número de Série;Data de Calibração;Validade;Status;Temperatura Mínima (°C);Temperatura Máxima (°C);Umidade Mínima (%);Umidade Máxima (%);Localização;Observações
+Termômetro Digital;;Testo 110;SN12345;2024-01-15;2025-01-15;Valido;-20;250;0;100;Laboratório Principal;Marca em branco
+Higrômetro Digital;Oregon Scientific;THGN801;SN67890;invalid-date;2025-02-10;Valido;-10;60;10;95;Sala de Testes;Data de calibração inválida
+Sensor de Temperatura;Honeywell;T775;SN11111;2024-03-01;2023-03-01;Valido;-40;85;5;90;Área Externa;Validade vencida
+Termômetro Infravermelho;Fluke;Fluke 62 MAX;SN22222;2024-04-05;2025-04-05;Invalido;-30;500;0;100;Setor de Manutenção;Status inválido

@@ -20,6 +20,18 @@ async function main() {
     },
   });
 
+  // Also ensure legacy/admin compatibility email used by frontend
+  await prisma.user.upsert({
+    where: { email: 'admin@laudo.com' },
+    update: {},
+    create: {
+      email: 'admin@laudo.com',
+      password: hashedPassword,
+      name: 'Administrador',
+      role: 'ADMIN',
+    },
+  });
+
   // Create default sensor types (minimal set)
   const sensorTypes = [
     {

@@ -368,8 +368,9 @@ export class FileProcessorService {
     // Handle Excel date numbers
     if (typeof value === 'number') {
       // Excel date serial number (days since 1900-01-01)
+      // CORREÇÃO: Usar (value - 2) para compensar o bug do Excel 1900
       const excelEpoch = new Date(1900, 0, 1);
-      const date = new Date(excelEpoch.getTime() + (value - 1) * 24 * 60 * 60 * 1000);
+      const date = new Date(excelEpoch.getTime() + (value - 2) * 24 * 60 * 60 * 1000);
       return isNaN(date.getTime()) ? null : date;
     }
 

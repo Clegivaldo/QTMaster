@@ -45,7 +45,7 @@ services:
     container_name: laudo-backend
     restart: unless-stopped
     env_file:
-      - ./backend/.env
+      - ./backend/.env.docker
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://laudo_user:laudo_password@postgres:5432/laudo_db
@@ -91,10 +91,8 @@ services:
       dockerfile: Dockerfile
     container_name: laudo-frontend
     restart: unless-stopped
-    environment:
-      REACT_APP_API_URL: http://localhost:3001/api
-      REACT_APP_TEMPLATE_EDITOR_URL: http://localhost:3001/api/template-editor
-      REACT_APP_ENVIRONMENT: development
+    env_file:
+      - ./frontend/.env.docker
     ports:
       - "3000:80"
     depends_on:

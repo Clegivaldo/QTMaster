@@ -34,6 +34,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
 
   const { data: clientsData } = useClients({ page: 1, limit: 100 });
   const { data: equipmentData } = useClientEquipments();
+  
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -56,6 +57,8 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
     if (!formData.clientId) {
       newErrors.clientId = 'Cliente é obrigatório';
     }
+
+    
 
     if (!formData.equipmentId) {
       newErrors.equipmentId = 'Equipamento é obrigatório';
@@ -151,6 +154,29 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                       </select>
                       {errors.equipmentId && (
                         <p className="mt-1 text-sm text-red-600">{errors.equipmentId}</p>
+                      )}
+                    </div>
+ 
+                    <div>
+                      <label htmlFor="suitcaseId" className="block text-sm font-medium text-gray-700">
+                        Maleta *
+                      </label>
+                      <select
+                        id="suitcaseId"
+                        value={formData.suitcaseId}
+                        onChange={(e) => handleChange('suitcaseId', e.target.value)}
+                        className={`mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
+                          errors.suitcaseId ? 'border-red-300' : ''
+                        }`}
+                        disabled={isLoading}
+                      >
+                        <option value="">Selecione uma maleta</option>
+                        {suitcasesData?.suitcases?.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                      {errors.suitcaseId && (
+                        <p className="mt-1 text-sm text-red-600">{errors.suitcaseId}</p>
                       )}
                     </div>
 

@@ -127,7 +127,7 @@ model SensorData {
 
 model Validation {
   id             String       @id @default(cuid())
-  suitcaseId     String
+  suitcaseId     String?
   clientId       String
   userId         String
   name           String
@@ -145,6 +145,7 @@ model Validation {
   equipmentPatrimony String?
   startAt        DateTime?
   endAt          DateTime?
+  hiddenSensorIds String[]     @default([])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   reports        Report[]
@@ -152,7 +153,7 @@ model Validation {
   cycles         ValidationCycle[]
   importedItems  ValidationImportItem[]
   client         Client       @relation(fields: [clientId], references: [id])
-  suitcase       Suitcase     @relation(fields: [suitcaseId], references: [id])
+  suitcase       Suitcase?    @relation(fields: [suitcaseId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
   equipment      ClientEquipment? @relation(fields: [equipmentId], references: [id])
 
