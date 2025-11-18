@@ -6,8 +6,8 @@ import { fileService } from '@/services/fileService';
 // Upload files mutation
 export const useUploadFiles = () => {
   return useMutation({
-    mutationFn: ({ files, suitcaseId }: { files: File[]; suitcaseId: string }) =>
-      fileService.uploadFiles(files, suitcaseId),
+    mutationFn: ({ files, suitcaseId, validationId }: { files: File[]; suitcaseId: string; validationId?: string }) =>
+      fileService.uploadFiles(files, suitcaseId, validationId),
   });
 };
 

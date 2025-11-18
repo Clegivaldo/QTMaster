@@ -17,7 +17,7 @@ interface EnhancedValidationFormProps {
   equipmentTypes?: EquipmentType[];
   brands?: Brand[];
   models?: EquipmentModel[];
-  onImportData?: (validationId: string, file: File) => void;
+  onImportData?: (validationId: string, file: File, suitcaseIds: string[]) => void;
   onCalculateStatistics?: (validationId: string) => void;
   importLoading?: boolean;
   calculateLoading?: boolean;
@@ -77,6 +77,7 @@ const EnhancedValidationForm: React.FC<EnhancedValidationFormProps> = ({
   const [cycles, setCycles] = useState<ValidationCycleData[]>([]);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [selectedSuitcaseIds, setSelectedSuitcaseIds] = useState<string[]>([]);
 
   const {
     register,
@@ -158,11 +159,17 @@ const EnhancedValidationForm: React.FC<EnhancedValidationFormProps> = ({
   };
 
   const handleImportSubmit = () => {
-    if (importFile && onImportData) {
-      onImportData(validation?.id || 'new', importFile);
-      setShowImportModal(false);
-      setImportFile(null);
+    if (!importFile || !onImportData) return;
+
+    if (selectedSuitcaseIds.length === 0) {
+      alert('Selecione ao menos uma maleta para associar os dados importados.');
+      return;
     }
+
+    onImportData(validation?.id || 'new', importFile, selectedSuitcaseIds);
+    setShowImportModal(false);
+    setImportFile(null);
+    setSelectedSuitcaseIds([]);
   };
 
   const onFormSubmit = (data: EnhancedValidationFormData) => {
@@ -665,6 +672,33 @@ const EnhancedValidationForm: React.FC<EnhancedValidationFormProps> = ({
                   Formatos aceitos: CSV, Excel (.xlsx, .xls), TXT
                 </p>
               </div>
+              {suitcases && suitcases.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Associar a maleta(s)
+                  </label>
+                  <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
+                    {suitcases.map((s) => (
+                      <label key={s.id} className="inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          className="form-checkbox h-4 w-4 text-primary-600"
+                          checked={selectedSuitcaseIds.includes(s.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedSuitcaseIds(prev => [...prev, s.id]);
+                            } else {
+                              setSelectedSuitcaseIds(prev => prev.filter(id => id !== s.id));
+                            }
+                          }}
+                        />
+                        <span className="ml-2 text-sm text-gray-700">{s.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">Selecione uma ou mais maletas para associar os dados importados.</p>
+                </div>
+              )}
             </div>
           </div>
           <div className="bg-gray-50 px-4 py-3 sm:px-6 flex flex-col-reverse space-y-2 space-y-reverse sm:flex-row sm:space-y-0 sm:space-x-3 sm:justify-end">

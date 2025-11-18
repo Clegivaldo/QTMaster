@@ -18,6 +18,7 @@ interface ProcessingOptions {
   chunkSize: number;
   jobId: string;
   fileName: string;
+  validationId?: string;
 }
 
 interface ProcessingResult {
@@ -248,7 +249,7 @@ export class ExcelProcessingService {
               humidity: validatedData.humidity ?? null,
               fileName: options.fileName,
               rowNumber: rowNumber,
-              validationId: null,
+              validationId: options.validationId ?? null,
               createdAt: new Date()
             });
             
@@ -275,7 +276,7 @@ export class ExcelProcessingService {
             humidity: parsedData.humidity ?? null,
             fileName: options.fileName,
             rowNumber: rowNumber,
-            validationId: null,
+            validationId: options.validationId ?? null,
             createdAt: new Date()
           });
           successful++;

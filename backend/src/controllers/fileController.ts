@@ -52,6 +52,7 @@ const upload = multer({
 // Validation schemas
 const processFilesSchema = z.object({
   suitcaseId: z.string().min(1, 'Suitcase ID is required'),
+  validationId: z.string().min(1).optional(),
 });
 
 export class FileController {
@@ -114,7 +115,9 @@ export class FileController {
       const jobId = await enhancedFileProcessorService.processFiles(
         files,
         suitcaseId,
-        req.user!.id
+        req.user!.id,
+        // pass optional validationId through
+        (req.body as any).validationId
       );
 
       logger.info('File upload started:', {

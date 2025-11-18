@@ -141,11 +141,11 @@ export class ReportGenerationService {
         cnpj: validation.client.cnpj,
       },
       suitcase: {
-        id: validation.suitcase.id,
-        name: validation.suitcase.name,
-        description: validation.suitcase.description,
+        id: validation.suitcase?.id ?? '',
+        name: validation.suitcase?.name ?? '',
+        description: validation.suitcase?.description ?? null,
       },
-      sensors: validation.suitcase.sensors.map(ss => ({
+      sensors: validation.suitcase?.sensors ? validation.suitcase.sensors.map(ss => ({
         id: ss.sensor.id,
         serialNumber: ss.sensor.serialNumber,
         model: ss.sensor.model,
@@ -153,7 +153,7 @@ export class ReportGenerationService {
           name: ss.sensor.type.name,
           description: ss.sensor.type.description,
         }
-      })),
+      })) : [],
       sensorData: validation.sensorData.map(sd => ({
         id: sd.id,
         timestamp: sd.timestamp,

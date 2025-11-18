@@ -16,6 +16,7 @@ interface CSVProcessingOptions {
   delimiter?: string;
   encoding?: BufferEncoding;
   hasHeader?: boolean;
+  validationId?: string;
 }
 
 interface CSVProcessingResult {
@@ -335,7 +336,7 @@ export class CSVProcessingService {
           humidity: parsedData.humidity,
           fileName: options.fileName,
           rowNumber: rowNumber,
-          validationId: null,
+          validationId: options.validationId ?? null,
           createdAt: new Date()
         });
         

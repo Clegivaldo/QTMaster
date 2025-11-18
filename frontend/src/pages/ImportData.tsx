@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Upload, 
   X, 
@@ -11,11 +11,15 @@ import {
 import PageHeader from '@/components/Layout/PageHeader';
 import { useFileUpload, useUploadFiles, useProcessingStatus } from '@/hooks/useFileProcessing';
 import { useSuitcases } from '@/hooks/useSuitcases';
+import { useSearchParams } from 'react-router-dom';
 
 const ImportData: React.FC = () => {
   const [selectedSuitcaseId, setSelectedSuitcaseId] = useState<string>('');
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams] = useSearchParams();
+  const validationIdFromQuery = searchParams.get('validationId');
+  const suitcaseIdFromQuery = searchParams.get('suitcaseId');
 
   const { data: suitcasesData } = useSuitcases({ limit: 100 });
   const uploadMutation = useUploadFiles();
@@ -39,6 +43,13 @@ const ImportData: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    // If navigation came from newly created validation, pre-select suitcase if provided
+    if (suitcaseIdFromQuery) {
+      setSelectedSuitcaseId(suitcaseIdFromQuery);
+    }
+  }, [suitcaseIdFromQuery]);
+
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {
       alert('Selecione pelo menos um arquivo');
@@ -54,6 +65,7 @@ const ImportData: React.FC = () => {
       const response = await uploadMutation.mutateAsync({
         files: selectedFiles,
         suitcaseId: selectedSuitcaseId,
+        validationId: validationIdFromQuery || undefined,
       });
 
       if (response.data.success) {
@@ -99,9 +111,16 @@ const ImportData: React.FC = () => {
       <div className="space-y-6">
         {/* Suitcase Selection */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            1. Selecione a Maleta
-          </h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              1. Selecione a Maleta
+            </h3>
+            {validationIdFromQuery && (
+              <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                <div className="text-sm text-yellow-800">
+                  Você está importando dados para a validação <strong>{validationIdFromQuery}</strong>. Após o processamento, você poderá associar os dados a essa validação.
+                </div>
+              </div>
+            )}
           <div className="max-w-md">
             <select
               value={selectedSuitcaseId}

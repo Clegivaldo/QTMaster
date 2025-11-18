@@ -399,7 +399,7 @@ export class ValidationController {
         sensorDataIds: validatedData.sensorDataIds,
         cycles: validatedData.cycles,
         importedItems: validatedData.importedItems,
-      });
+      } as any);
 
       const fullValidation = await prisma.validation.findUnique({
         where: { id: validation.id },

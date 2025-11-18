@@ -12,9 +12,11 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
 import { useValidations, useCreateValidation, useUpdateValidationApproval, useDeleteValidation } from '@/hooks/useValidations';
+import { useNavigate } from 'react-router-dom';
 import { Validation, ValidationFilters } from '@/types/validation';
 
 import ValidationCreationModal, { ValidationCreationData } from '@/components/ValidationCreationModal';
+import { parseApiError } from '@/utils/apiErrors';
 
 
 const Validations: React.FC = () => {
@@ -40,6 +42,8 @@ const Validations: React.FC = () => {
     setFilters({ ...filters, search: search || undefined, page: 1 });
   };
 
+  const navigate = useNavigate();
+
   const handleCreateValidation = async (data: ValidationCreationData) => {
     try {
       // Transformar os dados do modal de criação para o formato esperado pelo backend
@@ -58,12 +62,17 @@ const Validations: React.FC = () => {
         sensorDataIds: [], // Será preenchido quando importar dados dos sensores
       };
       
-      await createMutation.mutateAsync(validationData);
+      const response = await createMutation.mutateAsync(validationData);
+      // If API returns created validation, navigate to Import page for user to import sensor data
+      const createdId = response?.data?.data?.validation?.id;
       setShowCreationModal(false);
+      if (createdId) {
+        navigate(`/import?validationId=${createdId}&clientId=${validationData.clientId}`);
+      }
     } catch (error) {
       console.error('Error creating validation:', error);
-      const serverMessage = (error as any)?.response?.data?.error || (error as any)?.message;
-      alert(serverMessage || 'Erro ao criar validação');
+      const message = parseApiError(error);
+      alert(message || 'Erro ao criar validação');
     }
   };
 
@@ -322,7 +331,7 @@ const Validations: React.FC = () => {
                       {validation._count?.sensorData || 0} dados • {validation._count?.reports || 0} relatórios
                     </span>
                     <div className="flex space-x-2">
-                      <button 
+                        <button 
                           onClick={() => alert('Funcionalidade de gráficos será implementada em breve')}
                           className="text-primary-600 hover:text-primary-900 font-medium"
                         >
@@ -333,6 +342,12 @@ const Validations: React.FC = () => {
                           className="text-gray-600 hover:text-gray-900 font-medium"
                         >
                           Detalhes
+                        </button>
+                        <button
+                          onClick={() => navigate(`/import?validationId=${validation.id}&clientId=${validation.clientId}&suitcaseId=${validation.suitcase?.id || ''}`)}
+                          className="text-primary-600 hover:text-primary-900 font-medium"
+                        >
+                          Importar Dados
                         </button>
                         {validation.isApproved === null && (
                           <>

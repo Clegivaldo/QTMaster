@@ -178,12 +178,12 @@ export class TemplateEngineService {
       const statistics = await this.calculateStatistics(validation);
 
       // Preparar dados dos sensores
-      const sensors = validation.suitcase.sensors.map(ss => ({
+      const sensors = validation.suitcase ? validation.suitcase.sensors.map(ss => ({
         id: ss.sensor.id,
         serialNumber: ss.sensor.serialNumber,
         model: ss.sensor.model,
         position: ss.position,
-      }));
+      })) : [];
 
       return {
         client: {

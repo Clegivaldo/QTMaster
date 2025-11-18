@@ -6,7 +6,8 @@ import { ProcessingJob, UploadResponse } from '@/types/fileProcessing';
 class FileService {
   async uploadFiles(
     files: File[],
-    suitcaseId: string
+    suitcaseId: string,
+    validationId?: string
   ): Promise<AxiosResponse<ApiResponse<UploadResponse>>> {
     const formData = new FormData();
     
@@ -17,6 +18,11 @@ class FileService {
     
     // Add suitcase ID
     formData.append('suitcaseId', suitcaseId);
+
+    // Optional: attach validationId so backend can associate processed data
+    if (validationId) {
+      formData.append('validationId', validationId);
+    }
 
     return apiService['api'].post('/files/upload', formData, {
       headers: {

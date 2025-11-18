@@ -29,6 +29,7 @@ export interface EnhancedFileProcessingJob {
   id: string;
   files: Express.Multer.File[];
   suitcaseId: string;
+  validationId: string | undefined;
   userId: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   results: EnhancedProcessingResult[];
@@ -45,7 +46,8 @@ export class EnhancedFileProcessorService {
   async processFiles(
     files: Express.Multer.File[],
     suitcaseId: string,
-    userId: string
+    userId: string,
+    validationId?: string
   ): Promise<string> {
     const jobId = this.generateJobId();
     
@@ -53,6 +55,7 @@ export class EnhancedFileProcessorService {
       id: jobId,
       files,
       suitcaseId,
+      validationId,
       userId,
       status: 'pending',
       results: [],
@@ -140,7 +143,7 @@ export class EnhancedFileProcessorService {
       let processedFiles = 0;
       for (const file of job.files) {
         try {
-          const result = await this.processFileWithRobustService(file, suitcase);
+          const result = await this.processFileWithRobustService(file, suitcase, job.userId, job.validationId);
           job.results.push(result);
           processedFiles++;
           
@@ -192,7 +195,9 @@ export class EnhancedFileProcessorService {
 
   private async processFileWithRobustService(
     file: Express.Multer.File,
-    suitcase: any
+    suitcase: any,
+    userId: string,
+    validationId?: string
   ): Promise<EnhancedProcessingResult> {
     const startTime = Date.now();
     const tempFilePath = await this.saveTempFile(file);
@@ -211,12 +216,13 @@ export class EnhancedFileProcessorService {
 
       const options = {
         suitcaseId: suitcase.id,
-        userId: suitcase.userId,
+        userId: userId,
         validateData: true,
         chunkSize: 1000,
         jobId: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         fileName: file.originalname,
-      };
+        validationId,
+      } as any;
 
       switch (extension) {
         case 'csv':
