@@ -184,7 +184,12 @@ export class EnhancedFileProcessorService {
       });
 
       // Store final results in Redis for 24 hours
-      await redisService.set(`job:results:${jobId}`, job, 86400);
+      // Sanitize job object to avoid serializing non-serializable fields (file buffers, streams)
+      const sanitizedJob = {
+        ...job,
+        files: job.files.map(f => ({ originalname: f.originalname, mimetype: f.mimetype, size: f.size }))
+      };
+      await redisService.set(`job:results:${jobId}`, sanitizedJob, 86400);
       // Ensure final progress is stored so clients polling progress see 100%
       try {
         await this.updateJobProgress(jobId, {
