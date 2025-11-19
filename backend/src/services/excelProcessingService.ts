@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import * as fs from 'fs';
 import { prisma } from '../lib/prisma';
 import { validateSensorData } from '../utils/validationUtils';
 import { logger } from '../utils/logger';
@@ -19,6 +20,7 @@ interface ProcessingOptions {
   jobId: string;
   fileName: string;
   validationId?: string;
+  fileSensorSerial?: string;
 }
 
 interface ProcessingResult {
@@ -64,18 +66,52 @@ export class ExcelProcessingService {
     const startTime = Date.now();
     try {
       await this.validateFile(filePath, originalName);
-      const workbook = XLSX.readFile(filePath);
-      const sheetName = workbook.SheetNames[0];
+      const XLSXLib: any = (XLSX as any)?.default ?? XLSX;
+      const workbook = XLSXLib.readFile(filePath);
+
+      // Detect model/serial from 'Resumo' sheet for specific sensor parsing
+      let defaultSensorSerial: string | undefined = undefined;
+      let preferLista = false;
+      const resumo = workbook.SheetNames.includes('Resumo') ? workbook.Sheets['Resumo'] : undefined;
+      if (resumo) {
+        try {
+          const modelCell = resumo['B5'];
+          const serialCell = resumo['B6'];
+          const modelStr = modelCell ? String((modelCell as any).v || (modelCell as any).w || '').trim() : '';
+          const serialStr = serialCell ? String((serialCell as any).v || (serialCell as any).w || '').trim() : '';
+          if (modelStr) {
+            const modelLower = modelStr.toLowerCase();
+            if (modelLower.includes('rc-4hc') || modelLower.includes('rc4hc')) {
+              preferLista = true;
+            }
+          }
+          if (serialStr) {
+            defaultSensorSerial = serialStr;
+          }
+        } catch (e) {
+          // ignore, proceed with default behaviour
+        }
+      }
+
+      // Choose sheet: prefer 'Lista' for RC-4HC if present, otherwise first sheet
+      let sheetName = workbook.SheetNames[0];
+      if (preferLista && workbook.SheetNames.includes('Lista')) {
+        sheetName = 'Lista';
+      }
       if (!sheetName) throw new Error('Planilha não encontrada');
       const worksheet = workbook.Sheets[sheetName];
       if (!worksheet) throw new Error('Worksheet não encontrada');
-      const range = XLSX.utils.decode_range(worksheet['!ref'] as string);
-      const headerRow = XLSX.utils.sheet_to_json(worksheet, { header: 1, range: { s: { r: range.s.r, c: range.s.c }, e: { r: range.s.r, c: range.e.c } } }) as any[];
+      const range = XLSXLib.utils.decode_range(worksheet['!ref'] as string);
+      const headerRow = XLSXLib.utils.sheet_to_json(worksheet, { header: 1, range: { s: { r: range.s.r, c: range.s.c }, e: { r: range.s.r, c: range.e.c } } }) as any[];
       const headers: string[] = (headerRow[0] || []).map((h: any) => String(h || '').trim());
       if (headers.length === 0) {
         throw new Error('Cabeçalhos não encontrados no Excel');
       }
       const mapping = this.detectColumnStructure(Object.fromEntries(headers.map(h => [h, ''])));
+      // If we detected a sensor serial in Resumo, attach to options so processChunk can use as fallback
+      if (defaultSensorSerial) {
+        options.fileSensorSerial = defaultSensorSerial;
+      }
       this.validateColumnMapping(mapping);
       const chunkSize = Math.min(options.chunkSize || 1000, this.MAX_ROWS_PER_BATCH);
       const totalRows = range.e.r - range.s.r;
@@ -85,7 +121,7 @@ export class ExcelProcessingService {
       const warnings: string[] = [];
       for (let start = range.s.r + 1; start <= range.e.r; start += chunkSize) {
         const end = Math.min(start + chunkSize - 1, range.e.r);
-        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, range: { s: { r: start, c: range.s.c }, e: { r: end, c: range.e.c } }, defval: null, raw: false }) as any[];
+        const rows = XLSXLib.utils.sheet_to_json(worksheet, { header: 1, range: { s: { r: start, c: range.s.c }, e: { r: end, c: range.e.c } }, defval: null, raw: false }) as any[];
         const objects = rows.map((arr: any[]) => Object.fromEntries(headers.map((h, idx) => [h, arr[idx]])));
         const chunkResults = await this.processChunk(objects, mapping, options);
         successful += chunkResults.successful;
@@ -108,7 +144,6 @@ export class ExcelProcessingService {
   }
   
   private async validateFile(filePath: string, originalName: string): Promise<void> {
-    const fs = require('fs');
     const stats = fs.statSync(filePath);
     
     // Validar tamanho do arquivo
@@ -127,6 +162,7 @@ export class ExcelProcessingService {
     const mapping: ColumnMapping = {};
     
     const possibleTimestampColumns = [
+      'tempo',
       'timestamp', 'data', 'hora', 'time', 'date', 'data_hora', 'datetime',
       'data/hora', 'data e hora', 'timestamp_leitura', 'leitura_data'
     ];
@@ -215,8 +251,20 @@ export class ExcelProcessingService {
       const row = chunk[index];
       const rowNumber = index + 1;
       
-      try {
+        try {
         const parsedData = this.parseRow(row, mapping);
+        // Temporary debug: log first few parsed rows to help diagnose parsing issues
+        try {
+          if (index < 10) {
+            logger.info('Parsed sample row', { rowNumber, parsedData, fileName: options.fileName, jobId: options.jobId });
+          }
+        } catch (e) {
+          // ignore logging errors
+        }
+        // If sensorId not present in rows, use file-level detected serial as fallback
+        if ((parsedData.sensorId === 'unknown' || !parsedData.sensorId) && options.fileSensorSerial) {
+          parsedData.sensorId = options.fileSensorSerial;
+        }
         
         // Validação com Zod schema
         if (options.validateData) {

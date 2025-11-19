@@ -17,6 +17,7 @@ interface CSVProcessingOptions {
   encoding?: BufferEncoding;
   hasHeader?: boolean;
   validationId?: string;
+  forceSensorId?: string;
 }
 
 interface CSVProcessingResult {
@@ -302,7 +303,7 @@ export class CSVProcessingService {
     mapping: ColumnMapping,
     options: CSVProcessingOptions
   ): Promise<{ successful: number; failed: number; errors: string[]; warnings: string[] }> {
-    const sensorDataToCreate = [];
+    let sensorDataToCreate = [];
     const errors = [];
     const warnings = [];
     let successful = 0;
@@ -329,8 +330,19 @@ export class CSVProcessingService {
           }
         }
         
+        // Prefer forced sensor id (from suitcase matching). If not present, use parsed sensor id when valid.
+        const finalSensorId = options.forceSensorId ?? ((parsedData.sensorId && parsedData.sensorId !== 'unknown') ? parsedData.sensorId : null);
+        // Normalize sensor id to avoid hidden characters or extra whitespace
+        const normalizedSensorId = finalSensorId == null ? null : String(finalSensorId).trim();
+
+        if (!normalizedSensorId) {
+          failed++;
+          errors.push(`Linha ${rowNumber}: Sensor não encontrado ou inválido`);
+          continue;
+        }
+
         sensorDataToCreate.push({
-          sensorId: parsedData.sensorId,
+          sensorId: normalizedSensorId,
           timestamp: parsedData.timestamp,
           temperature: parsedData.temperature,
           humidity: parsedData.humidity,
@@ -350,12 +362,114 @@ export class CSVProcessingService {
     // Inserir dados válidos em lote
     if (sensorDataToCreate.length > 0) {
       try {
-        await prisma.sensorData.createMany({
-          data: sensorDataToCreate,
-          skipDuplicates: true
+        // Structured summary (kept for log parsers)
+        logger.info('DEBUG_SENSOR_DATA_BATCH', {
+          jobId: options.jobId,
+          fileName: options.fileName,
+          forceSensorId: (options as any).forceSensorId ?? null,
+          count: sensorDataToCreate.length,
+          sample: sensorDataToCreate.slice(0, 10)
         });
+
+        // Console logs to increase chances of visibility in container logs
+        try {
+          console.log(`DEBUG_SENSOR_IDS job=${options.jobId} file=${options.fileName} ids=${sensorDataToCreate.map(d => d.sensorId).join(',')}`);
+          console.log('DEBUG_SENSOR_DATA_SAMPLE', JSON.stringify(sensorDataToCreate.slice(0, 10)));
+        } catch (e) {
+          // ignore console logging failures
+        }
+        // Verify sensor IDs exist to avoid FK violations
+        const sensorIds = Array.from(new Set(sensorDataToCreate.map(d => d.sensorId)));
+        const existingSensors = await prisma.sensor.findMany({ where: { id: { in: sensorIds } }, select: { id: true } });
+        const existingIds = new Set(existingSensors.map(s => s.id));
+        const missingIds = sensorIds.filter(id => !existingIds.has(id));
+
+        // Log the lookup results to help diagnose FK violations
+        try {
+          logger.info('EXISTING_SENSORS_CHECK', {
+            jobId: options.jobId,
+            fileName: options.fileName,
+            sensorIds,
+            existingIds: Array.from(existingIds),
+            missingIds
+          });
+        } catch (e) {
+          // ignore logging failures
+        }
+
+        // Additional diagnostic: record length and hex representation
+        try {
+          const sensorHexes = sensorIds.map(id => {
+            const s = id == null ? String(id) : String(id);
+            let hex = null;
+            try {
+              hex = Buffer.from(s).toString('hex');
+            } catch (e) {
+              hex = 'hex-failed';
+            }
+            return { id: s, len: s.length, hex };
+          });
+
+          logger.info('EXISTING_SENSOR_HEX', {
+            jobId: options.jobId,
+            fileName: options.fileName,
+            sensorHexes
+          });
+
+          try {
+            console.log('EXISTING_SENSOR_HEX', JSON.stringify({ jobId: options.jobId, fileName: options.fileName, sensorHexes }));
+          } catch (e) {}
+        } catch (e) {
+          // ignore
+        }
+
+        // Build final payload: remove rows referencing missing sensors and record errors
+        if (missingIds.length > 0) {
+          logger.error('MISSING_SENSORS_BEFORE_INSERT', { jobId: options.jobId, fileName: options.fileName, missingIds });
+          const beforeCount = sensorDataToCreate.length;
+          sensorDataToCreate = sensorDataToCreate.filter(d => existingIds.has(d.sensorId));
+          const removedCount = beforeCount - sensorDataToCreate.length;
+          if (removedCount > 0) {
+            errors.push(`${removedCount} linhas removidas por sensor inexistente: ${missingIds.join(',')}`);
+          }
+        }
+
+        if (sensorDataToCreate.length === 0) {
+          logger.warn('Nenhuma linha válida para inserir após remover sensores faltantes', { jobId: options.jobId, fileName: options.fileName });
+          return { successful, failed, errors, warnings };
+        }
+
+        // Insert per-row in chunks to avoid a createMany FK edge-case
+        const CHUNK = 100;
+        for (let i = 0; i < sensorDataToCreate.length; i += CHUNK) {
+          const chunk = sensorDataToCreate.slice(i, i + CHUNK);
+          try {
+            const tx = chunk.map(d => prisma.sensorData.create({ data: d }));
+            await prisma.$transaction(tx);
+          } catch (e) {
+            logger.error('Erro ao inserir chunk de sensor_data', { jobId: options.jobId, fileName: options.fileName, index: i, error: e });
+            errors.push('Erro ao inserir dados no banco de dados');
+          }
+        }
       } catch (error) {
         logger.error('Erro ao inserir dados em lote', error);
+        try {
+          logger.error('BATCH_PAYLOAD_SNAPSHOT', {
+            jobId: options.jobId,
+            fileName: options.fileName,
+            count: sensorDataToCreate.length,
+            sensorIds: sensorDataToCreate.map(d => d.sensorId),
+            sample: sensorDataToCreate.slice(0, 10)
+          });
+            // Also print snapshot to stdout so it's visible in plain container logs
+            try {
+              console.log('BATCH_PAYLOAD_SNAPSHOT', JSON.stringify({ jobId: options.jobId, fileName: options.fileName, count: sensorDataToCreate.length, sensorIds: sensorDataToCreate.map(d => d.sensorId), sample: sensorDataToCreate.slice(0,10) }));
+            } catch (e) {
+              // ignore
+            }
+        } catch (e) {
+          // ignore snapshot failures
+        }
         errors.push('Erro ao inserir dados no banco de dados');
       }
     }
@@ -376,7 +490,20 @@ export class CSVProcessingService {
     if (!value || value === null || value === '') {
       return 'unknown';
     }
-    return String(value).trim();
+    try {
+      let s = String(value).trim();
+      // Normalize unicode (NFKC) and strip invisible/control characters (including zero-width)
+      if (s.normalize) {
+        s = s.normalize('NFKC');
+      }
+      // Remove control characters and zero-width/byte-order-mark
+      s = s.replace(/[\p{C}\u200B-\u200D\uFEFF]/gu, '');
+      s = s.trim();
+      if (s === '') return 'unknown';
+      return s;
+    } catch (e) {
+      return String(value).trim();
+    }
   }
   
   private parseTimestamp(value: any): Date {

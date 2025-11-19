@@ -48,6 +48,7 @@ services:
       - ./backend/.env.docker
     environment:
       NODE_ENV: development
+      MAX_FILE_SIZE: 52428800
       DATABASE_URL: postgresql://laudo_user:laudo_password@postgres:5432/laudo_db
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-in-production

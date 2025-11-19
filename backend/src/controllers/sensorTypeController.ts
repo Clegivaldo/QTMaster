@@ -192,8 +192,10 @@ export class SensorTypeController {
         return;
       }
 
-      logger.error('Update sensor type error:', { error: error instanceof Error ? error.message : error, sensorTypeId: req.params.id, userId: req.user?.id });
-      res.status(500).json({ error: 'Internal server error' });
+      logger.error('Update sensor type error:', { error: error instanceof Error ? error.message : error, sensorTypeId: req.params.id, userId: req.user?.id, stack: error instanceof Error ? error.stack : undefined });
+      // In development return error message to aid debugging
+      const devMessage = process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : 'Internal server error';
+      res.status(500).json({ error: devMessage });
       return;
     }
   }

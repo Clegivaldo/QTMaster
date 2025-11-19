@@ -24,29 +24,50 @@ interface SidebarProps {
   sidebarCollapsed?: boolean;
 }
 
+type NavIcon = React.ComponentType<{ className?: string }>;
+
 interface NavigationItem {
   name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  href?: string;
+  icon?: NavIcon;
   adminOnly?: boolean;
   badge?: string;
+  children?: NavigationItem[];
 }
 
 const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Clientes', href: '/clients', icon: Users },
-  { name: 'Sensores', href: '/sensors', icon: Thermometer },
-  { name: 'Tipos de Sensor', href: '/sensor-types', icon: Thermometer },
-  { name: 'Equipamentos', href: '/equipment-types', icon: Wrench },
-  { name: 'Marcas', href: '/brands', icon: Wrench },
-  { name: 'Modelos', href: '/models', icon: Wrench },
-  { name: 'Equip. Clientes', href: '/client-equipments', icon: Wrench },
-  { name: 'Maletas', href: '/suitcases', icon: Package },
+  {
+    name: 'Clientes',
+    icon: Users,
+    children: [
+      { name: 'Cliente', href: '/clients', icon: Users },
+      { name: 'Equipamento de Cliente', href: '/client-equipments', icon: Wrench },
+    ],
+  },
+  {
+    name: 'Sensores',
+    icon: Thermometer,
+    children: [
+      { name: 'Tipo de Sensor', href: '/sensor-types', icon: Thermometer },
+      { name: 'Sensor', href: '/sensors', icon: Thermometer },
+      { name: 'Maleta', href: '/suitcases', icon: Package },
+    ],
+  },
+  {
+    name: 'Equipamentos',
+    icon: Wrench,
+    children: [
+      { name: 'Tipo', href: '/equipment-types', icon: Wrench },
+      { name: 'Marca', href: '/brands', icon: Wrench },
+      { name: 'Modelo', href: '/models', icon: Wrench },
+    ],
+  },
   { name: 'Importar Dados', href: '/import', icon: Upload },
   { name: 'Validações', href: '/validations', icon: BarChart3 },
   { name: 'Relatórios', href: '/reports', icon: FileText },
   { name: 'Templates', href: '/templates', icon: Layout },
-  { name: 'Configurações', href: '/settings', icon: Settings, adminOnly: true },
+  // Configurações removed from sidebar (available in header avatar)
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, sidebarCollapsed = false }) => {
@@ -54,9 +75,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, sidebarCollapsed = f
   const { user } = useAuth();
   const { version, buildDate } = useAppVersion();
 
-  const filteredNavigation = navigation.filter(item => 
-    !item.adminOnly || user?.role === 'ADMIN'
-  );
+  const filterNav = (items: NavigationItem[]) => {
+    return items
+      .map(i => {
+        if (i.children) {
+          const children = i.children.filter(c => !c.adminOnly || user?.role === 'ADMIN');
+          if (children.length === 0) return null;
+          return { ...i, children };
+        }
+        if (i.adminOnly && user?.role !== 'ADMIN') return null;
+        return i;
+      })
+      .filter(Boolean) as NavigationItem[];
+  };
+
+  const filteredNavigation = filterNav(navigation);
+
+  const [openGroup, setOpenGroup] = React.useState<string | null>(null);
+  const toggleGroup = (name: string) => setOpenGroup(prev => (prev === name ? null : name));
 
   return (
     <>
@@ -85,11 +121,55 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, sidebarCollapsed = f
             {/* Navigation */}
             <nav className={clsx('mt-8 flex-1 space-y-1', sidebarCollapsed ? 'px-2' : 'px-2')}>
               {filteredNavigation.map((item) => {
-                const isActive = location.pathname === item.href;
+                if (item.children && item.children.length > 0) {
+                  const open = openGroup === item.name;
+                  return (
+                    <div key={item.name}>
+                      <button
+                        onClick={() => toggleGroup(item.name)}
+                        className={clsx(
+                          'w-full group flex items-center py-3 text-sm font-medium rounded-md transition-colors duration-150',
+                          'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        )}
+                      >
+                        {item.icon && (
+                          <item.icon className={clsx('flex-shrink-0 h-6 w-6', sidebarCollapsed ? '' : 'mr-3', 'text-gray-400')} />
+                        )}
+                        {!sidebarCollapsed && item.name}
+                        <ChevronRight className={clsx('ml-auto h-4 w-4 transition-transform', open ? 'rotate-90' : '')} />
+                      </button>
+
+                      {open && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          {item.children.map(child => {
+                            const isActive = child.href && location.pathname === child.href;
+                            return (
+                              <NavLink
+                                key={child.name}
+                                to={child.href || '#'}
+                                className={clsx(
+                                  'group flex items-center py-2 text-sm rounded-md transition-colors duration-150',
+                                  isActive ? 'bg-primary-100 text-primary-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                )}
+                              >
+                                {child.icon && (
+                                  <child.icon className={clsx('flex-shrink-0 h-4 w-4 mr-2', isActive ? 'text-primary-600' : 'text-gray-400')} />
+                                )}
+                                {!sidebarCollapsed && child.name}
+                              </NavLink>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                const isActive = item.href && location.pathname === item.href;
                 return (
                   <NavLink
                     key={item.name}
-                    to={item.href}
+                    to={item.href || '#'}
                     className={clsx(
                       'group flex items-center py-3 text-sm font-medium rounded-md transition-colors duration-150',
                       isActive
@@ -100,13 +180,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, sidebarCollapsed = f
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     )}
                   >
-                    <item.icon
-                      className={clsx(
-                        'flex-shrink-0 h-6 w-6',
-                        sidebarCollapsed ? '' : 'mr-3',
-                        isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500'
-                      )}
-                    />
+                    {item.icon && (
+                      <item.icon
+                        className={clsx(
+                          'flex-shrink-0 h-6 w-6',
+                          sidebarCollapsed ? '' : 'mr-3',
+                          isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500'
+                        )}
+                      />
+                    )}
                     {!sidebarCollapsed && item.name}
                     {item.badge && (
                       <span className="ml-auto inline-block py-0.5 px-2 text-xs font-medium rounded-full bg-primary-100 text-primary-800">
@@ -164,31 +246,62 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, sidebarCollapsed = f
           {/* Mobile navigation */}
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {filteredNavigation.map((item) => {
-              const isActive = location.pathname === item.href;
+              if (item.children && item.children.length > 0) {
+                const open = openGroup === item.name;
+                return (
+                  <div key={item.name}>
+                    <button
+                      onClick={() => toggleGroup(item.name)}
+                      className={clsx(
+                        'w-full group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-150',
+                        'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      )}
+                    >
+                      {item.icon && (
+                        <item.icon className={clsx('mr-3 flex-shrink-0 h-5 w-5 text-gray-400')} />
+                      )}
+                      {item.name}
+                      <ChevronRight className={clsx('ml-auto h-4 w-4 transition-transform', open ? 'rotate-90' : '')} />
+                    </button>
+
+                    {open && (
+                      <div className="pl-6 mt-1 space-y-1">
+                        {item.children.map(child => (
+                          <NavLink
+                            key={child.name}
+                            to={child.href || '#'}
+                            onClick={onClose}
+                            className={clsx(
+                              'group flex items-center px-2 py-2 text-sm rounded-md transition-colors duration-150',
+                              location.pathname === child.href ? 'bg-primary-100 text-primary-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            )}
+                          >
+                            {child.icon && (
+                              <child.icon className="mr-3 flex-shrink-0 h-4 w-4 text-gray-400" />
+                            )}
+                            {child.name}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <NavLink
                   key={item.name}
-                  to={item.href}
+                  to={item.href || '#'}
                   onClick={onClose}
                   className={clsx(
                     'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-150',
-                    isActive
-                      ? 'bg-primary-100 text-primary-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    location.pathname === item.href ? 'bg-primary-100 text-primary-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   )}
                 >
-                  <item.icon
-                    className={clsx(
-                      'mr-3 flex-shrink-0 h-5 w-5',
-                      isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500'
-                    )}
-                  />
-                  {item.name}
-                  {item.badge && (
-                    <span className="ml-auto inline-block py-0.5 px-2 text-xs font-medium rounded-full bg-primary-100 text-primary-800">
-                      {item.badge}
-                    </span>
+                  {item.icon && (
+                    <item.icon className={clsx('mr-3 flex-shrink-0 h-5 w-5 text-gray-400')} />
                   )}
+                  {item.name}
                 </NavLink>
               );
             })}

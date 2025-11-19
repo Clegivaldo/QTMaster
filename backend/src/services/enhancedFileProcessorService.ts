@@ -185,6 +185,17 @@ export class EnhancedFileProcessorService {
 
       // Store final results in Redis for 24 hours
       await redisService.set(`job:results:${jobId}`, job, 86400);
+      // Ensure final progress is stored so clients polling progress see 100%
+      try {
+        await this.updateJobProgress(jobId, {
+          processed: job.files.length,
+          total: job.files.length,
+          percentage: 100,
+          currentFile: null,
+        });
+      } catch (e) {
+        logger.warn('Failed to set final job progress in Redis:', { jobId, error: e instanceof Error ? e.message : String(e) });
+      }
       
     } catch (error) {
       job.status = 'failed';
@@ -222,6 +233,8 @@ export class EnhancedFileProcessorService {
         jobId: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         fileName: file.originalname,
         validationId,
+        // force sensor id when file doesn't contain sensor identifier
+        forceSensorId: matchedSensor.sensor.id,
       } as any;
 
       switch (extension) {
