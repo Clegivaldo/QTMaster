@@ -1,4 +1,4 @@
-import { AppError } from '../utils/errors';
+import { AppError } from '../utils/errors.js';
 import { prisma } from '../lib/prisma.js';
 import { ValidationCycleType, type ValidationImportItem } from '@prisma/client';
 

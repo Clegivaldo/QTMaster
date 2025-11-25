@@ -8,7 +8,7 @@
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "vite",
     "dev:backend": "tsx watch src/server.ts",
-    "build": "tsc && vite build",
+    "build": "tsc -p tsconfig.prod.json || tsc -p tsconfig.json",
     "build:backend": "tsc -p tsconfig.json",
     "preview": "vite preview",
     "lint": "eslint .",

@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { digitalSignatureService } from '../services/digitalSignatureService';
-import { reportSharingService } from '../services/reportSharingService';
-import { authenticate } from '../middleware/auth';
-import { requirePermission, Permission } from '../middleware/authorization';
-import { logger } from '../utils/logger';
+import { digitalSignatureService } from '../services/digitalSignatureService.js';
+import { reportSharingService } from '../services/reportSharingService.js';
+import { authenticate } from '../middleware/auth.js';
+import { requirePermission, Permission } from '../middleware/authorization.js';
+import { logger } from '../utils/logger.js';
 import * as fs from 'fs/promises';
 
 const router = Router();
@@ -28,7 +28,7 @@ router.post(
       const { reason, location, contactInfo } = req.body;
 
       // Carregar PDF do relatório
-      const report = await (await import('../lib/prisma')).prisma.report.findUnique({
+      const report = await (await import('../lib/prisma.js')).prisma.report.findUnique({
         where: { id },
       });
 

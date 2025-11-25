@@ -7,27 +7,38 @@ services:
     container_name: laudo-postgres-dev
     restart: unless-stopped
     environment:
-      POSTGRES_DB: laudo_db_dev
+      POSTGRES_DB: laudo_db
       POSTGRES_USER: laudo_user
-      POSTGRES_PASSWORD: laudo_password
+      POSTGRES_PASSWORD: laudo123
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "5432:5432"
     networks:
       - laudo-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U laudo_user -d laudo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: laudo-redis-dev
     restart: unless-stopped
+    command: redis-server
     ports:
       - "6379:6379"
     volumes:
       - redis_dev_data:/data
     networks:
       - laudo-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_dev_data:

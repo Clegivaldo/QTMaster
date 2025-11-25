@@ -1,7 +1,7 @@
 import crypto from 'crypto';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../lib/prisma.js';
 import { Prisma } from '@prisma/client';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/logger.js';
 import * as fs from 'fs/promises';
 import path from 'path';
 

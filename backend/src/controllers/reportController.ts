@@ -1,12 +1,11 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { ReportGenerationService } from '../services/reportGenerationService.js';
+import { getReportGenerationService } from '../services/serviceInstances.js';
 import path from 'path';
 import fs from 'fs';
 import { requireParam } from '../utils/requestUtils.js';
 
 const prisma = new PrismaClient();
-const reportService = new ReportGenerationService();
 
 export class ReportController {
   /**
@@ -42,7 +41,7 @@ export class ReportController {
       }
 
       // Gerar o PDF
-      const pdfBuffer = await reportService.generateReport(
+  const pdfBuffer = await getReportGenerationService().generateReport(
         validationId, 
         templateId as string
       );
@@ -265,7 +264,7 @@ export class ReportController {
       if (!validationId) return;
 
       // Gerar o PDF
-      const pdfBuffer = await reportService.generateReport(validationId);
+  const pdfBuffer = await getReportGenerationService().generateReport(validationId);
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'inline');

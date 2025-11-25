@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
-import { TemplateService } from './templateService';
+import type { TemplateService } from './templateService.js';
+import { getTemplateService } from './templateServiceInstance.js';
 import { prisma } from '../lib/prisma.js';
 
 export interface ReportData {
@@ -58,7 +59,7 @@ export class ReportGenerationService {
   public templateService: TemplateService;
 
   constructor() {
-    this.templateService = new TemplateService();
+     this.templateService = getTemplateService();
   }
 
   /**

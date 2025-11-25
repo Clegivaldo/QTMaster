@@ -1,10 +1,11 @@
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
-import { prisma } from '../lib/prisma';
-import { validateSensorData } from '../utils/validationUtils';
-import { logger } from '../utils/logger';
-import { redisService } from './redisService';
-import { performanceService } from './performanceService';
+import { prisma } from '../lib/prisma.js';
+import { validateSensorData } from '../utils/validationUtils.js';
+import { logger } from '../utils/logger.js';
+import { redisService } from './redisService.js';
+import { performanceService } from './performanceService.js';
+import { processingMetricsService } from './processingMetricsService.js';
 import { 
   sensorDataRowSchema, 
   sensorDataBatchSchema,
@@ -21,6 +22,7 @@ interface ProcessingOptions {
   fileName: string;
   validationId?: string;
   fileSensorSerial?: string;
+  vendorGuess?: string | null;
 }
 
 interface ProcessingResult {
@@ -64,10 +66,40 @@ export class ExcelProcessingService {
     options: ProcessingOptions
   ): Promise<ProcessingResult> {
     const startTime = Date.now();
+      logger.info('processExcelFile entry', { filePath, originalName, suitcaseId: options.suitcaseId });
+      processingMetricsService.startTracking(options.jobId, originalName, options.vendorGuess || undefined, 'excel');
     try {
+        logger.info('Validating file', { filePath });
       await this.validateFile(filePath, originalName);
+        logger.info('File validated, reading workbook', { filePath });
       const XLSXLib: any = (XLSX as any)?.default ?? XLSX;
-      const workbook = XLSXLib.readFile(filePath);
+      const timeoutMs = Number(process.env.XLS_READ_TIMEOUT_MS || 10000);
+      const readStart = Date.now();
+      logger.info('Attempting workbook read', { timeoutMs, filePath, originalName });
+      const workbook = await Promise.race([
+        new Promise<any>((resolve, reject) => {
+          try {
+            const wb = XLSXLib.readFile(filePath);
+            resolve(wb);
+          } catch (e) {
+            reject(e);
+          }
+        }),
+        new Promise((_resolve, reject) => {
+          const to = setTimeout(() => {
+            const err: any = new Error(`XLS read timeout after ${timeoutMs}ms`);
+            err.code = 'XLS_READ_TIMEOUT';
+            reject(err);
+          }, timeoutMs);
+          // No clear needed; timeout will fire or promise resolved earlier
+        })
+      ]).catch(err => {
+        logger.error('Workbook read failed', { message: err?.message, code: err?.code });
+        throw err;
+      });
+      const readDuration = Date.now() - readStart;
+      processingMetricsService.recordStage(options.jobId, 'workbook_load', readDuration);
+      logger.info('Workbook loaded', { sheetCount: workbook.SheetNames.length, sheets: workbook.SheetNames, readDuration });
 
       // Detect model/serial from 'Resumo' sheet for specific sensor parsing
       let defaultSensorSerial: string | undefined = undefined;
@@ -93,11 +125,40 @@ export class ExcelProcessingService {
         }
       }
 
-      // Choose sheet: prefer 'Lista' for RC-4HC if present, otherwise first sheet
+      // Choose sheet with vendor-aware heuristics
       let sheetName = workbook.SheetNames[0];
+      const sheetNamesLower = workbook.SheetNames.map((s: string) => s.toLowerCase());
+      // Elitech preference already captured by preferLista (RC-4HC)
       if (preferLista && workbook.SheetNames.includes('Lista')) {
         sheetName = 'Lista';
+      } else if (options.vendorGuess) {
+        switch (options.vendorGuess) {
+          case 'Elitech':
+            // Common possibilities: Lista, Dados, Data, Registros
+            for (const candidate of ['Lista', 'Dados', 'Data', 'Registros']) {
+              if (workbook.SheetNames.includes(candidate)) { sheetName = candidate; break; }
+            }
+            break;
+          case 'Novus':
+            for (const candidate of ['Dados', 'Data', 'Log', 'Medicoes']) {
+              if (workbook.SheetNames.includes(candidate)) { sheetName = candidate; break; }
+            }
+            break;
+          case 'Instrutemp':
+            for (const candidate of ['Registros', 'Dados', 'Lista']) {
+              if (workbook.SheetNames.includes(candidate)) { sheetName = candidate; break; }
+            }
+            break;
+          case 'Testo':
+            for (const candidate of ['Data', 'Log', 'Measurements']) {
+              if (workbook.SheetNames.includes(candidate)) { sheetName = candidate; break; }
+            }
+            break;
+          default:
+            break;
+        }
       }
+      logger.info('Selected sheet', { chosen: sheetName, vendorGuess: options.vendorGuess, allSheets: workbook.SheetNames });
       if (!sheetName) throw new Error('Planilha não encontrada');
       const worksheet = workbook.Sheets[sheetName];
       if (!worksheet) throw new Error('Worksheet não encontrada');
@@ -115,15 +176,19 @@ export class ExcelProcessingService {
       this.validateColumnMapping(mapping);
       const chunkSize = Math.min(options.chunkSize || 1000, this.MAX_ROWS_PER_BATCH);
       const totalRows = range.e.r - range.s.r;
+        logger.info('Starting chunk processing loop', { totalRows, chunkSize, startRow: range.s.r + 1, endRow: range.e.r });
       let successful = 0;
       let failed = 0;
       const errors: string[] = [];
       const warnings: string[] = [];
       for (let start = range.s.r + 1; start <= range.e.r; start += chunkSize) {
         const end = Math.min(start + chunkSize - 1, range.e.r);
+          logger.info('Processing chunk', { start, end, chunkSize });
         const rows = XLSXLib.utils.sheet_to_json(worksheet, { header: 1, range: { s: { r: start, c: range.s.c }, e: { r: end, c: range.e.c } }, defval: null, raw: false }) as any[];
         const objects = rows.map((arr: any[]) => Object.fromEntries(headers.map((h, idx) => [h, arr[idx]])));
+          logger.info('Calling processChunk', { rowCount: objects.length });
         const chunkResults = await this.processChunk(objects, mapping, options);
+          logger.info('processChunk returned', { successful: chunkResults.successful, failed: chunkResults.failed });
         successful += chunkResults.successful;
         failed += chunkResults.failed;
         errors.push(...chunkResults.errors);
@@ -134,11 +199,18 @@ export class ExcelProcessingService {
         }
       }
       const processingTime = Date.now() - startTime;
+      processingMetricsService.recordStage(options.jobId, 'total_processing', processingTime);
+      processingMetricsService.incrementCounter(options.jobId, 'rows_processed', successful);
+      processingMetricsService.incrementCounter(options.jobId, 'rows_failed', failed);
+      processingMetricsService.logSummary(options.jobId);
       // TODO: Implementar recordProcessingStats no performanceService
       logger.info(`Processamento concluído: ${originalName}`, { totalRows, processedRows: successful, failedRows: failed, processingTime, userId: options.userId });
       return { totalRows, processedRows: successful, failedRows: failed, errors, warnings, processingTime };
     } catch (error) {
-      logger.error(`Erro ao processar arquivo Excel: ${originalName}`, error);
+      logger.error(`Erro ao processar arquivo Excel: ${originalName}`, {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       throw error;
     }
   }

@@ -127,23 +127,21 @@ export const performanceLogger = winston.createLogger({
   ],
 });
 
-// Console transport for development
-if (process.env.NODE_ENV !== 'production') {
-  const consoleTransport = new winston.transports.Console({
-    format: combine(
-      colorize(),
-      timestamp({ format: 'HH:mm:ss' }),
-      printf(({ level, message, timestamp, service, ...meta }) => {
-        const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
-        return `${timestamp} [${service}] ${level}: ${message}${metaStr}`;
-      })
-    )
-  });
-  
-  logger.add(consoleTransport);
-  auditLogger.add(consoleTransport);
-  securityLogger.add(consoleTransport);
-}
+// Console transport for all environments (needed for Docker logs)
+const consoleTransport = new winston.transports.Console({
+  format: combine(
+    colorize(),
+    timestamp({ format: 'HH:mm:ss' }),
+    printf(({ level, message, timestamp, service, ...meta }) => {
+      const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+      return `${timestamp} [${service}] ${level}: ${message}${metaStr}`;
+    })
+  )
+});
+
+logger.add(consoleTransport);
+auditLogger.add(consoleTransport);
+securityLogger.add(consoleTransport);
 
 // Utility functions for structured logging
 export const logAuditEvent = (event: string, details: Record<string, any>) => {

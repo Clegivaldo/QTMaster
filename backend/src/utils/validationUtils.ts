@@ -1,4 +1,4 @@
-import { DataValidationResult } from '../services/excelProcessingService';
+import { DataValidationResult } from '../services/excelProcessingService.js';
 
 interface SensorDataPoint {
   sensorId: string;

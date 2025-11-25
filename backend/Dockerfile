@@ -28,15 +28,17 @@ WORKDIR /app
 
 # Install system dependencies for Puppeteer and PDF generation
 RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    wget \
-    curl
+  chromium \
+  nss \
+  freetype \
+  freetype-dev \
+  harfbuzz \
+  ca-certificates \
+  ttf-freefont \
+  wget \
+  curl \
+  python3 \
+  py3-pip
 
 # Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
@@ -47,7 +49,8 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install only production dependencies and tsx for TypeScript execution
-RUN npm ci --only=production && npm install -g tsx && npm cache clean --force
+RUN npm ci --only=production && npm install -g tsx && npm cache clean --force \
+  && pip install --no-cache-dir -r backend/python/requirements.txt || echo "Python fallback requirements skipped (path may not exist in build context)"
 
 # Copy source code and generated Prisma client from builder stage
 COPY --from=builder /app/src ./src

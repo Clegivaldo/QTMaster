@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { ReportGenerationService } from '../services/reportGenerationService';
+import { getReportGenerationService } from '../services/serviceInstances.js';
 import fs from 'fs';
 import path from 'path';
 
-const reportService = new ReportGenerationService();
+
 
 export interface TemplateElement {
   id: string;

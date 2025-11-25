@@ -1,10 +1,10 @@
 import * as fs from 'fs/promises';
 import * as fsStream from 'fs';
 import { parse } from 'csv-parse';
-import { prisma } from '../lib/prisma';
-import { validateSensorData } from '../utils/validationUtils';
-import { logger } from '../utils/logger';
-import { redisService } from './redisService';
+import { prisma } from '../lib/prisma.js';
+import { validateSensorData } from '../utils/validationUtils.js';
+import { logger } from '../utils/logger.js';
+import { redisService } from './redisService.js';
 
 interface CSVProcessingOptions {
   suitcaseId: string;

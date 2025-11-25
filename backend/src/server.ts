@@ -5,8 +5,8 @@ import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
 import routes from './routes/index.js';
-import { logger } from './utils/logger';
-import { redisService } from './services/redisService';
+import { logger } from './utils/logger.js';
+import { redisService } from './services/redisService.js';
 import { 
   generalRateLimit, 
   authRateLimit, 
@@ -14,15 +14,15 @@ import {
   reportGenerationRateLimit,
   dataModificationRateLimit,
   skipRateLimit 
-} from './middleware/rateLimitMiddleware';
+} from './middleware/rateLimitMiddleware.js';
 import { 
   metricsMiddleware, 
   auditMiddleware, 
   errorTrackingMiddleware 
-} from './middleware/metricsMiddleware';
-import { performanceMiddleware } from './services/performanceService';
-import { BackupService } from './services/backupService';
-import { prisma } from './lib/prisma';
+} from './middleware/metricsMiddleware.js';
+import { performanceMiddleware } from './services/performanceService.js';
+import { BackupService } from './services/backupService.js';
+import { prisma } from './lib/prisma.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;

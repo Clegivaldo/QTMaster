@@ -179,17 +179,19 @@ export class FileController {
       }
 
       // Calculate progress - enhanced service provides more detailed progress
-      const totalFiles = job.files.length;
-      const processedFiles = job.results.length;
+      const filesArr = Array.isArray((job as any).files) ? job.files : [];
+      const resultsArr = Array.isArray((job as any).results) ? job.results : [];
+      const totalFiles = filesArr.length;
+      const processedFiles = resultsArr.length;
       const progress = job.totalProgress || (totalFiles > 0 ? Math.round((processedFiles / totalFiles) * 100) : 0);
 
       // Calculate detailed statistics
-      const successfulFiles = job.results.filter(r => r.success).length;
-      const failedFiles = job.results.filter(r => !r.success).length;
-      const totalRecords = job.results.reduce((sum, r) => sum + r.recordsProcessed, 0);
-      const totalFailedRecords = job.results.reduce((sum, r) => sum + r.recordsFailed, 0);
-      const totalWarnings = job.results.reduce((sum, r) => sum + r.warnings.length, 0);
-      const totalErrors = job.results.reduce((sum, r) => sum + r.errors.length, 0);
+      const successfulFiles = resultsArr.filter(r => r.success).length;
+      const failedFiles = resultsArr.filter(r => !r.success).length;
+      const totalRecords = resultsArr.reduce((sum, r) => sum + r.recordsProcessed, 0);
+      const totalFailedRecords = resultsArr.reduce((sum, r) => sum + r.recordsFailed, 0);
+      const totalWarnings = resultsArr.reduce((sum, r) => sum + (r.warnings?.length || 0), 0);
+      const totalErrors = resultsArr.reduce((sum, r) => sum + (r.errors?.length || 0), 0);
 
       res.json({
         success: true,
@@ -206,11 +208,11 @@ export class FileController {
             totalFailedRecords,
             totalWarnings,
             totalErrors,
-            averageProcessingTime: job.results.length > 0 
-              ? Math.round(job.results.reduce((sum, r) => sum + r.processingTime, 0) / job.results.length)
+            averageProcessingTime: resultsArr.length > 0 
+              ? Math.round(resultsArr.reduce((sum, r) => sum + r.processingTime, 0) / resultsArr.length)
               : 0,
           },
-          results: job.results.map(result => ({
+          results: resultsArr.map(result => ({
             fileName: result.fileName,
             success: result.success,
             recordsProcessed: result.recordsProcessed,
@@ -218,10 +220,10 @@ export class FileController {
             sensorId: result.sensorId,
             sensorSerialNumber: result.sensorSerialNumber,
             processingTime: result.processingTime,
-            errorCount: result.errors.length,
-            warningCount: result.warnings.length,
-            errors: result.errors.slice(0, 5), // Limit to first 5 errors for brevity
-            warnings: result.warnings.slice(0, 5), // Limit to first 5 warnings for brevity
+            errorCount: (result.errors?.length || 0),
+            warningCount: (result.warnings?.length || 0),
+            errors: (result.errors || []).slice(0, 5),
+            warnings: (result.warnings || []).slice(0, 5),
           })),
           createdAt: job.createdAt,
           completedAt: job.completedAt,

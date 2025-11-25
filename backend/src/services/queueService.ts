@@ -1,7 +1,7 @@
 import Bull from 'bull';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { PrismaClient } from '@prisma/client';
-import { AppError } from '../utils/errors';
+import { AppError } from '../utils/errors.js';
 
 export interface JobData {
   type: 'import' | 'report' | 'notification' | 'cleanup';

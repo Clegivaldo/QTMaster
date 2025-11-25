@@ -1,6 +1,6 @@
-import { prisma } from '../../../lib/prisma';
-import { ClientController } from '../../clientController';
-import { AuthenticatedRequest } from '../../../types/auth';
+import { prisma } from '../../../lib/prisma.js';
+import { ClientController } from '../../clientController.js';
+import { AuthenticatedRequest } from '../../../types/auth.js';
 
 const clientController = new ClientController();
 
@@ -65,8 +65,8 @@ describe('ClientController integration', () => {
     expect(updated.street).toBe('Rua Atualizada');
   });
 });
-import { prisma } from '../../lib/prisma';
-import { ClientController } from '../clientController';
+import { prisma } from '../../lib/prisma.js';
+import { ClientController } from '../clientController.js';
 import { jest } from '@jest/globals';
 
 // Simple mocks for Express req/res

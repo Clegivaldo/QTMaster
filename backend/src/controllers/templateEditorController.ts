@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { ReportGenerationService } from '../services/reportGenerationService';
+import { getReportGenerationService } from '../services/serviceInstances.js';
 import fs from 'fs';
 import path from 'path';
 
-const reportService = new ReportGenerationService();
+
 
 export interface TemplateElement {
   id: string;
@@ -1653,7 +1653,7 @@ export class TemplateEditorController {
 
       try {
         // Tentar gerar PDF
-        const pdfBuffer = await reportService.generatePDFFromHTML(html);
+        const pdfBuffer = await getReportGenerationService().generatePDFFromHTML(html);
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'inline; filename="preview-template.pdf"');
@@ -1873,7 +1873,7 @@ export class TemplateEditorController {
 
       // Recarregar templates
       try {
-        reportService.templateService.reloadTemplates();
+        getReportGenerationService().templateService.reloadTemplates();
       } catch (reloadError) {
         console.warn('⚠️ Aviso: Não foi possível recarregar templates:', reloadError);
       }

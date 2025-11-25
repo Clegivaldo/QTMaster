@@ -1,7 +1,7 @@
 import handlebars from 'handlebars';
-import { prisma } from '../lib/prisma';
-import { logger } from '../utils/logger';
-import { redisService } from './redisService';
+import { prisma } from '../lib/prisma.js';
+import { logger } from '../utils/logger.js';
+import { redisService } from './redisService.js';
 
 interface TemplateVariable {
   name: string;

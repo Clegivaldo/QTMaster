@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { templateVersionService } from '../services/templateVersionService';
-import { templateEngineService } from '../services/templateEngineService';
-import { authenticate } from '../middleware/auth';
-import { requirePermission, Permission } from '../middleware/authorization';
-import { logger } from '../utils/logger';
+import { templateVersionService } from '../services/templateVersionService.js';
+import { templateEngineService } from '../services/templateEngineService.js';
+import { authenticate } from '../middleware/auth.js';
+import { requirePermission, Permission } from '../middleware/authorization.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 

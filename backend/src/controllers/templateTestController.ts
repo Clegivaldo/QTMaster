@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { ReportGenerationService } from '../services/reportGenerationService';
+import { getReportGenerationService } from '../services/serviceInstances.js';
 
-const reportService = new ReportGenerationService();
+
 
 export class TemplateTestController {
   /**
@@ -9,7 +9,7 @@ export class TemplateTestController {
    */
   static async listTemplates(req: Request, res: Response) {
     try {
-      const templates = reportService.templateService.getAvailableTemplates();
+      const templates = getReportGenerationService().templateService.getAvailableTemplates();
       
       return res.json({
         success: true,
@@ -35,8 +35,8 @@ export class TemplateTestController {
    */
   static async reloadTemplates(req: Request, res: Response) {
     try {
-      reportService.templateService.reloadTemplates();
-      const templates = reportService.templateService.getAvailableTemplates();
+      getReportGenerationService().templateService.reloadTemplates();
+      const templates = getReportGenerationService().templateService.getAvailableTemplates();
       
       return res.json({
         success: true,
@@ -132,16 +132,16 @@ export class TemplateTestController {
       };
 
       // Gerar gráficos
-      const chartData = reportService.prepareChartData(mockReportData.sensorData);
+      const chartData = getReportGenerationService().prepareChartData(mockReportData.sensorData);
 
       // Preparar dados para o template
-      const templateData = reportService.templateService.prepareTemplateData(mockReportData, chartData);
+      const templateData = getReportGenerationService().templateService.prepareTemplateData(mockReportData, chartData);
 
       // Renderizar HTML
-      const html = reportService.templateService.renderTemplate(templateName, templateData);
+      const html = getReportGenerationService().templateService.renderTemplate(templateName, templateData);
 
       // Gerar PDF
-      const pdfBuffer = await reportService.generatePDFFromHTML(html);
+      const pdfBuffer = await getReportGenerationService().generatePDFFromHTML(html);
 
       console.log(`✅ Template '${templateName}' testado com sucesso!`);
       console.log('📄 Tamanho do PDF:', pdfBuffer.length, 'bytes');

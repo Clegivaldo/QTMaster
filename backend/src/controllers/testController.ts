@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { ReportGenerationService } from '../services/reportGenerationService';
+import { getReportGenerationService } from '../services/serviceInstances.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const reportService = new ReportGenerationService();
+
 
 export class TestController {
   /**
@@ -55,7 +55,7 @@ export class TestController {
       console.log('📊 Usando validação:', validation.id);
 
       // Gerar o relatório
-      const pdfBuffer = await reportService.generateReport(validation.id, 'test-report');
+      const pdfBuffer = await getReportGenerationService().generateReport(validation.id, 'test-report');
 
       console.log('✅ Relatório gerado com sucesso!');
       console.log('📄 Tamanho do PDF:', pdfBuffer.length, 'bytes');
@@ -296,16 +296,16 @@ export class TestController {
       };
 
       // Gerar gráficos usando Chart.js no HTML
-      const chartData = reportService.prepareChartData(mockReportData.sensorData);
+      const chartData = getReportGenerationService().prepareChartData(mockReportData.sensorData);
 
       // Preparar dados para o template
-      const templateData = reportService.templateService.prepareTemplateData(mockReportData, chartData);
+      const templateData = getReportGenerationService().templateService.prepareTemplateData(mockReportData, chartData);
 
       // Renderizar HTML
-      const html = reportService.templateService.renderTemplate('advanced-report', templateData);
+      const html = getReportGenerationService().templateService.renderTemplate('advanced-report', templateData);
 
       // Gerar PDF com Puppeteer
-      const pdfBuffer = await reportService.generatePDFFromHTML(html);
+      const pdfBuffer = await getReportGenerationService().generatePDFFromHTML(html);
 
       console.log('✅ Relatório avançado gerado com sucesso!');
       console.log('📄 Tamanho do PDF:', pdfBuffer.length, 'bytes');
@@ -404,16 +404,16 @@ export class TestController {
       };
 
       // Gerar gráficos usando Chart.js no HTML
-      const chartData = reportService.prepareChartData(mockReportData.sensorData);
+      const chartData = getReportGenerationService().prepareChartData(mockReportData.sensorData);
 
       // Preparar dados para o template
-      const templateData = reportService.templateService.prepareTemplateData(mockReportData, chartData);
+      const templateData = getReportGenerationService().templateService.prepareTemplateData(mockReportData, chartData);
 
       // Renderizar HTML
-      const html = reportService.templateService.renderTemplate('test-report', templateData);
+      const html = getReportGenerationService().templateService.renderTemplate('test-report', templateData);
 
       // Gerar PDF com Puppeteer
-      const pdfBuffer = await reportService.generatePDFFromHTML(html);
+      const pdfBuffer = await getReportGenerationService().generatePDFFromHTML(html);
 
       console.log('✅ Relatório mock gerado com sucesso!');
       console.log('📄 Tamanho do PDF:', pdfBuffer.length, 'bytes');

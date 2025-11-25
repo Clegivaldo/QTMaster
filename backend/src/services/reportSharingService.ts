@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import { prisma } from '../lib/prisma';
-import { logger } from '../utils/logger';
+import { prisma } from '../lib/prisma.js';
+import { logger } from '../utils/logger.js';
 import bcrypt from 'bcryptjs';
 
 export interface CreateSharedLinkOptions {

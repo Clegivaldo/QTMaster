@@ -2,9 +2,9 @@ import puppeteer, { Browser } from 'puppeteer';
 import handlebars from 'handlebars';
 import path from 'path';
 import * as fs from 'fs/promises';
-import { logger } from '../utils/logger';
-import { redisService } from './redisService';
-import { templateEngineService } from './templateEngineService';
+import { logger } from '../utils/logger.js';
+import { redisService } from './redisService.js';
+import { templateEngineService } from './templateEngineService.js';
 
 interface RetryOptions {
   maxRetries: number;

@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
-import { AppError } from '../utils/errors';
+import { AppError } from '../utils/errors.js';
 import { prisma as prismaSingleton } from '../lib/prisma.js';
 
 export interface LoginData {

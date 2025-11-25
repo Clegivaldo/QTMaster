@@ -62,7 +62,7 @@ export class TemplateService {
       this.templates.set(templateName, Handlebars.compile(templateContent));
     });
 
-    console.log(`📄 Loaded ${templateFiles.length} report templates`);
+  console.log(`📄 Loaded ${templateFiles.length} report templates`);
   }
 
   /**

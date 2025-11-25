@@ -1,4 +1,11 @@
-# Plano de Análise e Resolução de Problemas no Editor de Layout
+# ✅ Sistema QT-Master - Docker Deployment COMPLETO
+
+## Status Atual: PRODUÇÃO
+- 🚀 Sistema rodando em Docker Compose (http://localhost)
+- ✅ Todos os 12 containers saudáveis
+- ✅ Banco PostgreSQL inicializado com seed
+- ✅ Nginx, Backend, Frontend, Redis, Prometheus, Grafana, Loki operacionais
+- 🔐 **Login**: admin@sistema.com / admin123
 
 ## Resumo de Entendimento
 O sistema QT-Master é um projeto full-stack com backend em Node.js/Prisma e frontend em React/TypeScript. O editor de layout está nos componentes React em `frontend/src/components/EditorLayoutProfissional/`. Os problemas relatados foram:
@@ -86,6 +93,56 @@ O sistema QT-Master é um projeto full-stack com backend em Node.js/Prisma e fro
 - [x] Adicionada migration SQL `prisma/migrations/20251112_add-client-address-fields/migration.sql` que adiciona as colunas no Postgres.
 - [x] Criado `prisma/seed.ts` para centralizar seeds (admin, sensor types, template, client CNPJ `10.520.565/0001-53`).
 - [x] Executado `prisma migrate deploy` localmente (marcando migração pré-existente como aplicada quando necessário) e rodado seed — cliente criado e atualizável via Prisma.
+
+## Importação de dados RC-4HC (janeiro 2025)
+
+### Problema inicial
+- Sistema rodando em Docker (Nginx porta 80, backend porta 5000, PostgreSQL)
+- Login não funcionava → Resolvido executando `npx prisma db push` e seed
+- Foco movido para importação de arquivos `.xls` do datalogger Elitech RC-4HC
+
+### Estrutura do arquivo RC-4HC
+- **Planilha "Resumo"**: Célula B6 contém o número de série do datalogger
+- **Planilha "Lista"**: Dados de leitura
+  - Coluna B: Data/Hora (formato DD/MM/YYYY HH:mm:ss)
+  - Coluna C: Temperatura (°C)
+  - Coluna D: Umidade (%RH)
+  - Linha 1: Cabeçalhos
+  - Dados começam na linha 2
+
+### Bloqueios técnicos enfrentados
+1. **xlsx library**: Falha com "RangeError: Array buffer allocation failed" ao tentar ler o arquivo `.xls` legado
+2. **Container Docker**: Memória limitada causando kills durante parsing
+3. **Python fallback**: Não disponível no container (arquivo não copiado para imagem)
+
+### Solução implementada
+Criado script Python standalone (`backend/tmp/import_rc4hc.py`) que:
+- Usa `pandas` + `openpyxl` (melhor compatibilidade com XLS/XLSX)
+- Conecta diretamente ao PostgreSQL usando credenciais do `.env`
+- Cria automaticamente sensor type, sensor, e suitcase
+- Detecta colunas automaticamente ou usa mapeamento por índice
+- Insere dados em lotes de 1000 registros
+- Usa nomes de coluna camelCase do Prisma (ex: `serialNumber`, `sensorId`, `createdAt`)
+
+### Resultado da importação
+- [x] ✅ **1128 linhas** importadas com sucesso
+- [x] ✅ Sensor criado: `RC4HC-1764091663` (ID: `cdb7b559-70d3-4834-9ee7-4232c344d306`)
+- [x] ✅ Maleta criada: `eaccc371-5d65-4498-9616-ecb1b21e592a`
+- [x] ✅ Período dos dados: 13/10/2025 a 21/10/2025
+- [x] ✅ Temperatura média: 26.34°C
+- [x] ✅ Umidade média: 64.03%RH
+- [x] ✅ 0 falhas de parsing
+
+### Arquivos modificados/criados
+- `backend/tmp/import_rc4hc.py`: Script Python para importação
+- `backend/src/services/enhancedFileProcessorService.ts`: Adicionado strategy para ler Resumo!B6
+- `backend/tmp/run_rc4hc_import.mjs`: Tentativa inicial com Node.js (não funcionou com xls legado)
+
+### Próximos passos
+- [ ] Integrar script Python no fluxo de upload via API
+- [ ] Copiar `backend/python/fallback_parser.py` para imagem Docker
+- [ ] Adicionar suporte para outros modelos Elitech (RC-5, RC-17, etc.)
+- [ ] Documentar mapeamento de colunas para cada vendor no README
 
 
 ## O que foi feito (mudanças relevantes)
