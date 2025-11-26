@@ -282,6 +282,169 @@ export class ReportController {
   }
 
   /**
+   * Cria um novo relatório
+   */
+  static async createReport(req: Request, res: Response) {
+    try {
+      const { validationId, name, templateId } = req.body;
+
+      if (!validationId || !name) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation ID e nome são obrigatórios'
+        });
+      }
+
+      // Verificar se a validação existe
+      const validation = await prisma.validation.findUnique({
+        where: { id: validationId }
+      });
+
+      if (!validation) {
+        return res.status(404).json({
+          success: false,
+          error: 'Validação não encontrada'
+        });
+      }
+
+      // Buscar template ativo se não especificado
+      let finalTemplateId = templateId;
+      if (!finalTemplateId) {
+        const activeTemplate = await prisma.reportTemplate.findFirst({
+          where: { isActive: true }
+        });
+        if (activeTemplate) {
+          finalTemplateId = activeTemplate.id;
+        } else {
+          // Criar um template default se não existir
+          const newTemplate = await prisma.reportTemplate.create({
+            data: {
+              name: 'Template Padrão',
+              description: 'Template criado automaticamente',
+              templatePath: '/templates/default.html',
+              isActive: true
+            }
+          });
+          finalTemplateId = newTemplate.id;
+        }
+      }
+
+      // Criar o relatório
+      const report = await prisma.report.create({
+        data: {
+          name,
+          validationId,
+          clientId: validation.clientId,
+          userId: req.user?.id || validation.userId,
+          templateId: finalTemplateId,
+          status: 'DRAFT'
+        },
+        include: {
+          validation: true,
+          client: true,
+          user: true
+        }
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: { report }
+      });
+
+    } catch (error) {
+      console.error('Erro ao criar relatório:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro interno do servidor'
+      });
+    }
+  }
+
+  /**
+   * Atualiza um relatório
+   */
+  static async updateReport(req: Request, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+
+      const { name, templateId, status } = req.body;
+
+      const report = await prisma.report.findUnique({
+        where: { id: id! }
+      });
+
+      if (!report) {
+        return res.status(404).json({
+          success: false,
+          error: 'Relatório não encontrado'
+        });
+      }
+
+      const updated = await prisma.report.update({
+        where: { id: id! },
+        data: {
+          ...(name && { name }),
+          ...(templateId && { templateId }),
+          ...(status && { status })
+        },
+        include: {
+          validation: true,
+          client: true,
+          user: true
+        }
+      });
+
+      return res.json({
+        success: true,
+        data: { report: updated }
+      });
+
+    } catch (error) {
+      console.error('Erro ao atualizar relatório:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro interno do servidor'
+      });
+    }
+  }
+
+  /**
+   * Retorna estatísticas gerais dos relatórios
+   */
+  static async getStatistics(req: Request, res: Response) {
+    try {
+      const [total, byStatus] = await Promise.all([
+        prisma.report.count(),
+        prisma.report.groupBy({
+          by: ['status'],
+          _count: true
+        })
+      ]);
+
+      const statistics = {
+        total,
+        byStatus: byStatus.reduce((acc, item) => {
+          acc[item.status] = item._count;
+          return acc;
+        }, {} as Record<string, number>)
+      };
+
+      return res.json({
+        success: true,
+        data: statistics
+      });
+
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro interno do servidor'
+      });
+    }
+  }
+
+  /**
    * Deleta um relatório
    */
   static async deleteReport(req: Request, res: Response) {

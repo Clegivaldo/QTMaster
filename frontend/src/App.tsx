@@ -21,6 +21,8 @@ const ClientEquipments = React.lazy(() => import('@/pages/ClientEquipments'));
 const Suitcases = React.lazy(() => import('@/pages/Suitcases'));
 const ImportData = React.lazy(() => import('@/pages/ImportData'));
 const Validations = React.lazy(() => import('@/pages/Validations'));
+const ValidationDetails = React.lazy(() => import('@/pages/ValidationDetails'));
+const ValidationCharts = React.lazy(() => import('@/pages/ValidationCharts'));
 const Reports = React.lazy(() => import('@/pages/Reports'));
 const Templates = React.lazy(() => import('@/pages/Templates'));
 const EditorLayout = React.lazy(() => import('@/pages/EditorLayout'));
@@ -103,6 +105,8 @@ const AppRoutes: React.FC = () => {
                   <Route path="/suitcases" element={<Suitcases />} />
                   <Route path="/import" element={<ImportData />} />
                   <Route path="/validations" element={<Validations />} />
+                  <Route path="/validations/:id/details" element={<ValidationDetails />} />
+                  <Route path="/validations/:id/charts" element={<ValidationCharts />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/reports/:id" element={<ReportDetails />} />
                   <Route path="/templates" element={<Templates />} />

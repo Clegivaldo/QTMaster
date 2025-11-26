@@ -262,7 +262,74 @@ export class ValidationController {
         return;
       }
 
-      res.json({ success: true, data: { validation } });
+      // Buscar TODOS os sensor data para estatísticas
+      const allSensorData = await prisma.sensorData.findMany({
+        where: { validationId: id },
+        include: {
+          sensor: {
+            select: {
+              id: true,
+              serialNumber: true,
+              type: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { timestamp: 'asc' },
+      });
+
+      // Calcular estatísticas
+      let totalReadings = allSensorData.length;
+      let conformCount = 0;
+      let temperatures: number[] = [];
+      let humidities: number[] = [];
+
+      allSensorData.forEach(data => {
+        temperatures.push(data.temperature);
+        if (data.humidity !== null) {
+          humidities.push(data.humidity);
+        }
+
+        // Verificar conformidade
+        const tempOk = data.temperature >= validation.minTemperature && data.temperature <= validation.maxTemperature;
+        let humidOk = true;
+        if (validation.minHumidity !== null && validation.maxHumidity !== null && data.humidity !== null) {
+          humidOk = data.humidity >= validation.minHumidity && data.humidity <= validation.maxHumidity;
+        }
+        if (tempOk && humidOk) {
+          conformCount++;
+        }
+      });
+
+      const statistics = {
+        totalReadings,
+        conformityPercentage: totalReadings > 0 ? (conformCount / totalReadings) * 100 : 0,
+        temperature: {
+          min: temperatures.length > 0 ? Math.min(...temperatures) : 0,
+          max: temperatures.length > 0 ? Math.max(...temperatures) : 0,
+          average: temperatures.length > 0 ? temperatures.reduce((a, b) => a + b, 0) / temperatures.length : 0,
+        },
+        humidity: humidities.length > 0 ? {
+          min: Math.min(...humidities),
+          max: Math.max(...humidities),
+          average: humidities.reduce((a, b) => a + b, 0) / humidities.length,
+        } : null,
+      };
+
+      res.json({ 
+        success: true, 
+        data: { 
+          validation: {
+            ...validation,
+            sensorData: allSensorData,
+            statistics
+          }
+        } 
+      });
       return;
     } catch (error) {
       logger.error('Get validation error:', { error: error instanceof Error ? error.message : error, validationId: req.params.id });

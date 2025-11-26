@@ -326,51 +326,77 @@ const Validations: React.FC = () => {
                   )}
 
                   {/* Actions */}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">
-                      {validation._count?.sensorData || 0} dados • {validation._count?.reports || 0} relatórios
-                    </span>
-                    <div className="flex space-x-2">
-                        <button 
-                          onClick={() => alert('Funcionalidade de gráficos será implementada em breve')}
-                          className="text-primary-600 hover:text-primary-900 font-medium"
-                        >
-                          Ver Gráficos
-                        </button>
-                        <button 
-                          onClick={() => alert('Funcionalidade de detalhes será implementada em breve')}
-                          className="text-gray-600 hover:text-gray-900 font-medium"
-                        >
-                          Detalhes
-                        </button>
-                        <button
-                          onClick={() => navigate(`/import?validationId=${validation.id}&clientId=${validation.clientId}&suitcaseId=${validation.suitcase?.id || ''}`)}
-                          className="text-primary-600 hover:text-primary-900 font-medium"
-                        >
-                          Importar Dados
-                        </button>
-                        {validation.isApproved === null && (
-                          <>
-                            <button 
-                              onClick={() => handleApproveValidation(validation.id, true)}
-                              className="text-green-600 hover:text-green-900 font-medium"
-                            >
-                              Aprovar
-                            </button>
-                            <button 
-                              onClick={() => handleApproveValidation(validation.id, false)}
-                              className="text-red-600 hover:text-red-900 font-medium"
-                            >
-                              Reprovar
-                            </button>
-                          </>
-                        )}
-                        <button 
-                          onClick={() => setDeletingValidation(validation)}
-                          className="text-red-600 hover:text-red-900 font-medium"
-                        >
-                          Excluir
-                        </button>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex flex-wrap gap-2">
+                      {/* Primary Action - Generate Report */}
+                      <button 
+                        onClick={() => navigate(`/reports?createNew=true&validationId=${validation.id}`)}
+                        className="btn-primary text-sm"
+                        disabled={!validation.statistics || (validation._count?.sensorData || 0) === 0}
+                        title={(validation._count?.sensorData || 0) === 0 ? 'Importe dados antes de gerar laudo' : 'Criar relatório/laudo desta validação'}
+                      >
+                        📊 Gerar Laudo
+                      </button>
+
+                      {/* Secondary Actions */}
+                      <button 
+                        onClick={() => navigate(`/validations/${validation.id}/charts`)}
+                        className="btn-secondary text-sm"
+                        disabled={(validation._count?.sensorData || 0) === 0}
+                        title="Ver gráficos de temperatura e umidade"
+                      >
+                        📈 Ver Gráficos
+                      </button>
+                      
+                      <button 
+                        onClick={() => navigate(`/validations/${validation.id}/details`)}
+                        className="btn-secondary text-sm"
+                        title="Ver todos os dados importados"
+                      >
+                        🔍 Detalhes
+                      </button>
+
+                      <button
+                        onClick={() => navigate(`/import?validationId=${validation.id}&clientId=${validation.clientId}&suitcaseId=${validation.suitcase?.id || ''}`)}
+                        className="btn-secondary text-sm"
+                        title="Importar mais dados para esta validação"
+                      >
+                        📤 Importar Dados
+                      </button>
+
+                      {/* Approval Actions */}
+                      {validation.isApproved === null && (
+                        <>
+                          <button 
+                            onClick={() => handleApproveValidation(validation.id, true)}
+                            className="px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-900 border border-green-600 hover:border-green-900 rounded-md transition-colors"
+                            title="Aprovar validação"
+                          >
+                            ✓ Aprovar
+                          </button>
+                          <button 
+                            onClick={() => handleApproveValidation(validation.id, false)}
+                            className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-900 border border-red-600 hover:border-red-900 rounded-md transition-colors"
+                            title="Reprovar validação"
+                          >
+                            ✗ Reprovar
+                          </button>
+                        </>
+                      )}
+
+                      {/* Delete Action */}
+                      <button 
+                        onClick={() => setDeletingValidation(validation)}
+                        className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-900 border border-red-200 hover:border-red-300 rounded-md transition-colors ml-auto"
+                        title="Excluir validação"
+                      >
+                        🗑️ Excluir
+                      </button>
+                    </div>
+
+                    {/* Info Footer */}
+                    <div className="mt-2 text-xs text-gray-500">
+                      {validation._count?.sensorData || 0} leituras • {validation._count?.reports || 0} relatórios
                     </div>
                   </div>
                 </div>
