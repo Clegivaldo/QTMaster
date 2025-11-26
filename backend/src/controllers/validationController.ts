@@ -222,6 +222,12 @@ export class ValidationController {
                 select: {
                   id: true,
                   serialNumber: true,
+                  type: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -262,7 +268,7 @@ export class ValidationController {
         return;
       }
 
-      // Buscar TODOS os sensor data para estatísticas
+      // Buscar TODOS os sensor data para estatísticas (SEM include para evitar duplicação)
       const allSensorData = await prisma.sensorData.findMany({
         where: { validationId: id },
         include: {
@@ -270,12 +276,6 @@ export class ValidationController {
             select: {
               id: true,
               serialNumber: true,
-              type: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
         },
@@ -764,6 +764,467 @@ export class ValidationController {
         userId: req.user?.id 
       });
       res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+  }
+
+  /**
+   * Delete all sensor data from a validation
+   */
+  async deleteSensorData(req: Request, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+
+      // Verificar se validação existe
+      const validation = await prisma.validation.findUnique({
+        where: { id },
+      });
+
+      if (!validation) {
+        res.status(404).json({ error: 'Validação não encontrada' });
+        return;
+      }
+
+      // Deletar todos os sensor data
+      const result = await prisma.sensorData.deleteMany({
+        where: { validationId: id },
+      });
+
+      logger.info('Sensor data deleted:', { validationId: id, count: result.count, userId: req.user?.id });
+
+      res.json({ 
+        success: true, 
+        message: `${result.count} registros deletados com sucesso`,
+        count: result.count
+      });
+      return;
+    } catch (error) {
+      logger.error('Delete sensor data error:', { 
+        error: error instanceof Error ? error.message : error, 
+        validationId: req.params.id, 
+        userId: req.user?.id 
+      });
+      res.status(500).json({ error: 'Erro interno do servidor' });
+      return;
+    }
+  }
+
+  /**
+   * Check if file was already imported (duplicate detection)
+   */
+  async checkDuplicate(req: Request, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+
+      const { fileName, firstTimestamp, lastTimestamp, recordCount } = req.body;
+
+      if (!fileName || !firstTimestamp || !lastTimestamp) {
+        // Para não bloquear o fluxo no frontend quando metadados não estiverem disponíveis,
+        // retornamos sucesso com isDuplicate=false e uma mensagem informativa.
+        logger.info('checkDuplicate called without full metadata; skipping strict check', {
+          validationId: id,
+          hasFileName: !!fileName,
+          hasFirst: !!firstTimestamp,
+          hasLast: !!lastTimestamp,
+          userId: req.user?.id,
+        });
+        res.json({
+          success: true,
+          isDuplicate: false,
+          message: 'Verificação de duplicidade ignorada por falta de metadados (timestamps)'
+        });
+        return;
+      }
+
+      // Buscar sensor data existente com timestamps similares
+      const existingData = await prisma.sensorData.findFirst({
+        where: {
+          validationId: id,
+          timestamp: {
+            gte: new Date(new Date(firstTimestamp).getTime() - 1000), // 1 segundo de tolerância
+            lte: new Date(new Date(firstTimestamp).getTime() + 1000),
+          },
+        },
+      });
+
+      if (existingData) {
+        // Contar quantos registros existem nesse range
+        const count = await prisma.sensorData.count({
+          where: {
+            validationId: id,
+            timestamp: {
+              gte: new Date(firstTimestamp),
+              lte: new Date(lastTimestamp),
+            },
+          },
+        });
+
+        res.json({
+          success: true,
+          isDuplicate: true,
+          message: `Detectados ${count} registros já importados neste período`,
+          existingCount: count,
+          details: {
+            firstTimestamp: existingData.timestamp,
+            range: `${new Date(firstTimestamp).toLocaleString()} - ${new Date(lastTimestamp).toLocaleString()}`,
+          },
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        isDuplicate: false,
+        message: 'Nenhuma duplicação detectada',
+      });
+      return;
+    } catch (error) {
+      logger.error('Check duplicate error:', { 
+        error: error instanceof Error ? error.message : error, 
+        validationId: req.params.id, 
+        userId: req.user?.id 
+      });
+      res.status(500).json({ error: 'Erro interno do servidor' });
+      return;
+    }
+  }
+
+  // ==================== CRUD DE CICLOS ====================
+
+  async getCycles(req: Request, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+
+      const cycles = await prisma.validationCycle.findMany({
+        where: { validationId: id },
+        orderBy: { startAt: 'asc' },
+        include: {
+          _count: {
+            select: { importedItems: true }
+          }
+        }
+      });
+
+      res.json({ success: true, data: { cycles } });
+      return;
+    } catch (error) {
+      logger.error('Get cycles error:', { 
+        error: error instanceof Error ? error.message : error, 
+        validationId: req.params.id 
+      });
+      res.status(500).json({ error: 'Erro interno do servidor' });
+      return;
+    }
+  }
+
+  async createCycle(req: Request, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+
+      const { name, cycleType, startAt, endAt, notes } = cycleSchema.parse(req.body);
+
+      // Verificar se validação existe
+      const validation = await prisma.validation.findUnique({ where: { id } });
+      if (!validation) {
+        res.status(404).json({ error: 'Validação não encontrada' });
+        return;
+      }
+
+      // Validar datas
+      if (startAt >= endAt) {
+        res.status(400).json({ error: 'Data inicial deve ser menor que data final' });
+        return;
+      }
+
+      // Verificar sobreposição de ciclos
+      const overlapping = await prisma.validationCycle.findFirst({
+        where: {
+          validationId: id,
+          OR: [
+            { AND: [{ startAt: { lte: startAt } }, { endAt: { gte: startAt } }] },
+            { AND: [{ startAt: { lte: endAt } }, { endAt: { gte: endAt } }] },
+            { AND: [{ startAt: { gte: startAt } }, { endAt: { lte: endAt } }] }
+          ]
+        }
+      });
+
+      if (overlapping) {
+        res.status(400).json({ 
+          error: 'Ciclo sobrepõe outro existente',
+          details: {
+            existingCycle: overlapping.name,
+            range: `${overlapping.startAt.toLocaleString()} - ${overlapping.endAt.toLocaleString()}`
+          }
+        });
+        return;
+      }
+
+      const cycle = await prisma.validationCycle.create({
+        data: {
+          validationId: id,
+          name,
+          cycleType,
+          startAt,
+          endAt,
+          notes
+        }
+      });
+
+      logger.info('Cycle created:', { cycleId: cycle.id, validationId: id, userId: req.user?.id });
+
+      res.status(201).json({ success: true, data: { cycle } });
+      return;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Dados inválidos', details: error.issues });
+        return;
+      }
+
+      logger.error('Create cycle error:', { 
+        error: error instanceof Error ? error.message : error, 
+        validationId: req.params.id,
+        userId: req.user?.id 
+      });
+      res.status(500).json({ error: 'Erro interno do servidor' });
+      return;
+    }
+  }
+
+  async updateCycle(req: Request, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+      const cycleId = requireParam(req, res, 'cycleId');
+      if (!cycleId) return;
+
+      const { name, cycleType, startAt, endAt, notes } = cycleSchema.partial().parse(req.body);
+
+      // Verificar se ciclo existe
+      const existingCycle = await prisma.validationCycle.findUnique({
+        where: { id: cycleId }
+      });
+
+      if (!existingCycle || existingCycle.validationId !== id) {
+        res.status(404).json({ error: 'Ciclo não encontrado' });
+        return;
+      }
+
+      // Validar datas se fornecidas
+      const finalStartAt = startAt || existingCycle.startAt;
+      const finalEndAt = endAt || existingCycle.endAt;
+
+      if (finalStartAt >= finalEndAt) {
+        res.status(400).json({ error: 'Data inicial deve ser menor que data final' });
+        return;
+      }
+
+      // Verificar sobreposição com outros ciclos (exceto o atual)
+      const overlapping = await prisma.validationCycle.findFirst({
+        where: {
+          validationId: id,
+          id: { not: cycleId },
+          OR: [
+            { AND: [{ startAt: { lte: finalStartAt } }, { endAt: { gte: finalStartAt } }] },
+            { AND: [{ startAt: { lte: finalEndAt } }, { endAt: { gte: finalEndAt } }] },
+            { AND: [{ startAt: { gte: finalStartAt } }, { endAt: { lte: finalEndAt } }] }
+          ]
+        }
+      });
+
+      if (overlapping) {
+        res.status(400).json({ 
+          error: 'Ciclo sobrepõe outro existente',
+          details: {
+            existingCycle: overlapping.name
+          }
+        });
+        return;
+      }
+
+      const cycle = await prisma.validationCycle.update({
+        where: { id: cycleId },
+        data: stripUndefined({ name, cycleType, startAt, endAt, notes })
+      });
+
+      logger.info('Cycle updated:', { cycleId, validationId: id, userId: req.user?.id });
+
+      res.json({ success: true, data: { cycle } });
+      return;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Dados inválidos', details: error.issues });
+        return;
+      }
+
+      logger.error('Update cycle error:', { 
+        error: error instanceof Error ? error.message : error, 
+        cycleId: req.params.cycleId,
+        userId: req.user?.id 
+      });
+      res.status(500).json({ error: 'Erro interno do servidor' });
+      return;
+    }
+  }
+
+  async deleteCycle(req: Request, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+      const cycleId = requireParam(req, res, 'cycleId');
+      if (!cycleId) return;
+
+      // Verificar se ciclo existe
+      const cycle = await prisma.validationCycle.findUnique({
+        where: { id: cycleId },
+        include: {
+          _count: {
+            select: { importedItems: true }
+          }
+        }
+      });
+
+      if (!cycle || cycle.validationId !== id) {
+        res.status(404).json({ error: 'Ciclo não encontrado' });
+        return;
+      }
+
+      await prisma.validationCycle.delete({ where: { id: cycleId } });
+
+      logger.info('Cycle deleted:', { cycleId, validationId: id, userId: req.user?.id });
+
+      res.json({ 
+        success: true, 
+        message: `Ciclo "${cycle.name}" deletado com sucesso`,
+        itemsAffected: cycle._count.importedItems
+      });
+      return;
+    } catch (error) {
+      logger.error('Delete cycle error:', { 
+        error: error instanceof Error ? error.message : error, 
+        cycleId: req.params.cycleId,
+        userId: req.user?.id 
+      });
+      res.status(500).json({ error: 'Erro interno do servidor' });
+      return;
+    }
+  }
+
+  async getCycleStatistics(req: Request, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+
+      // Buscar validação com cycles e importedItems
+      const validation = await prisma.validation.findUnique({
+        where: { id },
+        include: {
+          cycles: {
+            orderBy: { startAt: 'asc' }
+          },
+          importedItems: {
+            where: { isVisible: true },
+            select: {
+              id: true,
+              timestamp: true,
+              temperature: true,
+              humidity: true,
+              cycleId: true
+            }
+          }
+        }
+      });
+
+      if (!validation) {
+        res.status(404).json({ error: 'Validação não encontrada' });
+        return;
+      }
+
+      // Calcular estatísticas gerais
+      const allTemps = validation.importedItems.map(item => item.temperature);
+      const allHumidities = validation.importedItems
+        .filter(item => item.humidity !== null)
+        .map(item => item.humidity!);
+
+      const overall = {
+        temperature: allTemps.length > 0 ? {
+          min: Math.min(...allTemps),
+          max: Math.max(...allTemps),
+          avg: allTemps.reduce((a, b) => a + b, 0) / allTemps.length
+        } : null,
+        humidity: allHumidities.length > 0 ? {
+          min: Math.min(...allHumidities),
+          max: Math.max(...allHumidities),
+          avg: allHumidities.reduce((a, b) => a + b, 0) / allHumidities.length
+        } : null,
+        count: validation.importedItems.length
+      };
+
+      // Calcular estatísticas por ciclo
+      const byCycle = validation.cycles.map(cycle => {
+        // Filtrar itens dentro do período do ciclo
+        const cycleItems = validation.importedItems.filter(item => {
+          const timestamp = new Date(item.timestamp);
+          return timestamp >= new Date(cycle.startAt) && timestamp <= new Date(cycle.endAt);
+        });
+
+        const cycleTemps = cycleItems.map(item => item.temperature);
+        const cycleHumidities = cycleItems
+          .filter(item => item.humidity !== null)
+          .map(item => item.humidity!);
+
+        return {
+          cycleId: cycle.id,
+          cycleName: cycle.name,
+          cycleType: cycle.cycleType,
+          startAt: cycle.startAt,
+          endAt: cycle.endAt,
+          temperature: cycleTemps.length > 0 ? {
+            min: Math.min(...cycleTemps),
+            max: Math.max(...cycleTemps),
+            avg: cycleTemps.reduce((a, b) => a + b, 0) / cycleTemps.length
+          } : null,
+          humidity: cycleHumidities.length > 0 ? {
+            min: Math.min(...cycleHumidities),
+            max: Math.max(...cycleHumidities),
+            avg: cycleHumidities.reduce((a, b) => a + b, 0) / cycleHumidities.length
+          } : null,
+          count: cycleItems.length,
+          duration: (new Date(cycle.endAt).getTime() - new Date(cycle.startAt).getTime()) / 1000 / 60 / 60 // hours
+        };
+      });
+
+      logger.info('Cycle statistics calculated:', { 
+        validationId: id, 
+        cycleCount: validation.cycles.length,
+        totalItems: validation.importedItems.length,
+        userId: req.user?.id 
+      });
+
+      res.json({ 
+        success: true, 
+        data: {
+          overall,
+          byCycle,
+          parameters: {
+            minTemperature: validation.minTemperature,
+            maxTemperature: validation.maxTemperature,
+            minHumidity: validation.minHumidity,
+            maxHumidity: validation.maxHumidity
+          }
+        }
+      });
+      return;
+    } catch (error) {
+      logger.error('Get cycle statistics error:', { 
+        error: error instanceof Error ? error.message : error, 
+        validationId: req.params.id,
+        userId: req.user?.id 
+      });
+      res.status(500).json({ error: 'Erro interno do servidor' });
       return;
     }
   }

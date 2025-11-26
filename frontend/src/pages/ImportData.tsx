@@ -6,24 +6,28 @@ import {
   CheckCircle, 
   Clock, 
   RefreshCw,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ArrowRight
 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
 import { useFileUpload, useUploadFiles, useProcessingStatus } from '@/hooks/useFileProcessing';
 import { useSuitcases } from '@/hooks/useSuitcases';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useToast } from '@/components/ToastContext';
 
 const ImportData: React.FC = () => {
   const [selectedSuitcaseId, setSelectedSuitcaseId] = useState<string>('');
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const validationIdFromQuery = searchParams.get('validationId');
   const suitcaseIdFromQuery = searchParams.get('suitcaseId');
 
   const { data: suitcasesData } = useSuitcases({ limit: 100 });
   const uploadMutation = useUploadFiles();
   const { data: processingStatus } = useProcessingStatus(currentJobId, !!currentJobId);
+  const toast = useToast();
 
   const {
     selectedFiles,
@@ -38,7 +42,7 @@ const ImportData: React.FC = () => {
     if (e.target.files) {
       const result = addFiles(e.target.files);
       if (result.invalid > 0) {
-        alert(`${result.invalid} arquivo(s) com formato inválido foram ignorados. Formatos aceitos: .xlsx, .xls, .csv`);
+        toast.warning(`${result.invalid} arquivo(s) ignorados. Aceitos: .xlsx, .xls, .csv`);
       }
     }
   };
@@ -50,14 +54,78 @@ const ImportData: React.FC = () => {
     }
   }, [suitcaseIdFromQuery]);
 
+  const checkForDuplicates = async (): Promise<boolean> => {
+    if (!validationIdFromQuery) {
+      // Se não há validação associada, não há como ter duplicatas
+      return true;
+    }
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      // Extrair metadados do primeiro arquivo (aproximação)
+      const file = selectedFiles[0];
+      const fileName = file.name;
+      
+      const response = await fetch(`/api/validations/${validationIdFromQuery}/check-duplicate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fileName,
+          // Nota: metadados completos viriam do parser, mas por enquanto enviamos só o nome
+        })
+      });
+
+      if (!response.ok) {
+        // Se API falhar, continua com upload
+        console.warn('Failed to check duplicates, proceeding with upload');
+        toast.info('Não foi possível verificar duplicidade. Prosseguindo.');
+        return true;
+      }
+
+      const result = await response.json();
+      const isDuplicate = result?.isDuplicate ?? result?.data?.isDuplicate ?? false;
+      const message = result?.message ?? result?.data?.message;
+      const existingCount = result?.existingCount ?? result?.data?.existingCount ?? 0;
+      
+      if (isDuplicate) {
+        toast.warning(message || 'Dados possivelmente já importados.');
+        const confirmed = window.confirm(
+          `⚠️ ATENÇÃO: ${message}\n\n` +
+          `Registros existentes: ${existingCount}\n` +
+          `Novos arquivos: ${selectedFiles.length}\n\n` +
+          `Deseja prosseguir com a importação mesmo assim?`
+        );
+        
+        return confirmed;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+      // Em caso de erro na verificação, continua com upload
+      toast.info('Erro ao verificar duplicidade. Prosseguindo.');
+      return true;
+    }
+  };
+
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {
-      alert('Selecione pelo menos um arquivo');
+      toast.warning('Escolha ao menos um arquivo para processar.');
       return;
     }
 
     if (!selectedSuitcaseId) {
-      alert('Selecione uma maleta');
+      toast.warning('Escolha a maleta correspondente aos sensores.');
+      return;
+    }
+
+    // Verificar duplicatas antes de fazer upload
+    const canProceed = await checkForDuplicates();
+    if (!canProceed) {
       return;
     }
 
@@ -71,10 +139,11 @@ const ImportData: React.FC = () => {
       if (response.data.success) {
         setCurrentJobId(response.data.data?.jobId || null);
         clearFiles();
+        toast.success('Upload iniciado. Processamento em andamento.');
       }
     } catch (error: any) {
       console.error('Upload error:', error);
-      alert(error.response?.data?.error || 'Erro no upload dos arquivos');
+      toast.error(error?.response?.data?.error || 'Falha ao enviar arquivos.');
     }
   };
 
@@ -349,6 +418,77 @@ const ImportData: React.FC = () => {
                         )}
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Success Actions */}
+              {processingStatus.status === 'completed' && (
+                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+                      <div>
+                        <h4 className="text-sm font-medium text-green-900">
+                          Importação Concluída com Sucesso!
+                        </h4>
+                        <p className="text-sm text-green-700 mt-1">
+                          {processingStatus.statistics.totalRecords} registros foram processados.
+                          {validationIdFromQuery 
+                            ? ' Os dados foram associados à validação.' 
+                            : ' Você pode criar uma validação para analisar estes dados.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => navigate('/validations')}
+                      className="btn-primary flex items-center gap-2"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                      {validationIdFromQuery ? 'Ver Validações' : 'Criar Validação'}
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setCurrentJobId(null);
+                        clearFiles();
+                      }}
+                      className="btn-secondary"
+                    >
+                      Importar Mais Dados
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Actions */}
+              {processingStatus.status === 'failed' && (
+                <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start space-x-3">
+                    <AlertTriangle className="h-6 w-6 text-red-600 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-red-900">
+                        Erro no Processamento
+                      </h4>
+                      <p className="text-sm text-red-700 mt-1">
+                        Alguns arquivos não puderam ser processados. Verifique os erros acima e tente novamente.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <button
+                      onClick={() => {
+                        setCurrentJobId(null);
+                        clearFiles();
+                      }}
+                      className="btn-secondary"
+                    >
+                      Tentar Novamente
+                    </button>
                   </div>
                 </div>
               )}

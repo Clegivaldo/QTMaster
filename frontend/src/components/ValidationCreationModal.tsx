@@ -16,6 +16,10 @@ export interface ValidationCreationData {
   certificateNumber: string;
   name: string;
   description?: string;
+  minTemperature: number;
+  maxTemperature: number;
+  minHumidity?: number;
+  maxHumidity?: number;
 }
 
 const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
@@ -30,6 +34,10 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
     certificateNumber: '',
     name: '',
     description: '',
+    minTemperature: 2,
+    maxTemperature: 8,
+    minHumidity: undefined,
+    maxHumidity: undefined,
   });
 
   const { data: clientsData } = useClients({ page: 1, limit: 100 });
@@ -46,6 +54,10 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
         certificateNumber: '',
         name: '',
         description: '',
+        minTemperature: 2,
+        maxTemperature: 8,
+        minHumidity: undefined,
+        maxHumidity: undefined,
       });
       setErrors({});
     }
@@ -70,6 +82,16 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
 
     if (!formData.name.trim()) {
       newErrors.name = 'Nome da validação é obrigatório';
+    }
+
+    if (formData.minTemperature >= formData.maxTemperature) {
+      newErrors.minTemperature = 'Temperatura mínima deve ser menor que máxima';
+    }
+
+    if (formData.minHumidity !== undefined && formData.maxHumidity !== undefined) {
+      if (formData.minHumidity >= formData.maxHumidity) {
+        newErrors.minHumidity = 'Umidade mínima deve ser menor que máxima';
+      }
     }
 
     setErrors(newErrors);
@@ -212,6 +234,77 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                         placeholder="Descreva os objetivos desta validação..."
                         disabled={isLoading}
                       />
+                    </div>
+
+                    {/* Critérios de Aceitação */}
+                    <div className="border-t pt-4">
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">Critérios de Aceitação</h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="minTemperature" className="block text-sm font-medium text-gray-700">
+                            Temperatura Mínima (°C) *
+                          </label>
+                          <input
+                            type="number"
+                            id="minTemperature"
+                            step="0.1"
+                            value={formData.minTemperature}
+                            onChange={(e) => setFormData(prev => ({ ...prev, minTemperature: parseFloat(e.target.value) }))}
+                            className={`mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${errors.minTemperature ? 'border-red-300' : ''}`}
+                            disabled={isLoading}
+                          />
+                          {errors.minTemperature && <p className="mt-1 text-sm text-red-600">{errors.minTemperature}</p>}
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="maxTemperature" className="block text-sm font-medium text-gray-700">
+                            Temperatura Máxima (°C) *
+                          </label>
+                          <input
+                            type="number"
+                            id="maxTemperature"
+                            step="0.1"
+                            value={formData.maxTemperature}
+                            onChange={(e) => setFormData(prev => ({ ...prev, maxTemperature: parseFloat(e.target.value) }))}
+                            className="mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                            disabled={isLoading}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="minHumidity" className="block text-sm font-medium text-gray-700">
+                            Umidade Mínima (%)
+                          </label>
+                          <input
+                            type="number"
+                            id="minHumidity"
+                            step="1"
+                            value={formData.minHumidity || ''}
+                            onChange={(e) => setFormData(prev => ({ ...prev, minHumidity: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                            className={`mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${errors.minHumidity ? 'border-red-300' : ''}`}
+                            placeholder="Opcional"
+                            disabled={isLoading}
+                          />
+                          {errors.minHumidity && <p className="mt-1 text-sm text-red-600">{errors.minHumidity}</p>}
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="maxHumidity" className="block text-sm font-medium text-gray-700">
+                            Umidade Máxima (%)
+                          </label>
+                          <input
+                            type="number"
+                            id="maxHumidity"
+                            step="1"
+                            value={formData.maxHumidity || ''}
+                            onChange={(e) => setFormData(prev => ({ ...prev, maxHumidity: e.target.value ? parseFloat(e.target.value) : undefined }))}
+                            className="mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="Opcional"
+                            disabled={isLoading}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
 

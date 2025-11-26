@@ -11,6 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine
+  , ReferenceArea
 } from 'recharts';
 import PageHeader from '@/components/Layout/PageHeader';
 
@@ -22,6 +23,14 @@ interface SensorReading {
     id: string;
     serialNumber: string;
   };
+}
+
+interface Cycle {
+  id: string;
+  name: string;
+  cycleType: string;
+  startAt: string;
+  endAt: string;
 }
 
 interface ValidationData {
@@ -36,6 +45,7 @@ interface ValidationData {
     name: string;
   };
   sensorData: SensorReading[];
+  cycles?: Cycle[];
 }
 
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
@@ -50,6 +60,7 @@ const ValidationCharts: React.FC = () => {
   const [showHumidity, setShowHumidity] = useState(true);
   const [visibleSensors, setVisibleSensors] = useState<Set<string>>(new Set());
   const [dateRange, setDateRange] = useState<{ start: string; end: string } | null>(null);
+  const [selectedCycleId, setSelectedCycleId] = useState<string>('');
   const [yAxisConfig, setYAxisConfig] = useState({
     tempMin: 0,
     tempMax: 30,
@@ -58,13 +69,33 @@ const ValidationCharts: React.FC = () => {
     humMax: 100,
     humTick: 10
   });
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(true);
+  const [showCycleBands, setShowCycleBands] = useState(true);
+
+  const getCycleLegend = () => {
+    if (!data?.cycles || data.cycles.length === 0) return [] as Array<{ type: string; color: string; label: string }>;
+    const unique = Array.from(new Set(data.cycles.map(c => c.cycleType)));
+    return unique.map(t => ({ type: t, color: cycleColor(t), label: t.replace('_', ' ') }));
+  };
 
   useEffect(() => {
     if (id) {
       fetchValidation();
     }
   }, [id]);
+
+  // Atualizar range de datas quando ciclo é selecionado
+  useEffect(() => {
+    if (selectedCycleId && data?.cycles) {
+      const cycle = data.cycles.find(c => c.id === selectedCycleId);
+      if (cycle) {
+        setDateRange({
+          start: new Date(cycle.startAt).toISOString().slice(0, 16),
+          end: new Date(cycle.endAt).toISOString().slice(0, 16)
+        });
+      }
+    }
+  }, [selectedCycleId, data?.cycles]);
 
   const fetchValidation = async () => {
     try {
@@ -84,7 +115,7 @@ const ValidationCharts: React.FC = () => {
 
       // Inicializar sensores visíveis
       if (validationData.sensorData && validationData.sensorData.length > 0) {
-        const sensorIds = [...new Set(validationData.sensorData.map((d: SensorReading) => d.sensor.id))];
+        const sensorIds = [...new Set(validationData.sensorData.map((d: SensorReading) => d.sensor.id))] as string[];
         setVisibleSensors(new Set(sensorIds));
         
         // Calcular range de datas
@@ -104,6 +135,13 @@ const ValidationCharts: React.FC = () => {
         const humidities = validationData.sensorData
           .map((d: SensorReading) => d.humidity)
           .filter((h: number | null) => h !== null) as number[];
+        
+        console.log('Has humidity data:', humidities.length > 0, 'count:', humidities.length);
+        
+        // Habilitar checkbox de umidade se houver dados (FIXADO: remover dependência de min/maxHumidity)
+        if (humidities.length > 0) {
+          setShowHumidity(true);
+        }
         
         setYAxisConfig(prev => ({
           ...prev,
@@ -177,6 +215,36 @@ const ValidationCharts: React.FC = () => {
     );
   };
 
+  const formatDisplayTime = (dateStr: string) => new Date(dateStr).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const getCycleBands = () => {
+    if (!data?.cycles || data.cycles.length === 0) return [] as Array<{ x1: string; x2: string; label: string; type: string }>; 
+    const cyclesToShow = selectedCycleId
+      ? data.cycles.filter(c => c.id === selectedCycleId)
+      : data.cycles;
+    return cyclesToShow.map(c => ({
+      x1: formatDisplayTime(c.startAt),
+      x2: formatDisplayTime(c.endAt),
+      label: `${c.name} (${c.cycleType})`,
+      type: c.cycleType
+    }));
+  };
+
+  const cycleColor = (type: string) => {
+    switch (type) {
+      case 'CHEIO': return '#10b98133';
+      case 'VAZIO': return '#f59e0b33';
+      case 'FALTA_ENERGIA': return '#ef444433';
+      case 'PORTA_ABERTA': return '#f9731633';
+      default: return '#3b82f633';
+    }
+  };
+
   const getSensorInfo = () => {
     if (!data || !data.sensorData) return [];
     
@@ -225,37 +293,38 @@ const ValidationCharts: React.FC = () => {
       <PageHeader
         title={`Gráficos - ${data.name}`}
         description={`Validação #${data.validationNumber} - ${data.client.name}`}
-      >
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <Settings className="h-4 w-4" />
-            Configurações
-          </button>
-          <button
-            onClick={handleExport}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Exportar
-          </button>
-          <button
-            onClick={() => navigate(`/validations/${id}/details`)}
-            className="btn-secondary flex items-center gap-2"
-          >
-            Ver Dados
-          </button>
-          <button
-            onClick={() => navigate('/validations')}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar
-          </button>
-        </div>
-      </PageHeader>
+        actions={(
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Configurações
+            </button>
+            <button
+              onClick={handleExport}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Exportar
+            </button>
+            <button
+              onClick={() => navigate(`/validations/${id}/details`)}
+              className="btn-secondary flex items-center gap-2"
+            >
+              Ver Dados
+            </button>
+            <button
+              onClick={() => navigate('/validations')}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
+            </button>
+          </div>
+        )}
+      />
 
       <div className="space-y-6">
         {/* Settings Panel */}
@@ -263,6 +332,32 @@ const ValidationCharts: React.FC = () => {
           <div className="bg-white p-6 rounded-lg shadow-md space-y-6">
             <h3 className="text-lg font-semibold mb-4">Configurações do Gráfico</h3>
             
+            {/* Cycle Filter */}
+            {data.cycles && data.cycles.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  🔄 Filtrar por Ciclo
+                </label>
+                <select
+                  value={selectedCycleId}
+                  onChange={(e) => setSelectedCycleId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                >
+                  <option value="">Todos os dados (sem filtro)</option>
+                  {data.cycles.map(cycle => (
+                    <option key={cycle.id} value={cycle.id}>
+                      {cycle.name} ({cycle.cycleType}) - {new Date(cycle.startAt).toLocaleDateString('pt-BR')}
+                    </option>
+                  ))}
+                </select>
+                {selectedCycleId && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 O período de visualização foi ajustado automaticamente para o ciclo selecionado
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Date Range */}
             {dateRange && (
               <div className="grid grid-cols-2 gap-4">
@@ -317,7 +412,33 @@ const ValidationCharts: React.FC = () => {
                     <span>Umidade</span>
                   </label>
                 )}
+                {data.cycles && data.cycles.length > 0 && (
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={showCycleBands}
+                      onChange={(e) => setShowCycleBands(e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <span>Destacar ciclos</span>
+                  </label>
+                )}
               </div>
+              {data.cycles && data.cycles.length > 0 && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Legenda dos ciclos
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    {getCycleLegend().map((item) => (
+                      <div key={item.type} className="flex items-center gap-2 text-sm">
+                        <span className="inline-block w-4 h-4 rounded-sm" style={{ backgroundColor: item.color }}></span>
+                        <span className="text-gray-700">{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Sensor Selection */}
@@ -435,6 +556,9 @@ const ValidationCharts: React.FC = () => {
                   height={80}
                   style={{ fontSize: '12px' }}
                 />
+                {showCycleBands && getCycleBands().map((c, idx) => (
+                  <ReferenceArea key={`t-area-${idx}`} x1={c.x1} x2={c.x2} y1={yAxisConfig.tempMin} y2={yAxisConfig.tempMax} fill={cycleColor(c.type)} strokeOpacity={0} />
+                ))}
                 <YAxis 
                   domain={[yAxisConfig.tempMin, yAxisConfig.tempMax]}
                   ticks={Array.from(
@@ -477,8 +601,8 @@ const ValidationCharts: React.FC = () => {
           </div>
         )}
 
-        {/* Humidity Chart */}
-        {showHumidity && hasHumidity && data.minHumidity !== null && data.maxHumidity !== null && (
+        {/* Humidade Chart (renderiza se houver qualquer dado, independentemente de parâmetros definidos) */}
+        {showHumidity && hasHumidity && (
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold mb-4">Gráfico de Umidade</h3>
             <ResponsiveContainer width="100%" height={400}>
@@ -491,6 +615,9 @@ const ValidationCharts: React.FC = () => {
                   height={80}
                   style={{ fontSize: '12px' }}
                 />
+                {showCycleBands && getCycleBands().map((c, idx) => (
+                  <ReferenceArea key={`h-area-${idx}`} x1={c.x1} x2={c.x2} y1={yAxisConfig.humMin} y2={yAxisConfig.humMax} fill={cycleColor(c.type)} strokeOpacity={0} />
+                ))}
                 <YAxis 
                   domain={[yAxisConfig.humMin, yAxisConfig.humMax]}
                   ticks={Array.from(
@@ -503,18 +630,22 @@ const ValidationCharts: React.FC = () => {
                 <Legend />
                 
                 {/* Reference Lines */}
-                <ReferenceLine 
-                  y={data.minHumidity} 
-                  stroke="red" 
-                  strokeDasharray="5 5" 
-                  label={{ value: `Min: ${data.minHumidity}%`, position: 'right' }}
-                />
-                <ReferenceLine 
-                  y={data.maxHumidity} 
-                  stroke="red" 
-                  strokeDasharray="5 5" 
-                  label={{ value: `Max: ${data.maxHumidity}%`, position: 'right' }}
-                />
+                {data.minHumidity !== null && (
+                  <ReferenceLine 
+                    y={data.minHumidity} 
+                    stroke="red" 
+                    strokeDasharray="5 5" 
+                    label={{ value: `Min: ${data.minHumidity}%`, position: 'right' }}
+                  />
+                )}
+                {data.maxHumidity !== null && (
+                  <ReferenceLine 
+                    y={data.maxHumidity} 
+                    stroke="red" 
+                    strokeDasharray="5 5" 
+                    label={{ value: `Max: ${data.maxHumidity}%`, position: 'right' }}
+                  />
+                )}
                 
                 {/* Lines for each sensor */}
                 {sensors.filter(s => visibleSensors.has(s.id)).map((sensor, idx) => (

@@ -43,4 +43,26 @@ router.put(
 // DELETE /api/validations/:id - Delete validation
 router.delete('/:id', requirePermission(Permission.VALIDATION_DELETE), validationController.deleteValidation.bind(validationController));
 
+// DELETE /api/validations/:id/sensor-data - Delete all sensor data from validation
+router.delete('/:id/sensor-data', requirePermission(Permission.VALIDATION_UPDATE), validationController.deleteSensorData.bind(validationController));
+
+// POST /api/validations/:id/check-duplicate - Check if file was already imported
+router.post('/:id/check-duplicate', requirePermission(Permission.VALIDATION_UPDATE), validationController.checkDuplicate.bind(validationController));
+
+// CRUD de Ciclos de Validação
+// GET /api/validations/:id/cycles - List all cycles for a validation
+router.get('/:id/cycles', requirePermission(Permission.VALIDATION_READ), validationController.getCycles.bind(validationController));
+
+// POST /api/validations/:id/cycles - Create new cycle
+router.post('/:id/cycles', requirePermission(Permission.VALIDATION_UPDATE), validationController.createCycle.bind(validationController));
+
+// PUT /api/validations/:id/cycles/:cycleId - Update cycle
+router.put('/:id/cycles/:cycleId', requirePermission(Permission.VALIDATION_UPDATE), validationController.updateCycle.bind(validationController));
+
+// DELETE /api/validations/:id/cycles/:cycleId - Delete cycle
+router.delete('/:id/cycles/:cycleId', requirePermission(Permission.VALIDATION_UPDATE), validationController.deleteCycle.bind(validationController));
+
+// GET /api/validations/:id/cycle-statistics - Get statistics by cycle
+router.get('/:id/cycle-statistics', requirePermission(Permission.VALIDATION_READ), validationController.getCycleStatistics.bind(validationController));
+
 export default router;

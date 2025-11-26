@@ -55,6 +55,9 @@ export class PythonFallbackService {
       let resolved = false;
       let totalLines = 0;
       let failedLines = 0;
+      let failNoTimestamp = 0;
+      let failBadTemperature = 0;
+      const failSamples: Array<{ timestamp?: any; temperature?: any; humidity?: any; reason: string; line: number }>=[];
       const batch: any[] = [];
       const BATCH_SIZE = Math.min(options.chunkSize || 500, 1000);
 
@@ -100,6 +103,17 @@ export class PythonFallbackService {
               });
             } else {
               failedLines++;
+              if (!timestamp) {
+                failNoTimestamp++;
+                if (failSamples.length < 5) {
+                  failSamples.push({ timestamp: obj.timestamp, temperature: obj.temperature, humidity: obj.humidity, reason: 'no-timestamp', line: totalLines });
+                }
+              } else if (isNaN(temperature) || temperature < -80 || temperature > 120) {
+                failBadTemperature++;
+                if (failSamples.length < 5) {
+                  failSamples.push({ timestamp: obj.timestamp, temperature: obj.temperature, humidity: obj.humidity, reason: 'bad-temperature', line: totalLines });
+                }
+              }
             }
             if (batch.length >= BATCH_SIZE) {
               try {
@@ -120,7 +134,19 @@ export class PythonFallbackService {
         }
       });
 
-      child.stderr.on('data', chunk => { stderr += chunk.toString(); });
+      child.stderr.on('data', chunk => {
+        const text = chunk.toString();
+        stderr += text;
+        // Log linhas de debug do script Python mesmo em sucesso
+        try {
+          for (const line of text.split(/\r?\n/)) {
+            if (!line.trim()) continue;
+            if (line.includes('DEBUG')) {
+              logger.info('Python fallback debug', { line });
+            }
+          }
+        } catch {}
+      });
 
       child.on('error', err => {
         if (!resolved) {
@@ -148,7 +174,7 @@ export class PythonFallbackService {
             failedLines += batch.length;
           }
         }
-        logger.info('Python fallback completed', { originalName, totalLines, failedLines, duration });
+        logger.info('Python fallback completed', { originalName, totalLines, failedLines, duration, failNoTimestamp, failBadTemperature, failSamples });
         const processedRows = totalLines - failedLines;
         resolve({
           totalRows: totalLines,

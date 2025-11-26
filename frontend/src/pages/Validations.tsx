@@ -14,6 +14,7 @@ import PageHeader from '@/components/Layout/PageHeader';
 import { useValidations, useCreateValidation, useUpdateValidationApproval, useDeleteValidation } from '@/hooks/useValidations';
 import { useNavigate } from 'react-router-dom';
 import { Validation, ValidationFilters } from '@/types/validation';
+import { useToast } from '@/components/ToastContext';
 
 import ValidationCreationModal, { ValidationCreationData } from '@/components/ValidationCreationModal';
 import { parseApiError } from '@/utils/apiErrors';
@@ -28,11 +29,13 @@ const Validations: React.FC = () => {
   });
   const [showCreationModal, setShowCreationModal] = useState(false);
   const [deletingValidation, setDeletingValidation] = useState<Validation | null>(null);
+  const [generatingReport, setGeneratingReport] = useState<string | null>(null);
 
   const { data, isLoading, error } = useValidations(filters);
   const createMutation = useCreateValidation();
   const updateApprovalMutation = useUpdateValidationApproval();
   const deleteMutation = useDeleteValidation();
+  const toast = useToast();
   
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -54,10 +57,10 @@ const Validations: React.FC = () => {
         validationNumber: data.certificateNumber,
         equipmentId: data.equipmentId,
         parameters: {
-          minTemperature: 2,
-          maxTemperature: 8,
-          minHumidity: undefined,
-          maxHumidity: undefined,
+          minTemperature: data.minTemperature,
+          maxTemperature: data.maxTemperature,
+          minHumidity: data.minHumidity,
+          maxHumidity: data.maxHumidity,
         },
         sensorDataIds: [], // Será preenchido quando importar dados dos sensores
       };
@@ -72,19 +75,26 @@ const Validations: React.FC = () => {
     } catch (error) {
       console.error('Error creating validation:', error);
       const message = parseApiError(error);
-      alert(message || 'Erro ao criar validação');
+      toast.error(message || 'Erro ao criar validação');
     }
   };
 
+  const [confirmApproval, setConfirmApproval] = useState<{ id: string; isApproved: boolean } | null>(null);
+
   const handleApproveValidation = async (validationId: string, isApproved: boolean) => {
-    if (!confirm(`Tem certeza que deseja ${isApproved ? 'aprovar' : 'reprovar'} esta validação?`)) return;
-    
+    setConfirmApproval({ id: validationId, isApproved });
+  };
+
+  const confirmApprovalAction = async () => {
+    if (!confirmApproval) return;
     try {
-      await updateApprovalMutation.mutateAsync({ id: validationId, isApproved });
+      await updateApprovalMutation.mutateAsync({ id: confirmApproval.id, isApproved: confirmApproval.isApproved });
+      toast.success(`Validação ${confirmApproval.isApproved ? 'aprovada' : 'reprovada'} com sucesso!`);
     } catch (error) {
       console.error('Error updating validation approval:', error);
-      alert('Erro ao atualizar status da validação');
+      toast.error('Erro ao atualizar status da validação');
     }
+    setConfirmApproval(null);
   };
 
   const handleDeleteValidation = async () => {
@@ -93,9 +103,15 @@ const Validations: React.FC = () => {
     try {
       await deleteMutation.mutateAsync(deletingValidation.id);
       setDeletingValidation(null);
+      toast.success('Validação excluída com sucesso!');
     } catch (error) {
       console.error('Error deleting validation:', error);
-      alert('Erro ao excluir validação');
+      const message = parseApiError(error);
+      if (message.includes('Cannot delete validation with associated reports')) {
+        toast.error(message + '\nRemova ou arquive os relatórios antes de excluir esta validação.', 8000);
+      } else {
+        toast.error(message || 'Erro ao excluir validação');
+      }
     }
   };
 
@@ -132,6 +148,45 @@ const Validations: React.FC = () => {
 
   const formatPercentage = (value: number) => {
     return `${value.toFixed(1)}%`;
+  };
+
+  const handleGenerateReport = async (validation: Validation) => {
+    try {
+      setGeneratingReport(validation.id);
+      const token = localStorage.getItem('accessToken');
+      
+      const response = await fetch(`/api/reports/generate/${validation.id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao gerar relatório');
+      }
+
+      const result = await response.json();
+      
+      // Se retornar um ID de relatório, navegar para a página do relatório
+      if (result.data?.reportId) {
+        navigate(`/reports/${result.data.reportId}`);
+      } else if (result.data?.downloadUrl) {
+        // Ou abrir URL de download em nova aba
+        window.open(result.data.downloadUrl, '_blank');
+      } else {
+        // Fallback: navegar para lista de relatórios
+        toast.success('Relatório gerado com sucesso!');
+        navigate('/reports');
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao gerar relatório');
+    } finally {
+      setGeneratingReport(null);
+    }
   };
 
   return (
@@ -330,12 +385,12 @@ const Validations: React.FC = () => {
                     <div className="flex flex-wrap gap-2">
                       {/* Primary Action - Generate Report */}
                       <button 
-                        onClick={() => navigate(`/reports?createNew=true&validationId=${validation.id}`)}
+                        onClick={() => handleGenerateReport(validation)}
                         className="btn-primary text-sm"
-                        disabled={!validation.statistics || (validation._count?.sensorData || 0) === 0}
+                        disabled={!validation.statistics || (validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}
                         title={(validation._count?.sensorData || 0) === 0 ? 'Importe dados antes de gerar laudo' : 'Criar relatório/laudo desta validação'}
                       >
-                        📊 Gerar Laudo
+                        {generatingReport === validation.id ? '⏳ Gerando...' : '📊 Gerar Laudo'}
                       </button>
 
                       {/* Secondary Actions */}
@@ -492,6 +547,47 @@ const Validations: React.FC = () => {
                 type="button"
                 onClick={() => setDeletingValidation(null)}
                 disabled={deleteMutation.isLoading}
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:w-auto sm:text-sm disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approval Confirmation Modal */}
+      {confirmApproval && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="sm:flex sm:items-start">
+              <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Confirmar {confirmApproval.isApproved ? 'aprovação' : 'reprovação'}
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Tem certeza que deseja {confirmApproval.isApproved ? 'aprovar' : 'reprovar'} esta validação?
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={confirmApprovalAction}
+                disabled={updateApprovalMutation.isLoading}
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updateApprovalMutation.isLoading ? 'Confirmando...' : (confirmApproval.isApproved ? 'Aprovar' : 'Reprovar')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmApproval(null)}
+                disabled={updateApprovalMutation.isLoading}
                 className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:w-auto sm:text-sm disabled:opacity-50"
               >
                 Cancelar

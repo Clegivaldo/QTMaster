@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { AvatarProvider } from '@/contexts/AvatarContext';
 import { QueryProvider } from '@/contexts/QueryProvider';
+import { ToastProvider } from '@/components/ToastContext';
 import '@/styles/mobile.css';
 import Layout from '@/components/Layout/Layout';
 import LoginForm from '@/components/LoginForm';
@@ -140,7 +141,9 @@ function App() {
       <Router>
         <AuthProvider>
           <AvatarProvider>
-            <AppRoutes />
+            <ToastProvider>
+              <AppRoutes />
+            </ToastProvider>
           </AvatarProvider>
         </AuthProvider>
       </Router>

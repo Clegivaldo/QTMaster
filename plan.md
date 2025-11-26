@@ -1,184 +1,37 @@
-# ✅ Sistema QT-Master - Docker Deployment COMPLETO
+# Plano – Importação, Duplicidade e Toasts (26/11/2025)
 
-## Status Atual: PRODUÇÃO
-- 🚀 Sistema rodando em Docker Compose (http://localhost)
-- ✅ Todos os 12 containers saudáveis
-- ✅ Banco PostgreSQL inicializado com seed
-- ✅ Nginx, Backend, Frontend, Redis, Prometheus, Grafana, Loki operacionais
-- 🔐 **Login**: admin@sistema.com / admin123
-
-## Resumo de Entendimento
-O sistema QT-Master é um projeto full-stack com backend em Node.js/Prisma e frontend em React/TypeScript. O editor de layout está nos componentes React em `frontend/src/components/EditorLayoutProfissional/`. Os problemas relatados foram:
-1. Itens no cabeçalho/rodapé não podem ser selecionados após adição (z-index/pointer-events).
-2. Itens do cabeçalho não se replicam em todas as páginas mesmo com checkbox "replicar" marcado.
-3. ESC não limpa seleção de header/footer.
+## Resumo
+Estamos finalizando o fluxo de importação de arquivos (.xls/.xlsx/.csv) com fallback Python, corrigindo a verificação de duplicidade e padronizando UX com toasts. Persistia 400 no `check-duplicate` por falta de timestamps e 0 registros processados nos `.xls` legados. Melhoramos o parser Python e adicionamos logs de DEBUG no backend.
 
 ## Plano de Ação
-1. ✅ Explorar e analisar a estrutura do código do editor de layout.
-2. ✅ Identificar a lógica de seleção de itens e renderização de cabeçalho/rodapé.
-3. ✅ Resolver problema 1: Ajustar z-index e pointer-events para permitir seleção.
-4. ✅ Resolver problema 2: Corrigir lógica de replicação de itens em múltiplas páginas.
-5. ✅ Resolver problema 3: Implementar ESC para limpar seleção de elementos e regiões.
-6. ✅ Testar as correções com scripts de teste existentes.
-7. ✅ Validar e documentar as mudanças.
+1. Ajustar backend `check-duplicate` para não bloquear sem metadados (timestamps).
+2. Substituir `alert()` por toasts na tela de Importação e melhorar parsing da resposta do `check-duplicate`.
+3. Validar parser Python com logs de DEBUG e garantir mapeamento de colunas PT-BR (Data/Hora, Temperatura, Umidade).
+4. (Opcional) Evoluir `ImportData` para enviar `firstTimestamp/lastTimestamp` quando possível (pré-parse leve no cliente).
 
 ## Checklist TODO
-- [x] Analisar arquivos React/TypeScript do editor.
-- [x] Examinar lógica de adição e seleção de itens no cabeçalho/rodapé.
-- [x] Identificar causa da sobreposição (z-index, pointer-events).
-- [x] Corrigir seleção de itens no cabeçalho/rodapé.
-- [x] Examinar lógica de replicação de itens em páginas.
-- [x] Corrigir replicação de cabeçalho em todas as páginas.
-- [x] Implementar ESC para limpar seleção de header/footer.
-- [x] Executar testes relacionados e corrigir falhas.
-- [x] Validar correções e atualizar documentação.
+- [x] Backend: `checkDuplicate` tolera body incompleto (retorna `isDuplicate=false`).
+- [x] Frontend: substituir alerts por toasts em `ImportData.tsx` e tratar resposta flexível (`result.isDuplicate` ou `result.data.isDuplicate`).
+- [x] Parser Python: heurísticas de datetime (serial Excel, data+hora separados) e logs `DEBUG` expostos pelo Node.
+- [x] Parser Python: aceitar coluna única `time` contendo data+hora (formato Elitech RC-4HC) e evitar NaT quando o valor traz a data completa.
+- [x] Frontend: adicionar legenda de cores dos ciclos nos gráficos de validação.
+- [x] Login: remover botão "Testar Conexão Backend" da tela de login.
+- [ ] Validar importação novamente e conferir logs `Python fallback completed` com `processedRows > 0`.
+- [ ] (Opcional) Enviar `firstTimestamp/lastTimestamp` do cliente após um pré-parse simples.
+- [ ] (Opcional) Remover `window.confirm` por confirmação via UI (modal).
 
-## Mudanças Implementadas
-- [x] `frontend/src/components/EditorLayoutProfissional/components/EditorCanvas/Canvas.tsx`: 
-  - Ajustado z-index dos elementos do header/footer para 60 e removido click regions que interferiam na seleção
-  - Implementado validação de margens para movimento de elementos do header/footer (X e Y)
-  - Alinhado sistema de renderização de elementos de região (offsets) para que posições globais apareçam corretamente dentro de header/footer
-  - Adicionada limitação durante resize para que header + footer não ultrapassem altura da página
-- [x] `frontend/src/hooks/useTemplateEditor.ts`: Melhorada lógica de replicação em `updatePageRegions` para sincronizar elementos dinamicamente
- - [x] `frontend/src/hooks/useTemplateEditor.ts`: Simplificada e corrigida lógica de replicação em `updatePageRegions` — agora aplica a todas as páginas somente quando `replicateAcrossPages=true`; caso contrário aplica apenas na página atual (mais previsível)
-- [x] `frontend/src/components/EditorLayoutProfissional/index.tsx`: 
-  - Adicionado estado `selectedRegion`, `handleEscape`, e implementação correta do `region.onUpdate` para conectar ao `updatePageRegions`
-- [x] `frontend/src/components/EditorLayoutProfissional/components/Toolbars/PropertiesPanel.tsx`: Adicionado suporte para região selecionada
-- [x] Corrigido teste `useTemplateEditor.spec.tsx` (código duplicado)
-- [x] Adicionadas verificações defensivas para `editor.template?.pages`
+## Mudanças implementadas nesta entrega
+- Backend: `validationController.checkDuplicate` agora não retorna 400 sem timestamps; responde `success: true, isDuplicate: false` com mensagem informativa.
+- Frontend: `frontend/src/pages/ImportData.tsx`
+  - Uso de `ToastContext` para avisos/erros em seleção de arquivos, verificação ignorada e upload iniciado/falha.
+  - Interpretação robusta da resposta de duplicidade (aceita formatos `result.isDuplicate` ou `result.data.isDuplicate`).
+  - Mantida confirmação (`window.confirm`) apenas quando a API indicar duplicidade.
+- Parser Python: já incluía seleção de primeira aba, mapeamento PT-BR/EN, parsing de datas/tempos e coerção numérica.
+  - Suporte adicional: quando a planilha traz apenas a coluna `Time` contendo data e hora completas, fazemos o parse direto como datetime (com `dayfirst=True`). Para valores numéricos, tentamos serial Excel antes de desistir.
 
-## Status dos Testes
-- [x] `Canvas.test.tsx`: ✅ Passando (2/2 testes) - seleção de elementos do header funcionando
-- [x] `useTemplateEditor.spec.tsx`: ✅ Passando (2/2 testes)
-- [x] `useTemplateEditor.fixed.spec.tsx`: ✅ Passando (2/2 testes)
-- [x] Testes em execução mostram validação de margens funcionando (warnings esperados)
-
-## Correções Específicas para os Problemas Relatados
-1. **Seleção de elementos no header/footer**: Removido click regions que interferiam com pointer-events dos elementos
-2. **Replicação entre páginas**: Simplificada a lógica de replicação para evitar cópias inesperadas; marcar "Replicar em todas as páginas" aplica o header/footer completo para todas as páginas
-3. **Validação de margens (top/bottom)**: Elementos do header/footer agora respeitam limites verticais (não podem ser movidos acima da margem superior nem abaixo da margem inferior). Redimensionamento também é limitado de forma que header+footer não excedam a altura do A4.
-
-## Próximos passos
-- Testes manuais no editor para validar todas as correções
-- Verificar se a replicação funciona corretamente quando o checkbox "replicar em todas as páginas" é marcado/desmarcado
-- Confirmar que desmarcar cabeçalho/rodapé remove a região da página atual
-- Testar arrastar/redimensionar header/footer e confirmar que não ultrapassa altura da página
-
-## Mudança: Modal "Novo Cliente" (implementada)
-
-- Objetivo: Mover CNPJ para o primeiro campo, adicionar botão de busca (ícone lupa) que consulta o CNPJ e preenche campos; separar endereço em campos (Rua, Bairro, Cidade, Estado, Complemento); remover inputs de Email e Telefone do modal.
-- Arquivos alterados:
-  - `frontend/src/components/ClientForm.tsx` — reordenação de campos, botão de busca com ícone, implementação de `fetchCNPJ` (consulta BrasilAPI) e novos campos de endereço.
-  - `frontend/src/types/client.ts` — adição de campos de endereço em `Client` e `ClientFormData` (`street`, `neighborhood`, `city`, `state`, `complement`).
-- Comportamento implementado:
-  - Botão lupa ao lado do campo CNPJ que chama `https://brasilapi.com.br/api/cnpj/v1/{cnpj}` e preenche `name`, `street`, `neighborhood`, `city`, `state`, `complement` quando disponível.
-  - Removidos visualmente os inputs de Email e Telefone do modal (mantidos nos tipos por compatibilidade).
-  - Campo `address` legado removido da UI (mantido no tipo para compatibilidade retroativa).
-
-## QA recomendado para o modal de Cliente
-- Abrir a tela `Clientes` e acionar "Novo Cliente".
-- Inserir um CNPJ válido (14 dígitos) e clicar na lupa — verificar preenchimento de campos.
-- Testar com CNPJ inválido e verificar mensagem de erro exibida abaixo do campo.
-- Criar cliente e confirmar payload enviado ao backend (inspecionar network ou logs do servidor).
-- Se desejar persistir os novos campos no backend, ajustar controller/model/prisma para aceitar e salvar esses campos.
-
-## Próximos passos (específicos para o modal de cliente)
-- [ ] Testes manuais/QA no ambiente local (abrir app e validar fluxo completo)
-- [ ] (Opcional) Adicionar máscara/validação front-end para CNPJ e melhorar UX de loading/erro
-- [ ] (Opcional) Atualizar `ClientTable` para exibir os campos de endereço resumidos (Rua / Cidade - UF)
-
-## DB / Prisma updates (nov 12, 2025)
-
-- [x] Atualizado `prisma/schema.prisma` com campos: `street`, `neighborhood`, `city`, `state`, `complement` no modelo `Client`.
-- [x] Adicionada migration SQL `prisma/migrations/20251112_add-client-address-fields/migration.sql` que adiciona as colunas no Postgres.
-- [x] Criado `prisma/seed.ts` para centralizar seeds (admin, sensor types, template, client CNPJ `10.520.565/0001-53`).
-- [x] Executado `prisma migrate deploy` localmente (marcando migração pré-existente como aplicada quando necessário) e rodado seed — cliente criado e atualizável via Prisma.
-
-## Importação de dados RC-4HC (janeiro 2025)
-
-### Problema inicial
-- Sistema rodando em Docker (Nginx porta 80, backend porta 5000, PostgreSQL)
-- Login não funcionava → Resolvido executando `npx prisma db push` e seed
-- Foco movido para importação de arquivos `.xls` do datalogger Elitech RC-4HC
-
-### Estrutura do arquivo RC-4HC
-- **Planilha "Resumo"**: Célula B6 contém o número de série do datalogger
-- **Planilha "Lista"**: Dados de leitura
-  - Coluna B: Data/Hora (formato DD/MM/YYYY HH:mm:ss)
-  - Coluna C: Temperatura (°C)
-  - Coluna D: Umidade (%RH)
-  - Linha 1: Cabeçalhos
-  - Dados começam na linha 2
-
-### Bloqueios técnicos enfrentados
-1. **xlsx library**: Falha com "RangeError: Array buffer allocation failed" ao tentar ler o arquivo `.xls` legado
-2. **Container Docker**: Memória limitada causando kills durante parsing
-3. **Python fallback**: Não disponível no container (arquivo não copiado para imagem)
-
-### Solução implementada
-Criado script Python standalone (`backend/tmp/import_rc4hc.py`) que:
-- Usa `pandas` + `openpyxl` (melhor compatibilidade com XLS/XLSX)
-- Conecta diretamente ao PostgreSQL usando credenciais do `.env`
-- Cria automaticamente sensor type, sensor, e suitcase
-- Detecta colunas automaticamente ou usa mapeamento por índice
-- Insere dados em lotes de 1000 registros
-- Usa nomes de coluna camelCase do Prisma (ex: `serialNumber`, `sensorId`, `createdAt`)
-
-### Resultado da importação
-- [x] ✅ **1128 linhas** importadas com sucesso
-- [x] ✅ Sensor criado: `RC4HC-1764091663` (ID: `cdb7b559-70d3-4834-9ee7-4232c344d306`)
-- [x] ✅ Maleta criada: `eaccc371-5d65-4498-9616-ecb1b21e592a`
-- [x] ✅ Período dos dados: 13/10/2025 a 21/10/2025
-- [x] ✅ Temperatura média: 26.34°C
-- [x] ✅ Umidade média: 64.03%RH
-- [x] ✅ 0 falhas de parsing
-
-### Arquivos modificados/criados
-- `backend/tmp/import_rc4hc.py`: Script Python para importação
-- `backend/src/services/enhancedFileProcessorService.ts`: Adicionado strategy para ler Resumo!B6
-- `backend/tmp/run_rc4hc_import.mjs`: Tentativa inicial com Node.js (não funcionou com xls legado)
-
-### Próximos passos
-- [ ] Integrar script Python no fluxo de upload via API
-- [ ] Copiar `backend/python/fallback_parser.py` para imagem Docker
-- [ ] Adicionar suporte para outros modelos Elitech (RC-5, RC-17, etc.)
-- [ ] Documentar mapeamento de colunas para cada vendor no README
-
-
-## O que foi feito (mudanças relevantes)
-- [x] Atualizado `frontend/tsconfig.json` para excluir arquivos de teste do build principal.
-- [x] Criado `frontend/tsconfig.tests.json` para validação de tipos apenas em tests.
-- [x] Adicionado `src/test/setupTests.ts` (jest-dom) e configurado em `tsconfig.tests.json`.
-- [x] Alterado `src/test/test-utils.tsx` (factories) para retorno pragmático `any` onde necessário para acelerar a triagem.
-- [x] Implementado UI/logic no `PropertiesPanel` (bordas, prevBorder, verticalAlign, ícones de visível/bloqueado, transparência compacta).
-- [x] Implementado redimensionamento por arrastar header/footer no `Canvas` e persistência via `updatePageRegions`.
-- [x] Adicionado teste unitário cobrindo restauração de `prevBorder` no `PropertiesPanel`.
-
-## Erros restantes (visitados hoje)
-- `npx tsc -p tsconfig.tests.json` → 32 erros em 13 arquivos. Erros típicos:
-  - variáveis/const declaradas e não usadas em testes (TS6133) — simples de limpar nos testes;
-  - mocks de `EditorTemplate` faltando `pages` — alguns testes usam objetos antigos; solução pragmática: ajustar mocks ou tornar `pages` opcional temporariamente;
-  - incompatibilidades entre `TemplateElement` genérico e formas específicas em testes (esperam `content: LineData | TableData` etc.) — corrigir com casts ou factories tipadas;
-  - alguns usos de DOM APIs (ResizeObserver, getContext) com mocks tipados incorretamente.
-
-## Próximo passo proposto
-Escolha uma opção (responda com 1 ou 2):
-
-1) Continuo agora a triagem e corrijo os 32 erros restantes (aplico casts puntuais, removo variáveis não usadas e ajusto mocks). Vou iterar até zerar ou estabilizar o número de erros (estimado 20–60 minutos, dependendo do acerto fino).
-
-2) Pare por aqui: mantemos os testes excluídos do `tsconfig` principal e você revisa quando quiser; eu lhe envio um patch/PR com o que foi feito até agora e instruções para continuar a correção dos testes no branch.
-
-## TODO (atualizado)
-- [x] Excluir testes do `tsconfig` principal.
-- [x] Criar `tsconfig.tests.json`.
-- [x] Adicionar `src/test/setupTests.ts`.
-- [x] Ajustar `PropertiesPanel` (UI + lógica) e testes unitários básicos.
-- [x] Implementar redimensionamento header/footer no `Canvas`.
-- [x] Adicionar teste de restauração `prevBorder`.
-- [ ] Corrigir 32 erros restantes no `tsconfig.tests.json` (triagem contínua).
-- [ ] Refatorar `src/test/test-utils.tsx` para factories fortemente tipadas (melhoria a médio prazo).
-
-## Notas rápidas
-- As mudanças aplicadas são intencionais para desbloquear o pipeline de `tsc` do build principal. As mudanças pragmáticas em testes (casts/any) devem ser revertidas/refatoradas mais tarde para manter a qualidade do typing.
+## Validação / Próximos Passos
+- Reprocessar os `.xls` problemáticos para capturar linhas `Python fallback debug` (colunas detectadas e contagem de datetimes) e verificar se `processedRows > 0`.
+- Se ainda der 0, ampliar heurísticas de cabeçalhos conforme nomes exatos vistos nos logs (ex.: "Data e hora", "Umidade Relativa (%)").
+- (Opcional) Implementar pré-parse no cliente para enviar `firstTimestamp/lastTimestamp` no `check-duplicate` e evitar falsos negativos/positivos.
 
 ``` 
