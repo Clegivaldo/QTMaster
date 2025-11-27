@@ -8,6 +8,8 @@ Estamos finalizando o fluxo de importação de arquivos (.xls/.xlsx/.csv) com fa
 2. Substituir `alert()` por toasts na tela de Importação e melhorar parsing da resposta do `check-duplicate`.
 3. Validar parser Python com logs de DEBUG e garantir mapeamento de colunas PT-BR (Data/Hora, Temperatura, Umidade).
 4. (Opcional) Evoluir `ImportData` para enviar `firstTimestamp/lastTimestamp` quando possível (pré-parse leve no cliente).
+5. Implementar endpoints backend para salvar critérios de aceitação e seleção de sensores.
+6. Corrigir retorno de validação para múltiplos sensores sem duplicação e validar gráficos/detalhes.
 
 ## Checklist TODO
 - [x] Backend: `checkDuplicate` tolera body incompleto (retorna `isDuplicate=false`).
@@ -17,6 +19,9 @@ Estamos finalizando o fluxo de importação de arquivos (.xls/.xlsx/.csv) com fa
 - [x] Frontend: adicionar legenda de cores dos ciclos nos gráficos de validação.
 - [x] Login: remover botão "Testar Conexão Backend" da tela de login.
 - [ ] Validar importação novamente e conferir logs `Python fallback completed` com `processedRows > 0`.
+- [x] Backend: `PUT /api/validations/:id/criteria` para persistir min/max temperatura/umidade.
+- [x] Backend: `PUT /api/validations/:id/sensors/selection` para persistir seleção (armazenando `hiddenSensorIds`).
+- [ ] Verificar gráficos e detalhes exibindo todos os sensores selecionados, sem duplicações.
 - [ ] (Opcional) Enviar `firstTimestamp/lastTimestamp` do cliente após um pré-parse simples.
 - [ ] (Opcional) Remover `window.confirm` por confirmação via UI (modal).
 

@@ -294,7 +294,7 @@ export class EnhancedFileProcessorService {
 
       // Match file to sensor first
       logger.info('Attempting to match file to sensor', { fileName: file.originalname, suitcaseSensorCount: suitcase.sensors?.length || 0 });
-      const matchedSensor = await this.matchFileToSensor(file, suitcase);
+      const matchedSensor = await this.matchFileToSensor(file, suitcase, tempFilePath);
       logger.info('Sensor matching result', { fileName: file.originalname, matched: !!matchedSensor, sensorId: matchedSensor?.sensor?.id });
       if (!matchedSensor) {
         throw new Error('Could not match file to any sensor in the suitcase');
@@ -454,48 +454,135 @@ export class EnhancedFileProcessorService {
     return tempFilePath;
   }
 
-  private async matchFileToSensor(file: Express.Multer.File, suitcase: any): Promise<any | null> {
-    // Strategy 1: Match by filename containing serial number
-    for (const suitcaseSensor of suitcase.sensors) {
-      const serialNumber = suitcaseSensor.sensor.serialNumber.toLowerCase();
-      const fileName = file.originalname.toLowerCase();
-      
-      if (fileName.includes(serialNumber)) {
-        return suitcaseSensor;
-      }
-    }
+  private async matchFileToSensor(file: Express.Multer.File, suitcase: any, tempFilePath?: string): Promise<any | null> {
+    let extractedSerial: string | null = null;
 
-    // Strategy 2: If only one sensor in suitcase, use it
-    if (suitcase.sensors.length === 1) {
-      return suitcase.sensors[0];
-    }
-
-    // Strategy 3: Attempt to read serial from Excel 'Resumo' sheet (cell B6)
+    // Strategy 1: Attempt to read serial from Excel 'Resumo' sheet (cell B6) FIRST
     try {
       const ext = (file.originalname.split('.').pop() || '').toLowerCase();
-      // Only attempt for Excel formats
-      if (ext === 'xls' || ext === 'xlsx') {
-        const XLSXMod: any = (await import('xlsx')) as any;
-        const XLSXLib: any = (XLSXMod as any)?.default ?? XLSXMod;
-        const wb = XLSXLib.readFile((file as any).path || (file as any).tempFilePath || (file as any).filename || (file as any));
-        const sheetNames: string[] = wb.SheetNames || [];
-        // Try common variants of the summary sheet name
-        const resumoName = sheetNames.find((n: string) => n.toLowerCase() === 'resumo') || sheetNames.find((n: string) => /resumo/i.test(n));
-        if (resumoName) {
-          const resumo = wb.Sheets[resumoName];
-          const cell = resumo && resumo['B6'];
-          const serialStr = cell ? String((cell as any).v ?? (cell as any).w ?? '').trim() : '';
-          if (serialStr) {
-            const match = suitcase.sensors.find((s: any) => s.sensor.serialNumber.trim().toLowerCase() === serialStr.trim().toLowerCase());
-            if (match) return match;
+      // Only attempt for modern Excel formats (.xlsx)
+      // Skip .xls (Excel 97-2003) as it causes hangs with xlsx library
+      if (ext === 'xlsx') {
+        // Get file path in order of priority
+        const filePath = tempFilePath || (file as any).path || (file as any).tempFilePath;
+        
+        if (!filePath) {
+          logger.warn('No file path available for serial extraction', { fileName: file.originalname });
+        } else {
+          const XLSXMod: any = (await import('xlsx')) as any;
+          const XLSXLib: any = (XLSXMod as any)?.default ?? XLSXMod;
+          const wb = XLSXLib.readFile(filePath);
+          const sheetNames: string[] = wb.SheetNames || [];
+          // Try common variants of the summary sheet name
+          const resumoName = sheetNames.find((n: string) => n.toLowerCase() === 'resumo') || sheetNames.find((n: string) => /resumo/i.test(n));
+          if (resumoName) {
+            const resumo = wb.Sheets[resumoName];
+            const cell = resumo && resumo['B6'];
+            const serialStr = cell ? String((cell as any).v ?? (cell as any).w ?? '').trim() : '';
+            if (serialStr) {
+              extractedSerial = serialStr;
+              logger.info('Extracted serial from Excel Resumo sheet', { fileName: file.originalname, serial: extractedSerial });
+              // Try to match existing sensor
+              const match = suitcase.sensors.find((s: any) => s.sensor.serialNumber.trim().toLowerCase() === serialStr.trim().toLowerCase());
+              if (match) {
+                logger.info('Matched existing sensor by extracted serial', { fileName: file.originalname, sensorId: match.sensor.id });
+                return match;
+              }
+            }
           }
         }
+      } else if (ext === 'xls') {
+        logger.info('Skipping serial extraction for legacy .xls format (potential hang)', { fileName: file.originalname });
       }
     } catch (_err) {
-      // ignore fallback errors
+      logger.warn('Failed to extract serial from Excel', { fileName: file.originalname, error: _err instanceof Error ? _err.message : String(_err) });
     }
 
-    return null;
+    // Strategy 2: Match by filename containing serial number (DISABLED - always create new sensor for each file)
+    // This strategy was causing all files to match the same sensor when serial is "1", "2", etc.
+    // Now we skip this and go directly to creating a new sensor for each file
+    logger.info('Skipping filename match strategy, will create new sensor', { 
+      fileName: file.originalname, 
+      extractedSerial,
+      existingSensorCount: suitcase.sensors.length 
+    });
+
+    // Strategy 3: Create new sensor for this file
+    // Use extracted serial or generate one from filename + timestamp
+    let newSerial: string;
+    if (extractedSerial) {
+      newSerial = extractedSerial;
+    } else {
+      // Extract potential serial from filename (e.g., "EF7216103539" from the example)
+      const serialMatch = file.originalname.match(/[A-Z]{2}\d{10,}/);
+      if (serialMatch) {
+        newSerial = serialMatch[0];
+      } else {
+        // Fallback: use filename base + timestamp
+        const baseName = file.originalname.replace(/\.[^/.]+$/, '').substring(0, 20);
+        newSerial = `${baseName}_${Date.now()}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+      }
+    }
+    logger.info('Creating new sensor for file', { fileName: file.originalname, serial: newSerial, extracted: !!extractedSerial });
+    
+    try {
+      // Get default sensor type (or create one if needed)
+      let sensorType = await prisma.sensorType.findFirst({
+        where: { name: 'Generic Logger' }
+      });
+      
+      if (!sensorType) {
+        sensorType = await prisma.sensorType.create({
+          data: {
+            name: 'Generic Logger',
+            description: 'Auto-created sensor type for imported files',
+            dataConfig: {
+              temperatureRange: { min: -40, max: 85 },
+              humidityRange: { min: 0, max: 100 },
+              accuracy: { temperature: 0.5, humidity: 3 }
+            }
+          }
+        });
+      }
+
+      // Create new sensor
+      const newSensor = await prisma.sensor.create({
+        data: {
+          serialNumber: newSerial,
+          model: 'Auto-detected',
+          typeId: sensorType.id
+        }
+      });
+
+      // Associate sensor with suitcase
+      const suitcaseSensor = await prisma.suitcaseSensor.create({
+        data: {
+          suitcaseId: suitcase.id,
+          sensorId: newSensor.id
+        },
+        include: {
+          sensor: {
+            include: {
+              type: true
+            }
+          }
+        }
+      });
+
+      logger.info('Created new sensor and associated with suitcase', { 
+        fileName: file.originalname, 
+        sensorId: newSensor.id, 
+        serial: newSerial 
+      });
+
+      return suitcaseSensor;
+    } catch (createErr) {
+      logger.error('Failed to create new sensor', { 
+        fileName: file.originalname, 
+        error: createErr instanceof Error ? createErr.message : String(createErr) 
+      });
+      return null;
+    }
   }
 
   private async updateJobProgress(jobId: string, progress: any): Promise<void> {

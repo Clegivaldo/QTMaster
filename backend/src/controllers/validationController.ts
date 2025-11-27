@@ -73,6 +73,17 @@ const updateHiddenSensorsSchema = z.object({
   hiddenSensorIds: z.array(z.string()),
 });
 
+const updateCriteriaSchema = z.object({
+  minTemperature: z.number(),
+  maxTemperature: z.number(),
+  minHumidity: z.number().nullable().optional(),
+  maxHumidity: z.number().nullable().optional(),
+});
+
+const updateSensorSelectionSchema = z.object({
+  selectedSensorIds: z.array(z.string()).default([]),
+});
+
 const querySchema = z.object({
   page: z.string().optional().transform(val => val ? parseInt(val) : 1),
   limit: z.string().optional().transform(val => val ? parseInt(val) : 10),
@@ -269,7 +280,7 @@ export class ValidationController {
       }
 
       // Buscar TODOS os sensor data para estatísticas (SEM include para evitar duplicação)
-      const allSensorData = await prisma.sensorData.findMany({
+      const rawSensorData = await prisma.sensorData.findMany({
         where: { validationId: id },
         include: {
           sensor: {
@@ -280,6 +291,15 @@ export class ValidationController {
           },
         },
         orderBy: { timestamp: 'asc' },
+      });
+
+      // Remover duplicatas por (sensorId, timestamp)
+      const seen = new Set<string>();
+      const allSensorData = rawSensorData.filter((item) => {
+        const key = `${item.sensorId}|${item.timestamp.toISOString()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
       });
 
       // Calcular estatísticas
@@ -612,6 +632,98 @@ export class ValidationController {
         userId: req.user?.id 
       });
       res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+  }
+
+  async updateCriteria(req: AuthenticatedRequest, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+
+      const { minTemperature, maxTemperature, minHumidity, maxHumidity } = updateCriteriaSchema.parse(req.body);
+
+      if (minTemperature >= maxTemperature) {
+        res.status(400).json({ error: 'Temperatura mínima deve ser menor que a máxima' });
+        return;
+      }
+
+      if (
+        minHumidity !== undefined && minHumidity !== null &&
+        maxHumidity !== undefined && maxHumidity !== null &&
+        minHumidity >= maxHumidity
+      ) {
+        res.status(400).json({ error: 'Umidade mínima deve ser menor que a máxima' });
+        return;
+      }
+
+      const validation = await prisma.validation.update({
+        where: { id },
+        data: {
+          minTemperature,
+          maxTemperature,
+          minHumidity: minHumidity ?? null,
+          maxHumidity: maxHumidity ?? null,
+        },
+        select: {
+          id: true,
+          minTemperature: true,
+          maxTemperature: true,
+          minHumidity: true,
+          maxHumidity: true,
+          updatedAt: true,
+        },
+      });
+
+      res.json({ success: true, data: { validation } });
+      return;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Dados inválidos', details: error.issues });
+        return;
+      }
+      logger.error('Update criteria error:', { error: error instanceof Error ? error.message : error, validationId: req.params.id, userId: req.user?.id });
+      res.status(500).json({ error: 'Erro interno do servidor' });
+      return;
+    }
+  }
+
+  async updateSensorSelection(req: AuthenticatedRequest, res: Response) {
+    try {
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
+
+      const { selectedSensorIds } = updateSensorSelectionSchema.parse(req.body);
+
+      // Obter todos os sensores presentes na validação (distintos)
+      const allSensors = await prisma.sensorData.findMany({
+        where: { validationId: id },
+        select: { sensorId: true },
+        distinct: ['sensorId'],
+      });
+      const allSensorIds = allSensors.map(s => s.sensorId);
+
+      // Garantir que só consideramos IDs existentes
+      const selectedSet = new Set(selectedSensorIds.filter(sid => allSensorIds.includes(sid)));
+
+      // hidden = todos - selecionados
+      const hiddenSensorIds = allSensorIds.filter(sid => !selectedSet.has(sid));
+
+      const validation = await prisma.validation.update({
+        where: { id },
+        data: { hiddenSensorIds },
+        select: { id: true, hiddenSensorIds: true, updatedAt: true },
+      });
+
+      res.json({ success: true, data: { validation, selectedSensorIds: Array.from(selectedSet) } });
+      return;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Dados inválidos', details: error.issues });
+        return;
+      }
+      logger.error('Update sensor selection error:', { error: error instanceof Error ? error.message : error, validationId: req.params.id, userId: req.user?.id });
+      res.status(500).json({ error: 'Erro interno do servidor' });
       return;
     }
   }

@@ -71,6 +71,8 @@ const ValidationCharts: React.FC = () => {
   });
   const [showSettings, setShowSettings] = useState(true);
   const [showCycleBands, setShowCycleBands] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [alignmentBucketSec, setAlignmentBucketSec] = useState<number>(60); // agrupar leituras por janela (s)
 
   const getCycleLegend = () => {
     if (!data?.cycles || data.cycles.length === 0) return [] as Array<{ type: string; color: string; label: string }>;
@@ -138,6 +140,25 @@ const ValidationCharts: React.FC = () => {
         
         console.log('Has humidity data:', humidities.length > 0, 'count:', humidities.length);
         
+        // DEBUG: Analisar sensores únicos
+        console.log('=== VALIDATION CHARTS DEBUG ===');
+        console.log('Total sensorData records:', validationData.sensorData.length);
+        
+        const uniqueSensorMap = new Map();
+        validationData.sensorData.forEach((reading: SensorReading) => {
+          if (!uniqueSensorMap.has(reading.sensor.id)) {
+            uniqueSensorMap.set(reading.sensor.id, {
+              id: reading.sensor.id,
+              serial: reading.sensor.serialNumber
+            });
+          }
+        });
+        
+        console.log('Unique sensors count:', uniqueSensorMap.size);
+        console.log('Sensor details:', Array.from(uniqueSensorMap.values()));
+        console.log('First 5 readings:', validationData.sensorData.slice(0, 5));
+        console.log('===============================');
+        
         // Habilitar checkbox de umidade se houver dados (FIXADO: remover dependência de min/maxHumidity)
         if (humidities.length > 0) {
           setShowHumidity(true);
@@ -186,29 +207,34 @@ const ValidationCharts: React.FC = () => {
     // Filtrar por sensores visíveis
     filtered = filtered.filter(d => visibleSensors.has(d.sensor.id));
 
-    // Agrupar por timestamp
+    // Agrupar por bucket temporal (alinhamento entre sensores)
+    const bucketMs = Math.max(1, alignmentBucketSec) * 1000;
     const grouped = filtered.reduce((acc: any, reading) => {
-      const timestamp = new Date(reading.timestamp).toISOString();
-      if (!acc[timestamp]) {
-        acc[timestamp] = {
-          timestamp,
-          displayTime: new Date(reading.timestamp).toLocaleString('pt-BR', {
+      const ts = new Date(reading.timestamp).getTime();
+      const bucketTs = Math.round(ts / bucketMs) * bucketMs; // arredonda para o mais próximo
+      const bucketISO = new Date(bucketTs).toISOString();
+      if (!acc[bucketISO]) {
+        acc[bucketISO] = {
+          timestamp: bucketISO,
+          timestampNum: bucketTs,
+          displayTime: new Date(bucketTs).toLocaleString('pt-BR', {
             day: '2-digit',
             month: '2-digit',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            second: '2-digit'
           })
         };
       }
-      
+
       const sensorKey = reading.sensor.serialNumber;
-      acc[timestamp][`temp_${sensorKey}`] = reading.temperature;
+      // Se houver múltiplas leituras do mesmo sensor no mesmo bucket, mantemos a última
+      acc[bucketISO][`temp_${sensorKey}`] = reading.temperature;
       if (reading.humidity !== null) {
-        acc[timestamp][`hum_${sensorKey}`] = reading.humidity;
+        acc[bucketISO][`hum_${sensorKey}`] = reading.humidity;
       }
-      
       return acc;
-    }, {});
+    }, {} as Record<string, any>);
 
     return Object.values(grouped).sort((a: any, b: any) => 
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -258,7 +284,9 @@ const ValidationCharts: React.FC = () => {
       }
     });
     
-    return Array.from(sensorMap.values());
+    const sensors = Array.from(sensorMap.values());
+    console.log('getSensorInfo() returning', sensors.length, 'sensors:', sensors.map(s => s.serialNumber).join(', '));
+    return sensors;
   };
 
   const handleExport = () => {
@@ -386,6 +414,23 @@ const ValidationCharts: React.FC = () => {
               </div>
             )}
 
+            {/* Temporal Alignment */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Alinhamento Temporal (segundos)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={alignmentBucketSec}
+                  onChange={(e) => setAlignmentBucketSec(Math.max(1, Number(e.target.value)))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+                <p className="text-xs text-gray-500 mt-1">Agrupa leituras de sensores no mesmo intervalo para alinhar no tempo.</p>
+              </div>
+            </div>
+
             {/* Chart Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -439,6 +484,96 @@ const ValidationCharts: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Acceptance Criteria Inputs + Save */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Critérios de Aceitação
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Temp Mín (°C)</label>
+                  <input
+                    type="number"
+                    value={data.minTemperature}
+                    onChange={(e) => setData(prev => prev ? { ...prev, minTemperature: Number(e.target.value) } : prev)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Temp Máx (°C)</label>
+                  <input
+                    type="number"
+                    value={data.maxTemperature}
+                    onChange={(e) => setData(prev => prev ? { ...prev, maxTemperature: Number(e.target.value) } : prev)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Umid Mín (%RH)</label>
+                  <input
+                    type="number"
+                    value={data.minHumidity ?? 0}
+                    onChange={(e) => setData(prev => prev ? { ...prev, minHumidity: Number(e.target.value) } : prev)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Umid Máx (%RH)</label>
+                  <input
+                    type="number"
+                    value={data.maxHumidity ?? 100}
+                    onChange={(e) => setData(prev => prev ? { ...prev, maxHumidity: Number(e.target.value) } : prev)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <button
+                  disabled={saving}
+                  onClick={async () => {
+                    if (!id || !data) return;
+                    try {
+                      setSaving(true);
+                      const token = localStorage.getItem('accessToken');
+                      await fetch(`/api/validations/${id}/criteria`, {
+                        method: 'PUT',
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          minTemperature: data.minTemperature,
+                          maxTemperature: data.maxTemperature,
+                          minHumidity: data.minHumidity,
+                          maxHumidity: data.maxHumidity,
+                        })
+                      });
+                      // Persistir seleção de sensores visíveis
+                      const selectedSensorIds = Array.from(visibleSensors);
+                      await fetch(`/api/validations/${id}/sensors/selection`, {
+                        method: 'PUT',
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ selectedSensorIds })
+                      });
+                      alert('Critérios e seleção de sensores salvos.');
+                    } catch (err) {
+                      console.error('Erro ao salvar critérios/seleção:', err);
+                      alert('Erro ao salvar.');
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  className="btn-primary"
+                >
+                  {saving ? 'Salvando...' : 'Salvar Critérios e Seleção'}
+                </button>
+              </div>
             </div>
 
             {/* Sensor Selection */}
@@ -550,7 +685,7 @@ const ValidationCharts: React.FC = () => {
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
-                  dataKey="displayTime" 
+                  dataKey="displayTime"
                   angle={-45}
                   textAnchor="end"
                   height={80}
@@ -561,10 +696,17 @@ const ValidationCharts: React.FC = () => {
                 ))}
                 <YAxis 
                   domain={[yAxisConfig.tempMin, yAxisConfig.tempMax]}
-                  ticks={Array.from(
-                    { length: Math.floor((yAxisConfig.tempMax - yAxisConfig.tempMin) / yAxisConfig.tempTick) + 1 },
-                    (_, i) => yAxisConfig.tempMin + i * yAxisConfig.tempTick
-                  )}
+                  ticks={(function(){
+                    const min = yAxisConfig.tempMin;
+                    const max = yAxisConfig.tempMax;
+                    const step = Math.max(1, yAxisConfig.tempTick);
+                    const ticks: number[] = [];
+                    for (let v = min; v <= max + 1e-9; v += step) {
+                      // evitar acumular erro de ponto flutuante
+                      ticks.push(parseFloat(v.toFixed(6)));
+                    }
+                    return ticks;
+                  })()}
                   label={{ value: 'Temperatura (°C)', angle: -90, position: 'insideLeft' }}
                 />
                 <Tooltip />
@@ -609,7 +751,7 @@ const ValidationCharts: React.FC = () => {
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
-                  dataKey="displayTime" 
+                  dataKey="displayTime"
                   angle={-45}
                   textAnchor="end"
                   height={80}
@@ -620,10 +762,16 @@ const ValidationCharts: React.FC = () => {
                 ))}
                 <YAxis 
                   domain={[yAxisConfig.humMin, yAxisConfig.humMax]}
-                  ticks={Array.from(
-                    { length: Math.floor((yAxisConfig.humMax - yAxisConfig.humMin) / yAxisConfig.humTick) + 1 },
-                    (_, i) => yAxisConfig.humMin + i * yAxisConfig.humTick
-                  )}
+                  ticks={(function(){
+                    const min = yAxisConfig.humMin;
+                    const max = yAxisConfig.humMax;
+                    const step = Math.max(1, yAxisConfig.humTick);
+                    const ticks: number[] = [];
+                    for (let v = min; v <= max + 1e-9; v += step) {
+                      ticks.push(parseFloat(v.toFixed(6)));
+                    }
+                    return ticks;
+                  })()}
                   label={{ value: 'Umidade (%RH)', angle: -90, position: 'insideLeft' }}
                 />
                 <Tooltip />

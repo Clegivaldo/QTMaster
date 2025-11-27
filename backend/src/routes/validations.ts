@@ -33,6 +33,12 @@ router.put('/:id/approval', requirePermission(Permission.VALIDATION_APPROVE), va
 // PUT /api/validations/:id/hidden-sensors - Update hidden sensors
 router.put('/:id/hidden-sensors', requirePermission(Permission.VALIDATION_UPDATE), validationController.updateHiddenSensors.bind(validationController));
 
+// PUT /api/validations/:id/criteria - Update acceptance criteria (temperature/humidity)
+router.put('/:id/criteria', requirePermission(Permission.VALIDATION_UPDATE), validationController.updateCriteria.bind(validationController));
+
+// PUT /api/validations/:id/sensors/selection - Persist selected sensors (stores hiddenSensorIds)
+router.put('/:id/sensors/selection', requirePermission(Permission.VALIDATION_UPDATE), validationController.updateSensorSelection.bind(validationController));
+
 // PUT /api/validations/:validationId/imported-items/:itemId/visibility - Toggle visibility for imported data
 router.put(
 	'/:validationId/imported-items/:itemId/visibility',

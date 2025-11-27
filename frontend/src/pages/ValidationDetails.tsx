@@ -146,27 +146,58 @@ const ValidationDetails: React.FC = () => {
   const handleExportCSV = () => {
     if (!data) return;
 
-    // Criar CSV
-    const headers = ['Data/Hora', 'Sensor', 'Tipo', 'Temperatura (°C)', 'Umidade (%RH)', 'Status'];
-    const rows = data.sensorData.map(row => [
-      new Date(row.timestamp).toLocaleString('pt-BR'),
-      row.sensor.serialNumber,
-      row.sensor?.type?.name ?? 'N/A',
-      row.temperature.toFixed(2),
-      row.humidity?.toFixed(2) || 'N/A',
-      isWithinLimits(row) ? 'Conforme' : 'Não Conforme'
-    ]);
+    // Pivot: cada sensor em sua(s) coluna(s)
+    // Obter lista única de sensores preservando ordem de aparecimento
+    const sensorOrderMap = new Map<string, SensorDataRow['sensor']>();
+    data.sensorData.forEach(r => {
+      if (!sensorOrderMap.has(r.sensor.serialNumber)) {
+        sensorOrderMap.set(r.sensor.serialNumber, r.sensor);
+      }
+    });
+    const sensors = Array.from(sensorOrderMap.values());
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+    // Agrupar leituras por timestamp ISO (normalizado)
+    const groupMap = new Map<string, Map<string, SensorDataRow>>();
+    data.sensorData.forEach(r => {
+      const tsKey = new Date(r.timestamp).toISOString();
+      if (!groupMap.has(tsKey)) groupMap.set(tsKey, new Map());
+      groupMap.get(tsKey)!.set(r.sensor.serialNumber, r);
+    });
+    const sortedTimestamps = Array.from(groupMap.keys()).sort();
 
-    // Download
+    // Definir cabeçalhos dinâmicos
+    // Coluna de data/hora + para cada sensor: Temperatura e, se existir algum valor de umidade, coluna de umidade
+    const anyHumidity = data.sensorData.some(r => r.humidity !== null);
+    const headers = ['Data/Hora'];
+    sensors.forEach(s => {
+      headers.push(`${s.serialNumber} Temperatura (°C)`);
+      if (anyHumidity) headers.push(`${s.serialNumber} Umidade (%RH)`);
+    });
+
+    const rows: string[][] = [];
+    sortedTimestamps.forEach(ts => {
+      const sensorMap = groupMap.get(ts)!;
+      const row: string[] = [new Date(ts).toLocaleString('pt-BR')];
+      sensors.forEach(s => {
+        const reading = sensorMap.get(s.serialNumber);
+        if (reading) {
+          row.push(reading.temperature.toFixed(2));
+          if (anyHumidity) row.push(reading.humidity !== null ? reading.humidity.toFixed(2) : '');
+        } else {
+          // Sem leitura para este timestamp/sensor
+          row.push('');
+          if (anyHumidity) row.push('');
+        }
+      });
+      rows.push(row);
+    });
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `validacao_${data.validationNumber}_dados.csv`;
+    link.download = `validacao_${data.validationNumber}_pivot.csv`;
     link.click();
   };
 
@@ -234,27 +265,57 @@ const ValidationDetails: React.FC = () => {
     );
   }
 
-  const paginatedData = data.sensorData.slice(
+  // De-duplicar linhas por timestamp+sensor para evitar repetição 3x
+  const uniqueRowsMap = new Map<string, SensorDataRow>();
+  data.sensorData.forEach((row) => {
+    const key = `${new Date(row.timestamp).toISOString()}|${row.sensor.id}`;
+    if (!uniqueRowsMap.has(key)) uniqueRowsMap.set(key, row);
+  });
+  const uniqueRows = Array.from(uniqueRowsMap.values());
+
+  // PIVOT VIEW: construir linhas por timestamp com cada sensor em colunas
+  const sensorOrderMap = new Map<string, SensorDataRow['sensor']>();
+  uniqueRows.forEach(r => {
+    if (!sensorOrderMap.has(r.sensor.serialNumber)) {
+      sensorOrderMap.set(r.sensor.serialNumber, r.sensor);
+    }
+  });
+  const sensors = Array.from(sensorOrderMap.values());
+
+  const groupMap = new Map<string, Map<string, SensorDataRow>>();
+  uniqueRows.forEach(r => {
+    const tsKey = new Date(r.timestamp).toISOString();
+    if (!groupMap.has(tsKey)) groupMap.set(tsKey, new Map());
+    groupMap.get(tsKey)!.set(r.sensor.serialNumber, r);
+  });
+  const sortedTimestamps = Array.from(groupMap.keys()).sort();
+
+  const pivotRows = sortedTimestamps.map(ts => ({
+    ts,
+    readings: groupMap.get(ts)!
+  }));
+
+  const paginatedData = pivotRows.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
-
-  const totalPages = Math.ceil(data.sensorData.length / rowsPerPage);
+  const totalPages = Math.ceil(pivotRows.length / rowsPerPage);
 
   return (
     <>
       <PageHeader
         title={data.name}
         description={`Validação #${data.validationNumber} - ${data.client.name}`}
-      >
-        <button
-          onClick={() => navigate('/validations')}
-          className="btn-secondary flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar
-        </button>
-      </PageHeader>
+        actions={(
+          <button
+            onClick={() => navigate('/validations')}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar
+          </button>
+        )}
+      />
 
       <div className="space-y-6">
         {/* Summary Cards */}
@@ -316,6 +377,61 @@ const ValidationDetails: React.FC = () => {
           )}
         </div>
 
+        {/* Min/Max Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg shadow border-2 border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-blue-700 font-semibold">Temperatura Mínima</p>
+                <p className="text-3xl font-bold text-blue-900">
+                  {data.statistics?.temperature?.min?.toFixed(1) || '0'}°C
+                </p>
+              </div>
+              <TrendingDown className="h-10 w-10 text-blue-600" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-lg shadow border-2 border-red-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-red-700 font-semibold">Temperatura Máxima</p>
+                <p className="text-3xl font-bold text-red-900">
+                  {data.statistics?.temperature?.max?.toFixed(1) || '0'}°C
+                </p>
+              </div>
+              <TrendingUp className="h-10 w-10 text-red-600" />
+            </div>
+          </div>
+
+          {data.statistics?.humidity && (
+            <>
+              <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 p-6 rounded-lg shadow border-2 border-cyan-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-cyan-700 font-semibold">Umidade Mínima</p>
+                    <p className="text-3xl font-bold text-cyan-900">
+                      {data.statistics.humidity.min?.toFixed(1) || '0'}%
+                    </p>
+                  </div>
+                  <TrendingDown className="h-10 w-10 text-cyan-600" />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg shadow border-2 border-purple-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-purple-700 font-semibold">Umidade Máxima</p>
+                    <p className="text-3xl font-bold text-purple-900">
+                      {data.statistics.humidity.max?.toFixed(1) || '0'}%
+                    </p>
+                  </div>
+                  <TrendingUp className="h-10 w-10 text-purple-600" />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
         {/* Statistics Tabs */}
         <StatisticsTabs validationId={data.id} />
 
@@ -331,85 +447,71 @@ const ValidationDetails: React.FC = () => {
         {/* Actions */}
         <div className="bg-white p-4 rounded-lg shadow flex items-center justify-between">
           <div className="text-sm text-gray-600">
-            Exibindo {paginatedData.length} de {data.sensorData.length} leituras
+            Exibindo {paginatedData.length} de {uniqueRows.length} leituras
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleExportCSV}
               className="btn-secondary flex items-center gap-2"
             >
-              <Download className="h-4 w-4" />
-              Exportar CSV
-            </button>
-            <button
-              onClick={() => navigate(`/validations/${id}/charts`)}
-              className="btn-primary flex items-center gap-2"
-            >
-              📈 Ver Gráficos
-            </button>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="btn-secondary flex items-center gap-2 text-red-600 hover:text-red-700 hover:border-red-300"
-              disabled={data.sensorData.length === 0}
-              title="Excluir todos os dados desta validação"
-            >
-              <Trash2 className="h-4 w-4" />
-              Limpar Dados
-            </button>
-          </div>
-        </div>
-
-        {/* Data Table */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Data/Hora
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sensor
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tipo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Temperatura
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Umidade
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedData.map((row) => {
-                  const withinLimits = isWithinLimits(row);
-                  return (
-                    <tr key={row.id} className={withinLimits ? '' : 'bg-red-50'}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(row.timestamp).toLocaleString('pt-BR')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {row.sensor.serialNumber}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {row.sensor?.type?.name ?? 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={
-                          row.temperature < data.minTemperature || row.temperature > data.maxTemperature
-                            ? 'text-red-600 font-medium'
-                            : 'text-gray-900'
-                        }>
+              {/* Data Table Pivot (sensores em colunas) */}
+              <div className="bg-white shadow rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
+                        {sensors.map(s => (
+                          <th key={s.serialNumber + '-temp'} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {s.serialNumber} Temp (°C)
+                          </th>
+                        ))}
+                        {data.statistics?.humidity && sensors.map(s => (
+                          <th key={s.serialNumber + '-hum'} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {s.serialNumber} Umid (%RH)
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedData.map(pivot => {
+                        return (
+                          <tr key={pivot.ts}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {new Date(pivot.ts).toLocaleString('pt-BR')}
+                            </td>
+                            {sensors.map(s => {
+                              const reading = pivot.readings.get(s.serialNumber);
+                              const tempOut = reading && (reading.temperature < data.minTemperature || reading.temperature > data.maxTemperature);
+                              return (
+                                <td key={pivot.ts + s.serialNumber + '-t'} className="px-6 py-4 whitespace-nowrap text-sm">
+                                  {reading ? (
+                                    <span className={tempOut ? 'text-red-600 font-medium' : 'text-gray-900'}>
+                                      {reading.temperature.toFixed(2)}°C
+                                    </span>
+                                  ) : <span className="text-gray-400">-</span>}
+                                </td>
+                              );
+                            })}
+                            {data.statistics?.humidity && sensors.map(s => {
+                              const reading = pivot.readings.get(s.serialNumber);
+                              return (
+                                <td key={pivot.ts + s.serialNumber + '-h'} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {reading ? (reading.humidity !== null ? `${reading.humidity.toFixed(2)}%` : 'N/A') : <span className="text-gray-400">-</span>}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
                           {row.temperature.toFixed(2)}°C
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {row.humidity !== null ? `${row.humidity.toFixed(2)}%` : 'N/A'}
+                      Página {currentPage} de {totalPages} (leituras agrupadas por timestamp)
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

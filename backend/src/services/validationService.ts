@@ -393,7 +393,7 @@ export class ValidationService {
 
   async getChartData(sensorDataIds: string[], parameters: any, selectedSensorIds?: string[], hiddenSensorIds?: string[]): Promise<any> {
     // Buscar dados dos sensores com informações do sensor
-    const data = await prisma.sensorData.findMany({
+    const rawData = await prisma.sensorData.findMany({
       where: { 
         id: { in: sensorDataIds },
         ...(selectedSensorIds && selectedSensorIds.length > 0 && {
@@ -414,6 +414,15 @@ export class ValidationService {
           }
         }
       },
+    });
+
+    // Deduplicar por (sensorId, timestamp)
+    const dedupSeen = new Set<string>();
+    const data = rawData.filter((item) => {
+      const key = `${item.sensorId}|${item.timestamp.toISOString()}`;
+      if (dedupSeen.has(key)) return false;
+      dedupSeen.add(key);
+      return true;
     });
 
     // Filtrar sensores ocultos
