@@ -27,6 +27,7 @@ export interface ProcessingStatus {
   validationResults: ValidationResult[];
   processingTime?: number;
   completedAt?: string;
+  fileName?: string;
 }
 
 interface FileUploadProps {

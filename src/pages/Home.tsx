@@ -6,7 +6,7 @@ export default function Home() {
   const [lastProcessedFile, setLastProcessedFile] = useState<ProcessingStatus | null>(null);
   const [notifications, setNotifications] = useState<string[]>([]);
 
-  const showNotification = (message: string, type: 'success' | 'error' | 'warning' = 'info') => {
+  const showNotification = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
     setNotifications(prev => [...prev, `${type.toUpperCase()}: ${message}`]);
     setTimeout(() => {
       setNotifications(prev => prev.slice(1));

@@ -79,6 +79,7 @@ const ValidationDetails: React.FC = () => {
   const rowsPerPage = 50;
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeDataTab, setActiveDataTab] = useState<'temperature' | 'humidity'>('temperature');
 
   React.useEffect(() => {
     if (id) {
@@ -273,7 +274,17 @@ const ValidationDetails: React.FC = () => {
   });
   const uniqueRows = Array.from(uniqueRowsMap.values());
 
-  // PIVOT VIEW: construir linhas por timestamp com cada sensor em colunas
+  // Util: formatar data como dd/mm/aa hh:mm
+  const formatBRShort = (d: Date) => {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+  };
+
+  // PIVOT VIEW: construir linhas por timestamp com cada sensor em colunas, alinhando por tolerância
   const sensorOrderMap = new Map<string, SensorDataRow['sensor']>();
   uniqueRows.forEach(r => {
     if (!sensorOrderMap.has(r.sensor.serialNumber)) {
@@ -282,18 +293,57 @@ const ValidationDetails: React.FC = () => {
   });
   const sensors = Array.from(sensorOrderMap.values());
 
-  const groupMap = new Map<string, Map<string, SensorDataRow>>();
+  // Preparar listas por sensor (ordenadas por timestamp)
+  const readingsBySensor = new Map<string, SensorDataRow[]>();
+  sensors.forEach(s => readingsBySensor.set(s.serialNumber, []));
   uniqueRows.forEach(r => {
-    const tsKey = new Date(r.timestamp).toISOString();
-    if (!groupMap.has(tsKey)) groupMap.set(tsKey, new Map());
-    groupMap.get(tsKey)!.set(r.sensor.serialNumber, r);
+    const arr = readingsBySensor.get(r.sensor.serialNumber)!;
+    arr.push(r);
   });
-  const sortedTimestamps = Array.from(groupMap.keys()).sort();
+  sensors.forEach(s => {
+    const arr = readingsBySensor.get(s.serialNumber)!;
+    arr.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  });
 
-  const pivotRows = sortedTimestamps.map(ts => ({
-    ts,
-    readings: groupMap.get(ts)!
-  }));
+  const TOLERANCE_SECONDS = 30; // alinhar leituras até 30s de diferença
+  const primarySensor = sensors[0]?.serialNumber;
+  const primaryTimeline = primarySensor ? readingsBySensor.get(primarySensor)! : [];
+
+  // Função para achar leitura mais próxima dentro da tolerância
+  const findNearestWithinTolerance = (arr: SensorDataRow[], targetMs: number): SensorDataRow | undefined => {
+    if (arr.length === 0) return undefined;
+    // busca linear simples (dataset pequeno); pode otimizar com busca binária se necessário
+    let best: SensorDataRow | undefined;
+    let bestDiff = Number.POSITIVE_INFINITY;
+    for (const r of arr) {
+      const diff = Math.abs(new Date(r.timestamp).getTime() - targetMs) / 1000;
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = r;
+      }
+    }
+    if (bestDiff <= TOLERANCE_SECONDS) return best;
+    return undefined;
+  };
+
+  // Construir pivotRows a partir da linha do sensor primário, alinhando os demais
+  const pivotRows = primaryTimeline.map(base => {
+    const baseMs = new Date(base.timestamp).getTime();
+    const map = new Map<string, SensorDataRow>();
+    // sempre incluir leitura do sensor primário
+    map.set(base.sensor.serialNumber, base);
+    // alinhar demais sensores
+    sensors.forEach(s => {
+      if (s.serialNumber === base.sensor.serialNumber) return;
+      const arr = readingsBySensor.get(s.serialNumber)!;
+      const nearest = findNearestWithinTolerance(arr, baseMs);
+      if (nearest) map.set(s.serialNumber, nearest);
+    });
+    return {
+      ts: new Date(baseMs).toISOString(),
+      readings: map
+    };
+  });
 
   const paginatedData = pivotRows.slice(
     (currentPage - 1) * rowsPerPage,
@@ -447,89 +497,124 @@ const ValidationDetails: React.FC = () => {
         {/* Actions */}
         <div className="bg-white p-4 rounded-lg shadow flex items-center justify-between">
           <div className="text-sm text-gray-600">
-            Exibindo {paginatedData.length} de {uniqueRows.length} leituras
+            Exibindo {paginatedData.length} de {uniqueRows.length} leituras (agrupadas por timestamp)
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleExportCSV}
               className="btn-secondary flex items-center gap-2"
             >
-              {/* Data Table Pivot (sensores em colunas) */}
-              <div className="bg-white shadow rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
-                        {sensors.map(s => (
-                          <th key={s.serialNumber + '-temp'} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {s.serialNumber} Temp (°C)
-                          </th>
-                        ))}
-                        {data.statistics?.humidity && sensors.map(s => (
-                          <th key={s.serialNumber + '-hum'} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {s.serialNumber} Umid (%RH)
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {paginatedData.map(pivot => {
-                        return (
-                          <tr key={pivot.ts}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {new Date(pivot.ts).toLocaleString('pt-BR')}
-                            </td>
-                            {sensors.map(s => {
-                              const reading = pivot.readings.get(s.serialNumber);
-                              const tempOut = reading && (reading.temperature < data.minTemperature || reading.temperature > data.maxTemperature);
-                              return (
-                                <td key={pivot.ts + s.serialNumber + '-t'} className="px-6 py-4 whitespace-nowrap text-sm">
-                                  {reading ? (
-                                    <span className={tempOut ? 'text-red-600 font-medium' : 'text-gray-900'}>
-                                      {reading.temperature.toFixed(2)}°C
-                                    </span>
-                                  ) : <span className="text-gray-400">-</span>}
-                                </td>
-                              );
-                            })}
-                            {data.statistics?.humidity && sensors.map(s => {
-                              const reading = pivot.readings.get(s.serialNumber);
-                              return (
-                                <td key={pivot.ts + s.serialNumber + '-h'} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {reading ? (reading.humidity !== null ? `${reading.humidity.toFixed(2)}%` : 'N/A') : <span className="text-gray-400">-</span>}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                          {row.temperature.toFixed(2)}°C
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      Página {currentPage} de {totalPages} (leituras agrupadas por timestamp)
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          withinLimits
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {withinLimits ? 'Conforme' : 'Não Conforme'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+              <Download className="h-4 w-4" />
+              Exportar CSV Pivot
+            </button>
+            {data.sensorData.length > 0 && (
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="btn-danger flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Excluir Dados
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Data Tables Tabs */}
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="border-b bg-gray-50 px-4">
+            <div className="flex gap-2">
+              <button
+                className={`px-3 py-2 text-sm rounded-t ${activeDataTab === 'temperature' ? 'bg-white border border-b-transparent' : 'text-gray-600'}`}
+                onClick={() => setActiveDataTab('temperature')}
+              >
+                Temperatura
+              </button>
+              {data.statistics?.humidity && (
+                <button
+                  className={`px-3 py-2 text-sm rounded-t ${activeDataTab === 'humidity' ? 'bg-white border border-b-transparent' : 'text-gray-600'}`}
+                  onClick={() => setActiveDataTab('humidity')}
+                >
+                  Umidade
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Pagination */}
+          {/* Temperature Table */}
+          {activeDataTab === 'temperature' && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
+                    {sensors.map(s => (
+                      <th key={s.serialNumber + '-temp'} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {s.serialNumber} Temp (°C)
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedData.map(pivot => (
+                    <tr key={pivot.ts}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatBRShort(new Date(pivot.ts))}
+                      </td>
+                      {sensors.map(s => {
+                        const reading = pivot.readings.get(s.serialNumber);
+                        const tempOut = reading && (reading.temperature < data.minTemperature || reading.temperature > data.maxTemperature);
+                        return (
+                          <td key={pivot.ts + s.serialNumber + '-t'} className="px-6 py-4 whitespace-nowrap text-sm">
+                            {reading ? (
+                              <span className={tempOut ? 'text-red-600 font-medium' : 'text-gray-900'}>
+                                {reading.temperature.toFixed(2)}°C
+                              </span>
+                            ) : <span className="text-gray-400">-</span>}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Humidity Table */}
+          {activeDataTab === 'humidity' && data.statistics?.humidity && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
+                    {sensors.map(s => (
+                      <th key={s.serialNumber + '-hum'} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {s.serialNumber} Umid (%RH)
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedData.map(pivot => (
+                    <tr key={pivot.ts}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatBRShort(new Date(pivot.ts))}
+                      </td>
+                      {sensors.map(s => {
+                        const reading = pivot.readings.get(s.serialNumber);
+                        return (
+                          <td key={pivot.ts + s.serialNumber + '-h'} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {reading ? (reading.humidity !== null ? `${reading.humidity.toFixed(2)}%` : 'N/A') : <span className="text-gray-400">-</span>}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {totalPages > 1 && (
             <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
               <div className="text-sm text-gray-700">
