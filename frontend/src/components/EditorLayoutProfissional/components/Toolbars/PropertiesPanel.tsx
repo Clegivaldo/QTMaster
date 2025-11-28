@@ -1,10 +1,10 @@
 import React, { useCallback } from 'react';
-import { 
-  Bold, 
-  Italic, 
-  Underline, 
-  AlignLeft, 
-  AlignCenter, 
+import {
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
   AlignRight,
   AlignJustify,
   EyeOff,
@@ -19,6 +19,7 @@ import {
   Ungroup
 } from 'lucide-react';
 import { X as IconX } from 'lucide-react';
+import DynamicTextControls from './DynamicTextControls';
 import { PropertiesPanelProps, ElementStyles } from '../../../../types/editor';
 import { AVAILABLE_FONTS, FONT_SIZES } from '../../../../types/editor-constants';
 
@@ -44,26 +45,26 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
   // Obter estilos comuns entre elementos selecionados
   const getCommonStringStyle = useCallback((property: keyof ElementStyles): string | undefined => {
     if (!hasSelection) return undefined;
-    
+
     const firstValue = selectedElements[0].styles[property] as string;
     const allSame = selectedElements.every(el => el.styles[property] === firstValue);
-    
+
     return allSame ? firstValue : undefined;
   }, [selectedElements, hasSelection]);
 
   const getCommonNumberStyle = useCallback((property: keyof ElementStyles): number | undefined => {
     if (!hasSelection) return undefined;
-    
+
     const firstValue = selectedElements[0].styles[property] as number;
     const allSame = selectedElements.every(el => el.styles[property] === firstValue);
-    
+
     return allSame ? firstValue : undefined;
   }, [selectedElements, hasSelection]);
 
   // Aplicar estilo aos elementos selecionados
   const applyStyle = useCallback((styles: Partial<ElementStyles>) => {
     if (!hasSelection) return;
-    
+
     const elementIds = selectedElements.map(el => el.id);
     onUpdateStyles(elementIds, styles);
   }, [selectedElements, hasSelection, onUpdateStyles]);
@@ -170,7 +171,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
   }, [selectedElements, applyStyle, onUpdateContent, hasSelection]);
 
   // Verificar se elemento suporta formatação de texto
-  const supportsTextFormatting = hasSelection && selectedElements.some(el => 
+  const supportsTextFormatting = hasSelection && selectedElements.some(el =>
     el.type === 'text' || el.type === 'heading'
   );
 
@@ -193,7 +194,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
           </button>
         </div>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto">
         {!hasSelection && !region ? (
           <div className="p-8 text-center text-gray-500">
@@ -270,7 +271,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             {selectedElements.length > 1 && (
               <div className="p-4 bg-white border-b border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Agrupamento</h4>
-                
+
                 <div className="flex items-center gap-2">
                   <button
                     onClick={onGroupElements}
@@ -302,7 +303,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                   </div>
                 </div>
 
-                  {/* Alinhamento vertical - movido para seção de formatação de texto (visível quando suporta formatação) */}
+                {/* Alinhamento vertical - movido para seção de formatação de texto (visível quando suporta formatação) */}
               </div>
             )}
 
@@ -310,12 +311,12 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             {singleSelection && selectedElements[0].groupId && (
               <div className="p-4 bg-white border-b border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Grupo</h4>
-                
+
                 <div className="space-y-2">
                   <div className="text-xs text-gray-500">
                     ID do Grupo: <span className="font-mono">{selectedElements[0].groupId}</span>
                   </div>
-                  
+
                   <button
                     onClick={onUngroupElements}
                     className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors w-full justify-center"
@@ -324,7 +325,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                     <Ungroup className="h-4 w-4" />
                     <span>Desagrupar</span>
                   </button>
-                  
+
                   <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
                     Este elemento faz parte de um grupo. Selecione todos os elementos do grupo para ver mais opções.
                   </div>
@@ -336,7 +337,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             {singleSelection && (
               <div className="p-4 bg-white border-b border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Posição e Tamanho</h4>
-                
+
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -397,7 +398,15 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             {supportsTextFormatting && (
               <div className="p-4 bg-white border-b border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Formatação de Texto</h4>
-                
+
+                {singleSelection && (
+                  <DynamicTextControls
+                    element={selectedElements[0]}
+                    onUpdateElements={onUpdateElements}
+                    onUpdateContent={onUpdateContent}
+                  />
+                )}
+
                 <div className="space-y-3">
                   {/* Fonte */}
                   <div>
@@ -445,35 +454,32 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                     <div className="flex gap-1">
                       <button
                         onClick={() => toggleFormat('fontWeight', 'bold')}
-                        className={`p-2 border rounded transition-colors ${
-                          getCommonStringStyle('fontWeight') === 'bold'
+                        className={`p-2 border rounded transition-colors ${getCommonStringStyle('fontWeight') === 'bold'
                             ? 'bg-blue-500 text-white border-blue-500'
                             : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        }`}
+                          }`}
                         title="Negrito"
                       >
                         <Bold className="h-4 w-4" />
                       </button>
-                      
+
                       <button
                         onClick={() => toggleFormat('fontStyle', 'italic')}
-                        className={`p-2 border rounded transition-colors ${
-                          getCommonStringStyle('fontStyle') === 'italic'
+                        className={`p-2 border rounded transition-colors ${getCommonStringStyle('fontStyle') === 'italic'
                             ? 'bg-blue-500 text-white border-blue-500'
                             : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        }`}
+                          }`}
                         title="Itálico"
                       >
                         <Italic className="h-4 w-4" />
                       </button>
-                      
+
                       <button
                         onClick={() => toggleFormat('textDecoration', 'underline', 'none')}
-                        className={`p-2 border rounded transition-colors ${
-                          getCommonStringStyle('textDecoration') === 'underline'
+                        className={`p-2 border rounded transition-colors ${getCommonStringStyle('textDecoration') === 'underline'
                             ? 'bg-blue-500 text-white border-blue-500'
                             : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        }`}
+                          }`}
                         title="Sublinhado"
                       >
                         <Underline className="h-4 w-4" />
@@ -494,11 +500,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                         <button
                           key={value}
                           onClick={() => applyStyle({ textAlign: value as any })}
-                          className={`p-2 border rounded transition-colors ${
-                            getCommonStringStyle('textAlign') === value
+                          className={`p-2 border rounded transition-colors ${getCommonStringStyle('textAlign') === value
                               ? 'bg-blue-500 text-white border-blue-500'
                               : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                          }`}
+                            }`}
                           title={title}
                         >
                           <Icon className="h-4 w-4" />
@@ -519,11 +524,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                         <button
                           key={value}
                           onClick={() => applyStyle({ verticalAlign: value as any })}
-                          className={`p-2 border rounded transition-colors ${
-                            getCommonStringStyle('verticalAlign') === value
+                          className={`p-2 border rounded transition-colors ${getCommonStringStyle('verticalAlign') === value
                               ? 'bg-blue-500 text-white border-blue-500'
                               : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                          }`}
+                            }`}
                           title={title}
                         >
                           <Icon className="h-4 w-4" />
@@ -559,104 +563,104 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             {/* Cor de fundo */}
             {!isRegionHeaderFooter && (
               <div className="p-4 bg-white border-b border-gray-200">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Aparência</h4>
-              
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Cor de Fundo</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={getCommonStringStyle('backgroundColor') || '#ffffff'}
-                      onChange={(e) => applyStyle({ backgroundColor: e.target.value })}
-                      className="w-8 h-8 border border-gray-300 rounded-sm cursor-pointer"
-                      aria-label="Cor do fundo"
-                    />
-                    <input
-                      type="text"
-                      value={getCommonStringStyle('backgroundColor') || '#ffffff'}
-                      onChange={(e) => applyStyle({ backgroundColor: e.target.value })}
-                      className="w-28 px-2 py-1 border border-gray-300 rounded text-sm font-mono"
-                      placeholder="#ffffff"
-                    />
-                    <button
-                      onClick={() => applyStyle({ backgroundColor: 'transparent' })}
-                      className="ml-2 p-1 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center"
-                      title="Fundo transparente"
-                    >
-                      <IconX className="h-3 w-3 text-red-500" />
-                    </button>
-                  </div>
-                </div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Aparência</h4>
 
-                {/* Opacidade */}
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Opacidade ({Math.round((getCommonNumberStyle('opacity') || 1) * 100)}%)
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={getCommonNumberStyle('opacity') || 1}
-                    onChange={(e) => applyStyle({ opacity: parseFloat(e.target.value) })}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="pt-2">
-                    <input
-                      id="enable-border"
-                      type="checkbox"
-                      checked={isBorderEnabledCommon()}
-                      onChange={(e) => toggleBorderForSelection(e.target.checked)}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-300"
-                      title="Ativar/Desativar borda"
-                    />
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Cor de Fundo</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={getCommonStringStyle('backgroundColor') || '#ffffff'}
+                        onChange={(e) => applyStyle({ backgroundColor: e.target.value })}
+                        className="w-8 h-8 border border-gray-300 rounded-sm cursor-pointer"
+                        aria-label="Cor do fundo"
+                      />
+                      <input
+                        type="text"
+                        value={getCommonStringStyle('backgroundColor') || '#ffffff'}
+                        onChange={(e) => applyStyle({ backgroundColor: e.target.value })}
+                        className="w-28 px-2 py-1 border border-gray-300 rounded text-sm font-mono"
+                        placeholder="#ffffff"
+                      />
+                      <button
+                        onClick={() => applyStyle({ backgroundColor: 'transparent' })}
+                        className="ml-2 p-1 rounded-full border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center"
+                        title="Fundo transparente"
+                      >
+                        <IconX className="h-3 w-3 text-red-500" />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">Borda Arredondada</label>
+                  {/* Opacidade */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Opacidade ({Math.round((getCommonNumberStyle('opacity') || 1) * 100)}%)
+                    </label>
                     <input
-                      type="number"
-                      value={getCommonNumberStyle('borderRadius') || 0}
-                      onChange={(e) => applyStyle({ borderRadius: parseInt(e.target.value) || 0 })}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      type="range"
                       min="0"
-                      max="50"
-                      placeholder="0"
+                      max="1"
+                      step="0.1"
+                      value={getCommonNumberStyle('opacity') || 1}
+                      onChange={(e) => applyStyle({ opacity: parseFloat(e.target.value) })}
+                      className="w-full"
                     />
+                  </div>
 
-                    <div className="mt-3 grid grid-cols-3 gap-2 items-end">
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-1">Espessura</label>
-                        <input
-                          type="number"
-                          value={getCommonBorderWidth() ?? 1}
-                          onChange={(e) => setBorderWidthForSelection(parseInt(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                          min="0"
-                          max="20"
-                          disabled={!isBorderEnabledCommon()}
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs text-gray-400 mb-1">Cor</label>
-                        <input
-                          type="color"
-                          value={getCommonBorderColor() || '#000000'}
-                          onChange={(e) => setBorderColorForSelection(e.target.value)}
-                          className="w-8 h-8 border border-gray-300 rounded-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                          aria-label="Cor da borda"
-                          disabled={!isBorderEnabledCommon()}
-                        />
+                  <div className="flex items-start gap-3">
+                    <div className="pt-2">
+                      <input
+                        id="enable-border"
+                        type="checkbox"
+                        checked={isBorderEnabledCommon()}
+                        onChange={(e) => toggleBorderForSelection(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-300"
+                        title="Ativar/Desativar borda"
+                      />
+                    </div>
+
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-500 mb-1">Borda Arredondada</label>
+                      <input
+                        type="number"
+                        value={getCommonNumberStyle('borderRadius') || 0}
+                        onChange={(e) => applyStyle({ borderRadius: parseInt(e.target.value) || 0 })}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        min="0"
+                        max="50"
+                        placeholder="0"
+                      />
+
+                      <div className="mt-3 grid grid-cols-3 gap-2 items-end">
+                        <div>
+                          <label className="block text-xs text-gray-400 mb-1">Espessura</label>
+                          <input
+                            type="number"
+                            value={getCommonBorderWidth() ?? 1}
+                            onChange={(e) => setBorderWidthForSelection(parseInt(e.target.value) || 0)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            min="0"
+                            max="20"
+                            disabled={!isBorderEnabledCommon()}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs text-gray-400 mb-1">Cor</label>
+                          <input
+                            type="color"
+                            value={getCommonBorderColor() || '#000000'}
+                            onChange={(e) => setBorderColorForSelection(e.target.value)}
+                            className="w-8 h-8 border border-gray-300 rounded-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Cor da borda"
+                            disabled={!isBorderEnabledCommon()}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
               </div>
             )}
 
@@ -664,7 +668,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             {singleSelection && selectedElements[0].type === 'line' && (
               <div className="p-4 bg-white border-b border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Configurações da Linha</h4>
-                
+
                 <div className="space-y-3">
                   {/* Espessura da linha */}
                   <div>
@@ -695,8 +699,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                         onChange={(e) => {
                           const element = selectedElements[0];
                           const lineData = element.content as any;
-                          const newData = { 
-                            ...lineData, 
+                          const newData = {
+                            ...lineData,
                             style: { ...lineData.style, style: e.target.value }
                           };
                           onUpdateContent?.(element.id, newData);
@@ -716,8 +720,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                         onChange={(e) => {
                           const element = selectedElements[0];
                           const lineData = element.content as any;
-                          const newData = { 
-                            ...lineData, 
+                          const newData = {
+                            ...lineData,
                             style: { ...lineData.style, color: e.target.value }
                           };
                           onUpdateContent?.(element.id, newData);
@@ -743,7 +747,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             {singleSelection && (selectedElements[0].type === 'rectangle' || selectedElements[0].type === 'circle') && (
               <div className="p-4 bg-white border-b border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Configurações da Forma</h4>
-                
+
                 <div className="space-y-3">
                   {/* Preenchimento */}
                   <div>
@@ -837,7 +841,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             {singleSelection && selectedElements[0].type === 'table' && (
               <div className="p-4 bg-white border-b border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Configurações da Tabela</h4>
-                
+
                 <div className="space-y-3">
                   {/* Dimensões da tabela */}
                   <div className="grid grid-cols-2 gap-2">
@@ -869,7 +873,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                             const tableData = element.content as any;
                             const newData = { ...tableData };
                             newData.rows += 1;
-                            const newRow = Array.from({ length: newData.columns }, (_, colIndex) => 
+                            const newRow = Array.from({ length: newData.columns }, (_, colIndex) =>
                               `R${newData.rows}C${colIndex + 1}`
                             );
                             newData.data = [...(newData.data || []), newRow];
@@ -881,7 +885,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                         </button>
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Colunas</label>
                       <div className="flex items-center gap-1">
@@ -935,11 +939,11 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                           value={(selectedElements[0].styles.border as any)?.width || 1}
                           onChange={(e) => {
                             const currentBorder = selectedElements[0].styles.border as any || {};
-                            applyStyle({ 
-                              border: { 
-                                ...currentBorder, 
-                                width: parseInt(e.target.value) || 1 
-                              } 
+                            applyStyle({
+                              border: {
+                                ...currentBorder,
+                                width: parseInt(e.target.value) || 1
+                              }
                             });
                           }}
                           className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
@@ -953,11 +957,11 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                           value={(selectedElements[0].styles.border as any)?.style || 'solid'}
                           onChange={(e) => {
                             const currentBorder = selectedElements[0].styles.border as any || {};
-                            applyStyle({ 
-                              border: { 
-                                ...currentBorder, 
-                                style: e.target.value 
-                              } 
+                            applyStyle({
+                              border: {
+                                ...currentBorder,
+                                style: e.target.value
+                              }
                             });
                           }}
                           className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
@@ -974,11 +978,11 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                           value={(selectedElements[0].styles.border as any)?.color || '#000000'}
                           onChange={(e) => {
                             const currentBorder = selectedElements[0].styles.border as any || {};
-                            applyStyle({ 
-                              border: { 
-                                ...currentBorder, 
-                                color: e.target.value 
-                              } 
+                            applyStyle({
+                              border: {
+                                ...currentBorder,
+                                color: e.target.value
+                              }
                             });
                           }}
                           className="w-full h-8 border border-gray-300 rounded cursor-pointer"
@@ -999,37 +1003,37 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
             {/* Z-Index */}
             {!isRegionHeaderFooter && (
               <div className="p-4 bg-white">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Camadas</h4>
-              
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    onBringToFront?.(selectedElements[0].id);
-                  }}
-                  className="flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
-                >
-                  <ChevronUp className="h-3 w-3" />
-                  Frente
-                </button>
-                
-                <button
-                  onClick={() => {
-                    onSendToBack?.(selectedElements[0].id);
-                  }}
-                  className="flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
-                >
-                  <ChevronDown className="h-3 w-3" />
-                  Trás
-                </button>
-                
-                {singleSelection && (
-                  <div className="flex-1 text-right">
-                    <span className="text-xs text-gray-500">
-                      Z: {selectedElements[0].zIndex}
-                    </span>
-                  </div>
-                )}
-              </div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Camadas</h4>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      onBringToFront?.(selectedElements[0].id);
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    <ChevronUp className="h-3 w-3" />
+                    Frente
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onSendToBack?.(selectedElements[0].id);
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                    Trás
+                  </button>
+
+                  {singleSelection && (
+                    <div className="flex-1 text-right">
+                      <span className="text-xs text-gray-500">
+                        Z: {selectedElements[0].zIndex}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

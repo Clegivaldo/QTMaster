@@ -2,6 +2,7 @@ import handlebars from 'handlebars';
 import { prisma } from '../lib/prisma.js';
 import { logger } from '../utils/logger.js';
 import { redisService } from './redisService.js';
+import { formatDateShort, formatDateLong } from '../utils/formatDate.js';
 
 interface TemplateVariable {
   name: string;
@@ -535,7 +536,6 @@ export class TemplateEngineService {
 
   private setupDefaultHelpers(): void {
     // Helper para formatação de data
-    const { formatDateShort, formatDateLong } = require('../utils/formatDate.js');
     handlebars.registerHelper('formatDate', (date, format) => {
       if (!date) return '';
       switch (format) {

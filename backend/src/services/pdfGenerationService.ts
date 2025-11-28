@@ -5,6 +5,7 @@ import * as fs from 'fs/promises';
 import { logger } from '../utils/logger.js';
 import { redisService } from './redisService.js';
 import { templateEngineService } from './templateEngineService.js';
+import { formatDateShort, formatDateLong } from '../utils/formatDate.js';
 
 interface RetryOptions {
   maxRetries: number;
@@ -279,7 +280,7 @@ export class PDFGenerationService {
             include: {
               sensor: {
                 include: {
-                  equipmentType: true,
+                  type: true,
                 },
               },
             },
@@ -300,26 +301,26 @@ export class PDFGenerationService {
       });
 
       // Calculate statistics
-      const temperatures = validation.sensorData.map(d => d.temperature).filter(t => t !== null);
-      const humidities = validation.sensorData.map(d => d.humidity).filter(h => h !== null);
+      const temperatures = validation.sensorData.map((d: any) => d.temperature).filter((t: any) => t !== null);
+      const humidities = validation.sensorData.map((d: any) => d.humidity).filter((h: any) => h !== null);
 
       const temperatureStats = temperatures.length > 0 ? {
         min: Math.min(...temperatures),
         max: Math.max(...temperatures),
-        avg: temperatures.reduce((a, b) => a + b, 0) / temperatures.length,
+        avg: temperatures.reduce((a: number, b: number) => a + b, 0) / temperatures.length,
       } : { min: 0, max: 0, avg: 0 };
 
       const humidityStats = humidities.length > 0 ? {
         min: Math.min(...humidities),
         max: Math.max(...humidities),
-        avg: humidities.reduce((a, b) => a + b, 0) / humidities.length,
+        avg: humidities.reduce((a: number, b: number) => a + b, 0) / humidities.length,
       } : undefined;
 
       // Prepare template data
       const templateData = {
         client: {
           name: validation.client.name,
-          document: validation.client.cnpj || validation.client.cpf,
+          document: validation.client.cnpj || '',
           email: validation.client.email || undefined,
           phone: validation.client.phone || undefined,
         },
@@ -330,13 +331,13 @@ export class PDFGenerationService {
           temperatureStats,
           humidityStats,
         },
-        sensors: validation.equipment.map(eq => ({
-          id: eq.id,
-          name: eq.name || undefined,
-          serialNumber: eq.serialNumber,
-          model: eq.equipmentType.model,
-        })),
-        sensorData: validation.sensorData.map(sd => ({
+        sensors: validation.equipment ? [{
+          id: validation.equipment.id,
+          name: validation.equipment.name || undefined,
+          serialNumber: validation.equipment.serialNumber,
+          model: validation.equipment.equipmentType.name || 'Unknown',
+        }] : [],
+        sensorData: validation.sensorData.map((sd: any) => ({
           timestamp: new Date(sd.timestamp),
           temperature: sd.temperature,
           humidity: sd.humidity || undefined,
@@ -349,7 +350,7 @@ export class PDFGenerationService {
       };
 
       // Render template to HTML
-      const html = await editorTemplateRenderer.renderToHTML(templateId, templateData);
+      const html = await editorTemplateRenderer.renderToHTML(templateId, templateData as any);
 
       // Generate PDF
       const pdfBuffer = await this.generatePDF(html, {}, {
@@ -601,7 +602,6 @@ export class PDFGenerationService {
 
   private setupHandlebarsHelpers(): void {
     // Helper para formatação de data (padroniza para dd/MM/yy HH:mm)
-    const { formatDateShort, formatDateLong } = require('../utils/formatDate.js');
     handlebars.registerHelper('formatDate', (date, format) => {
       if (!date) return '';
       switch (format) {

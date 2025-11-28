@@ -19,6 +19,7 @@ import { useToast } from '@/components/ToastContext';
 import ValidationCreationModal, { ValidationCreationData } from '@/components/ValidationCreationModal';
 import { parseApiError } from '@/utils/apiErrors';
 import { parseToDate, formatBRShort } from '@/utils/parseDate';
+import TemplateSelectionModal from '@/components/TemplateSelectionModal';
 
 
 const Validations: React.FC = () => {
@@ -31,6 +32,7 @@ const Validations: React.FC = () => {
   const [showCreationModal, setShowCreationModal] = useState(false);
   const [deletingValidation, setDeletingValidation] = useState<Validation | null>(null);
   const [generatingReport, setGeneratingReport] = useState<string | null>(null);
+  const [selectedValidationForReport, setSelectedValidationForReport] = useState<Validation | null>(null);
 
   const { data, isLoading, error } = useValidations(filters);
   const createMutation = useCreateValidation();
@@ -146,41 +148,50 @@ const Validations: React.FC = () => {
   };
 
   const handleGenerateReport = async (validation: Validation) => {
+    setSelectedValidationForReport(validation);
+  };
+
+  const handleTemplateSelected = async (templateId: string) => {
+    if (!selectedValidationForReport) return;
+
     try {
-      setGeneratingReport(validation.id);
+      setGeneratingReport(selectedValidationForReport.id);
       const token = localStorage.getItem('accessToken');
       
-      const response = await fetch(`/api/reports/generate/${validation.id}`, {
+      const response = await fetch(`/api/editor-templates/${templateId}/generate-pdf`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          validationId: selectedValidationForReport.id
+        })
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Erro ao gerar relatório');
+        throw new Error(error.message || 'Erro ao gerar PDF');
       }
 
-      const result = await response.json();
-      
-      // Se retornar um ID de relatório, navegar para a página do relatório
-      if (result.data?.reportId) {
-        navigate(`/reports/${result.data.reportId}`);
-      } else if (result.data?.downloadUrl) {
-        // Ou abrir URL de download em nova aba
-        window.open(result.data.downloadUrl, '_blank');
-      } else {
-        // Fallback: navegar para lista de relatórios
-        toast.success('Relatório gerado com sucesso!');
-        navigate('/reports');
-      }
+      // The response is a PDF file, so we need to handle it as a download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `laudo_${selectedValidationForReport.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('PDF gerado com sucesso!');
     } catch (error) {
-      console.error('Error generating report:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao gerar relatório');
+      console.error('Error generating PDF:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao gerar PDF');
     } finally {
       setGeneratingReport(null);
+      setSelectedValidationForReport(null);
     }
   };
 
@@ -506,6 +517,16 @@ const Validations: React.FC = () => {
           onClose={() => setShowCreationModal(false)}
           onSubmit={handleCreateValidation}
           isLoading={createMutation.isLoading}
+        />
+      )}
+
+      {/* Template Selection Modal */}
+      {selectedValidationForReport && (
+        <TemplateSelectionModal
+          isOpen={!!selectedValidationForReport}
+          onClose={() => setSelectedValidationForReport(null)}
+          onSelectTemplate={handleTemplateSelected}
+          isLoading={generatingReport === selectedValidationForReport.id}
         />
       )}
 

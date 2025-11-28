@@ -20,19 +20,21 @@ import LoadTemplateModal from '../components/EditorLayoutProfissional/components
 import ExportModal from '../components/EditorLayoutProfissional/components/Modals/ExportModal';
 import PreviewModal from '../components/EditorLayoutProfissional/components/Modals/PreviewModal';
 import PageSettingsModal from '../components/EditorLayoutProfissional/components/Modals/PageSettingsModal';
+import ValidationSelectorModal from '../components/EditorLayoutProfissional/components/Modals/ValidationSelectorModal';
 import ToastContainer from '../components/Toast/ToastContainer';
+import { apiService } from '../services/api';
 import '../components/EditorLayoutProfissional/EditorLayout.css';
 
 const EditorLayout: React.FC = () => {
   const navigate = useNavigate();
   const { templateId } = useParams<{ templateId?: string }>();
   const [searchParams] = useSearchParams();
-  
+
   // Hook para toast notifications
   const { toasts, removeToast, success: showSuccessToast } = useToast();
-  
+
   // Hook principal do editor
-  const editor = useTemplateEditor({ 
+  const editor = useTemplateEditor({
     templateId: templateId || searchParams.get('templateId') || undefined,
     autoSave: false
   });
@@ -61,12 +63,12 @@ const EditorLayout: React.FC = () => {
   // Estado para controlar visibilidade das sidebars
   const [showElementPalette, setShowElementPalette] = useState(true);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(true);
-  
+
   // Estado para responsividade
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [forceShowSidebars, setForceShowSidebars] = useState(false);
-  
+
   // Grid / snap
   const [showGrid, setShowGrid] = useState<boolean>(() => {
     try { return localStorage.getItem('editor.showGrid') === 'true'; } catch { return false; }
@@ -81,7 +83,7 @@ const EditorLayout: React.FC = () => {
     try { return parseInt(localStorage.getItem('editor.gridSize') || '20'); } catch { return 20; }
   });
   const { snap } = useGridSnap({ gridSize, enabled: snapToGrid });
-  
+
   // Estados dos modais
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
@@ -91,6 +93,8 @@ const EditorLayout: React.FC = () => {
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [galleryTarget, setGalleryTarget] = useState<'element' | 'background'>('element');
   const [activeRegion, setActiveRegion] = useState<'header' | 'footer' | null>(null);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   // Hook para configurações de página
   const currentPageId = editor.getCurrentPageId ? editor.getCurrentPageId() : '';
@@ -150,7 +154,7 @@ const EditorLayout: React.FC = () => {
     if (typeof canvas.setContainerSize === 'function') {
       canvas.setContainerSize({ width: Math.max(100, Math.round(rect.width)), height: Math.max(100, Math.round(rect.height)) });
     }
-    
+
     // Centralizar horizontalmente após medir a área inicial
     if (typeof (canvas as any).centerCanvasHorizontally === 'function') {
       setTimeout(() => (canvas as any).centerCanvasHorizontally(), 0);
@@ -214,10 +218,10 @@ const EditorLayout: React.FC = () => {
 
     // Atualizar o template no editor com dados completos
     editor.loadTemplate(savedTemplate);
-    
+
     // Mostrar mensagem de sucesso
     showSuccessToast('Template salvo com sucesso!', 'Salvo', 3000);
-    
+
     // Se o template recebeu um novo ID do backend, atualizar a URL
     if (savedTemplate.id && !savedTemplate.id.startsWith('template-')) {
       // Agora é um template persistido, atualizar URL
@@ -232,6 +236,32 @@ const EditorLayout: React.FC = () => {
   const handlePreview = useCallback(() => {
     setShowPreviewModal(true);
   }, []);
+
+  const handleGeneratePDF = useCallback(async (validationId: string) => {
+    if (!editor.template?.id) return;
+    setGeneratingPdf(true);
+    try {
+      const templateId = editor.template.id;
+      const response = await apiService.api.post(
+        `/editor-templates/${templateId}/generate-pdf`,
+        { validationId },
+        { responseType: 'arraybuffer' }
+      );
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio_${templateId}_${validationId}_${Date.now()}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      // show some toast or error notification
+    } finally {
+      setGeneratingPdf(false);
+    }
+  }, [editor.template]);
 
   const handleClose = useCallback(() => {
     navigate('/templates');
@@ -253,15 +283,15 @@ const EditorLayout: React.FC = () => {
     onZoomFit: canvas.zoomToFit,
     onCopy: editor.copySelection,
     onPaste: editor.pasteClipboard,
-    onCut: () => {}
+    onCut: () => { }
   }, { enabled: true });
 
   // Atalhos adicionais específicos do editor
   useEffect(() => {
     const handleAdditionalKeyDown = (e: KeyboardEvent) => {
       const isEditingText = (e.target as HTMLElement)?.contentEditable === 'true' ||
-                           (e.target as HTMLElement)?.tagName === 'INPUT' ||
-                           (e.target as HTMLElement)?.tagName === 'TEXTAREA';
+        (e.target as HTMLElement)?.tagName === 'INPUT' ||
+        (e.target as HTMLElement)?.tagName === 'TEXTAREA';
 
       if (isEditingText) return;
 
@@ -299,7 +329,7 @@ const EditorLayout: React.FC = () => {
           case 'r':
             e.preventDefault();
             setShowRuler(s => {
-              try { localStorage.setItem('editor.showRuler', String(!s)); } catch {}
+              try { localStorage.setItem('editor.showRuler', String(!s)); } catch { }
               return !s;
             });
             break;
@@ -338,7 +368,7 @@ const EditorLayout: React.FC = () => {
   return (
     <div className="flex flex-col h-screen w-screen bg-white">
       {/* Header - Barra de ferramentas principal */}
-      <div 
+      <div
         className="bg-gray-900 text-white p-3 flex items-center justify-between border-b border-gray-700 min-h-[60px]"
       >
         {/* Lado esquerdo - Título e nome do template */}
@@ -375,13 +405,13 @@ const EditorLayout: React.FC = () => {
           <div className="w-px h-6 bg-gray-600 mx-1 md:mx-2 hidden sm:block" />
 
           <button
-            onClick={() => { 
+            onClick={() => {
               setShowGrid(s => {
-                try { localStorage.setItem('editor.showGrid', String(!s)); } catch {}
+                try { localStorage.setItem('editor.showGrid', String(!s)); } catch { }
                 return !s;
               });
               setSnapToGrid(s => {
-                try { localStorage.setItem('editor.snapToGrid', String(!s)); } catch {}
+                try { localStorage.setItem('editor.snapToGrid', String(!s)); } catch { }
                 return !s;
               });
             }}
@@ -393,7 +423,7 @@ const EditorLayout: React.FC = () => {
 
           <button
             onClick={() => setShowRuler(s => {
-              try { localStorage.setItem('editor.showRuler', String(!s)); } catch {}
+              try { localStorage.setItem('editor.showRuler', String(!s)); } catch { }
               return !s;
             })}
             className={`p-2 rounded transition-colors ${showRuler ? 'text-white bg-gray-700' : 'text-gray-300 hover:text-white hover:bg-gray-700'}`}
@@ -406,7 +436,7 @@ const EditorLayout: React.FC = () => {
             <button
               onClick={() => setGridSize(s => {
                 const newSize = Math.max(5, s - 5);
-                try { localStorage.setItem('editor.gridSize', String(newSize)); } catch {}
+                try { localStorage.setItem('editor.gridSize', String(newSize)); } catch { }
                 return newSize;
               })}
               className="p-1 rounded text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
@@ -419,7 +449,7 @@ const EditorLayout: React.FC = () => {
             <button
               onClick={() => setGridSize(s => {
                 const newSize = Math.min(100, s + 5);
-                try { localStorage.setItem('editor.gridSize', String(newSize)); } catch {}
+                try { localStorage.setItem('editor.gridSize', String(newSize)); } catch { }
                 return newSize;
               })}
               className="p-1 rounded text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
@@ -491,11 +521,10 @@ const EditorLayout: React.FC = () => {
                 setForceShowSidebars(newState);
               }
             }}
-            className={`lg:hidden p-2 rounded transition-colors ${
-              (showElementPalette || showPropertiesPanel)
-                ? 'text-white bg-gray-700' 
+            className={`lg:hidden p-2 rounded transition-colors ${(showElementPalette || showPropertiesPanel)
+                ? 'text-white bg-gray-700'
                 : 'text-gray-300 hover:text-white hover:bg-gray-700'
-            }`}
+              }`}
             title="Alternar painéis (Ctrl+3)"
           >
             <span className="text-xs font-medium">Painéis</span>
@@ -570,6 +599,14 @@ const EditorLayout: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setShowValidationModal(true)}
+            className="bg-yellow-600 hover:bg-yellow-700 p-2 rounded-full flex items-center justify-center transition-colors"
+            title="Gerar PDF a partir desta template"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+
+          <button
             onClick={handleClose}
             className="bg-red-600 hover:bg-red-700 p-2 rounded transition-colors"
             title="Fechar editor"
@@ -580,14 +617,12 @@ const EditorLayout: React.FC = () => {
       </div>
 
       {/* Conteúdo principal - Layout otimizado com CSS Grid */}
-      <div className={`flex-1 overflow-hidden grid editor-layout-grid ${
-        (isTablet && forceShowSidebars) ? 'force-show-sidebars' : ''
-      }`}>
+      <div className={`flex-1 overflow-hidden grid editor-layout-grid ${(isTablet && forceShowSidebars) ? 'force-show-sidebars' : ''
+        }`}>
         {/* Sidebar esquerda - Paleta de elementos */}
         {showElementPalette && (
-          <div className={`bg-gray-50 border-r border-gray-200 overflow-y-auto editor-sidebar-left ${
-            isMobile ? 'mobile-visible' : ''
-          }`}>
+          <div className={`bg-gray-50 border-r border-gray-200 overflow-y-auto editor-sidebar-left ${isMobile ? 'mobile-visible' : ''
+            }`}>
             <ElementPalette
               onAddElement={editor.addElement}
               isVisible={showElementPalette}
@@ -681,19 +716,20 @@ const EditorLayout: React.FC = () => {
 
         {/* Sidebar direita - Painel de propriedades */}
         {showPropertiesPanel && (
-          <div className={`bg-gray-50 border-l border-gray-200 overflow-y-auto editor-sidebar-right ${
-            isMobile ? 'mobile-visible' : ''
-          }`}>
+          <div className={`bg-gray-50 border-l border-gray-200 overflow-y-auto editor-sidebar-right ${isMobile ? 'mobile-visible' : ''
+            }`}>
             <PropertiesPanel
               selectedElements={editor.getSelectedElements()}
               onUpdateStyles={editor.updateElementStyles}
               onUpdateContent={editor.updateElementContent}
               onUpdateElements={editor.updateElements}
-              region={activeRegion ? { type: activeRegion, data: activeRegion === 'header' ? currentPageMeta?.header : currentPageMeta?.footer, onUpdate: (updates: any) => {
-                const newHeader = activeRegion === 'header' ? { ...(currentPageMeta?.header || {}), ...updates } : currentPageMeta?.header || null;
-                const newFooter = activeRegion === 'footer' ? { ...(currentPageMeta?.footer || {}), ...updates } : currentPageMeta?.footer || null;
-                editor.updatePageRegions && editor.updatePageRegions(newHeader as any, newFooter as any);
-              } } : undefined}
+              region={activeRegion ? {
+                type: activeRegion, data: activeRegion === 'header' ? currentPageMeta?.header : currentPageMeta?.footer, onUpdate: (updates: any) => {
+                  const newHeader = activeRegion === 'header' ? { ...(currentPageMeta?.header || {}), ...updates } : currentPageMeta?.header || null;
+                  const newFooter = activeRegion === 'footer' ? { ...(currentPageMeta?.footer || {}), ...updates } : currentPageMeta?.footer || null;
+                  editor.updatePageRegions && editor.updatePageRegions(newHeader as any, newFooter as any);
+                }
+              } : undefined}
               onGroupElements={editor.groupSelectedElements}
               onUngroupElements={editor.ungroupSelectedElements}
               onBringToFront={editor.bringToFront}
@@ -709,7 +745,7 @@ const EditorLayout: React.FC = () => {
 
       {/* Mobile overlay para fechar sidebars */}
       {isMobile && (showElementPalette || showPropertiesPanel) && (
-        <div 
+        <div
           className="mobile-sidebar-overlay"
           onClick={() => {
             setShowElementPalette(false);
@@ -725,7 +761,7 @@ const EditorLayout: React.FC = () => {
           <span className="hidden sm:inline">Selecionados: {editor.selectedElementIds.length}</span>
           <span>Zoom: {Math.round(canvas.zoom * 100)}%</span>
         </div>
-        
+
         <div className="flex items-center gap-2 md:gap-4">
           <div className="flex items-center gap-2">
             <button
@@ -740,7 +776,7 @@ const EditorLayout: React.FC = () => {
               className="px-2 py-1 bg-gray-100 rounded disabled:opacity-50"
             >›</button>
           </div>
-          <span className="hidden lg:inline">Orientação: { (currentPageMeta?.pageSettings?.orientation || editor.template.pages?.[0]?.pageSettings?.orientation) === 'portrait' ? 'Retrato' : 'Paisagem' }</span>
+          <span className="hidden lg:inline">Orientação: {(currentPageMeta?.pageSettings?.orientation || editor.template.pages?.[0]?.pageSettings?.orientation) === 'portrait' ? 'Retrato' : 'Paisagem'}</span>
         </div>
       </div>
 
@@ -784,6 +820,12 @@ const EditorLayout: React.FC = () => {
           editor.updatePageRegions && editor.updatePageRegions(header, footer);
         }}
         onOpenGallery={() => { setGalleryTarget('background'); setShowGalleryModal(true); }}
+      />
+
+      <ValidationSelectorModal
+        isOpen={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        onSelect={(validationId) => handleGeneratePDF(validationId)}
       />
 
       <ImageGalleryModal

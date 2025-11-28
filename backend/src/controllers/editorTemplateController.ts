@@ -10,6 +10,8 @@ import fsPromises from 'fs/promises';
 import PDFDocument from 'pdfkit';
 import { requireParam } from '../utils/requestUtils.js';
 import { prisma } from '../lib/prisma.js';
+import { pdfGenerationService } from '../services/pdfGenerationService.js';
+import { generatePDFFromTemplate } from './generatePdf.helper.js';
 
 // Validation schemas
 const elementStylesSchema = z.object({
@@ -1074,6 +1076,49 @@ export class EditorTemplateController {
       res.status(500).json({
         success: false,
         error: 'Erro ao exportar template',
+      });
+    }
+  }
+
+  generatePDF = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { validationId } = req.body;
+
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          error: 'Usuário não autenticado',
+        });
+        return;
+      }
+
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          error: 'ID do template é obrigatório',
+        });
+        return;
+      }
+
+      if (!validationId) {
+        res.status(400).json({
+          success: false,
+          error: 'validationId é obrigatório',
+        });
+        return;
+      }
+
+      const pdfBuffer = await generatePDFFromTemplate(id, validationId, req.user!.id);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="report_${id}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      logger.error('Generate PDF error:', { error: error instanceof Error ? error.message : error });
+      res.status(500).json({
+        success: false,
+        error: 'Erro ao gerar PDF',
       });
     }
   }

@@ -1,0 +1,1 @@
+INSERT INTO users (id,name,email,password,role,"updatedAt") VALUES ('1c8bd27c-8824-4f9b-b853-ba529e7f9d69','Admin','admin@laudo.com','$2a$12$e0qB9q59HWp9YRvwlPgeOeP0AaG5PYNRfSJiXWqMycu4F2nc8fb.y','ADMIN',CURRENT_TIMESTAMP) RETURNING id,email;

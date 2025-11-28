@@ -4,6 +4,7 @@ import { authService } from '../services/authService.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { logger, securityLogger } from '../utils/logger.js';
+import { AppError } from '../utils/errors.js';
 import { AuditService } from '../services/auditService.js';
 
 // Validation schemas
@@ -55,7 +56,11 @@ export class AuthController {
         return;
       }
 
-      if (error instanceof Error && error.message === 'Invalid credentials') {
+      if (
+        // Handle service-level AppError thrown with status 401 (e.g. "Credenciais inválidas")
+        (error instanceof AppError && error.statusCode === 401) ||
+        (error instanceof Error && error.message === 'Invalid credentials')
+      ) {
         // Log failed login attempt
         await AuditService.logLogin(
           'unknown',

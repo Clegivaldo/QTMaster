@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { EditorTemplateController } from '../controllers/editorTemplateController.js';
-import { generatePDFFromTemplate } from '../controllers/pdfGenerationHandler.js';
 import { authenticate } from '../middleware/auth.js';
 import { requirePermission, Permission } from '../middleware/authorization.js';
 
@@ -38,7 +37,7 @@ router.delete('/:id', requirePermission(Permission.TEMPLATE_DELETE), editorTempl
 router.post('/:id/duplicate', requirePermission(Permission.TEMPLATE_CREATE), editorTemplateController.duplicateTemplate.bind(editorTemplateController));
 
 // POST /api/editor-templates/:id/generate-pdf - Generate PDF from template with validation data
-router.post('/:id/generate-pdf', requirePermission(Permission.TEMPLATE_READ), generatePDFFromTemplate);
+router.post('/:id/generate-pdf', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.generatePDF);
 
 // POST /api/editor-templates/:id/export - Export template
 router.post('/:id/export', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.exportTemplate.bind(editorTemplateController));

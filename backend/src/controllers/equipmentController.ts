@@ -226,7 +226,11 @@ export class EquipmentController {
   async createClientEquipment(req: Request, res: Response) {
     try {
       const payload = clientEquipmentSchema.parse(req.body);
-      const equipment = await equipmentService.createClientEquipment(payload);
+      // Strip undefined values for Prisma compatibility
+      const cleanPayload = Object.fromEntries(
+        Object.entries(payload).filter(([_, value]) => value !== undefined)
+      );
+      const equipment = await equipmentService.createClientEquipment(cleanPayload as any);
       res.status(201).json({ success: true, data: { equipment } });
     } catch (error) {
       logger.error('Create client equipment error', { error });

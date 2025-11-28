@@ -59,18 +59,27 @@ export class EditorTemplateRenderer {
     try {
       // Fetch template
       const template = await prisma.editorTemplate.findUnique({
-        where: { id: templateId },
+        where: { id: templateId }
+      });
 
-        // Build complete HTML document
-        const html = this.buildHTMLDocument(elementsHTML, pageSettings, globalStyles);
-
-        logger.info('Template rendered successfully', { templateId });
-        return html;
-      } catch (error) {
-        logger.error('Error rendering template to HTML', { error, templateId });
-        throw error;
+      if (!template) {
+        throw new Error(`Template not found: ${templateId}`);
       }
+
+      // Convert elements to HTML
+      const elements = (template.elements as unknown as EditorElement[]) || [];
+      const elementsHTML = elements.map(el => this.convertElementToHTML(el, data)).join('');
+
+      // Build complete HTML document
+      const html = this.buildHTMLDocument(elementsHTML, template.pageSettings, template.globalStyles);
+
+      logger.info('Template rendered successfully', { templateId });
+      return html;
+    } catch (error) {
+      logger.error('Error rendering template to HTML', { error, templateId });
+      throw error;
     }
+  }
 
   /**
    * Convert a single element to HTML

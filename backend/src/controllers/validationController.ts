@@ -135,12 +135,22 @@ export class ValidationController {
               select: {
                 id: true,
                 name: true,
+                cnpj: true,
+                email: true,
+                phone: true,
               },
             },
             suitcase: {
               select: {
                 id: true,
                 name: true,
+              },
+            },
+            equipment: {
+              include: {
+                brand: true,
+                model: true,
+                equipmentType: true,
               },
             },
             user: {
@@ -1082,7 +1092,7 @@ export class ValidationController {
           cycleType,
           startAt,
           endAt,
-          notes
+          notes: notes || null
         }
       });
 
@@ -1159,7 +1169,13 @@ export class ValidationController {
 
       const cycle = await prisma.validationCycle.update({
         where: { id: cycleId },
-        data: stripUndefined({ name, cycleType, startAt, endAt, notes })
+        data: {
+          ...(name !== undefined && { name }),
+          ...(cycleType !== undefined && { cycleType }),
+          ...(startAt !== undefined && { startAt }),
+          ...(endAt !== undefined && { endAt }),
+          ...(notes !== undefined && { notes: notes || null }),
+        }
       });
 
       logger.info('Cycle updated:', { cycleId, validationId: id, userId: req.user?.id });

@@ -14,16 +14,15 @@ export async function generatePDFFromTemplate(req: Request, res: Response): Prom
         const { id } = req.params;
         const { validationId } = req.body;
 
-        // Validate authentication
-        if (!authReq.user?.id) {
-            res.status(401).json({
+        // Validate required fields
+        if (!id) {
+            res.status(400).json({
                 success: false,
-                error: 'Usuário não autenticado',
+                error: 'ID do template é obrigatório',
             });
             return;
         }
 
-        // Validate required fields
         if (!validationId) {
             res.status(400).json({
                 success: false,
@@ -38,14 +37,14 @@ export async function generatePDFFromTemplate(req: Request, res: Response): Prom
         logger.info('Generating PDF from editor template', {
             templateId: id,
             validationId,
-            userId: authReq.user.id,
+            userId: authReq.user!.id,
         });
 
         // Generate PDF from editor template
         const pdfBuffer = await pdfGenerationService.generateFromEditorTemplate(
             id,
             validationId,
-            authReq.user.id
+            authReq.user!.id
         );
 
         // Get template name for filename
@@ -57,17 +56,22 @@ export async function generatePDFFromTemplate(req: Request, res: Response): Prom
         const filename = `${template?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'relatorio'}_${Date.now()}.pdf`;
 
         // Audit log
-        await AuditService.log({
-            action: 'generate_pdf_from_template',
-            entityType: 'editor_template',
-            entityId: id,
-            userId: authReq.user.id,
-            metadata: {
+        await AuditService.logUserAction(
+            'generate_pdf_from_template',
+            'editor_template',
+            authReq.user!.id,
+            authReq.user!.email || '',
+            req.ip || '',
+            req.get('User-Agent'),
+            id,
+            undefined,
+            undefined,
+            {
                 validationId,
                 filename,
                 size: pdfBuffer.length,
-            },
-        });
+            }
+        );
 
         logger.info('PDF generated successfully from editor template', {
             templateId: id,

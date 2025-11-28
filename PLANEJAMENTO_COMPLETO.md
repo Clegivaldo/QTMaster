@@ -130,44 +130,28 @@
 
 ---
 
-### 7. 🔗 **Conectar Botão "Gerar Laudo"**
+### 7. ✅ **Conectar Botão "Gerar Laudo"** - RESOLVIDO
 
 **Localização**: `Validations.tsx` (botão já existe na UI)
 
-**Código Atual** (linha ~350):
-```tsx
-<button className="...">
-  <FileText /> Gerar Laudo
-</button>
-```
+**Implementação Realizada**:
+- ✅ Criado `TemplateSelectionModal.tsx` - Modal para seleção de templates
+- ✅ Modificado `handleGenerateReport` para abrir modal de seleção
+- ✅ Adicionado `handleTemplateSelected` para gerar PDF via template editor
+- ✅ Conectado ao endpoint `/api/editor-templates/:id/generate-pdf`
+- ✅ Implementado download automático do PDF gerado
+- ✅ Tratamento de erros e estados de loading
 
-**Implementação**:
-```tsx
-const handleGenerateReport = async (validation: Validation) => {
-  try {
-    setGeneratingReport(validation.id);
-    
-    const response = await fetch(`/api/reports/generate/${validation.id}`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    const { reportId, downloadUrl } = await response.json();
-    
-    // Opção 1: Navegar para página de relatórios
-    navigate(`/reports/${reportId}`);
-    
-    // Opção 2: Download direto
-    window.open(downloadUrl, '_blank');
-  } catch (error) {
-    alert('Erro ao gerar laudo');
-  } finally {
-    setGeneratingReport(null);
-  }
-};
-```
+**Fluxo Completo**:
+1. Usuário clica "📊 Gerar Laudo" 
+2. Modal abre mostrando templates disponíveis
+3. Usuário seleciona template desejado
+4. Sistema gera PDF usando template editor + dados da validação
+5. PDF é baixado automaticamente no navegador
 
-**Prioridade**: 🟡 **MÉDIA** - conecta fluxo validação → relatório
+**Deploy**: 28/11/2025 - Funcionalidade completa implementada
+
+**Status**: 🟢 **RESOLVIDO E DEPLOYADO**
 
 ---
 
@@ -262,9 +246,9 @@ const filteredData = useMemo(() => {
 2. ✅ Corrigir gráfico de umidade não renderizando - DEPLOYADO
 3. ✅ Verificar estatísticas min/max - JÁ FUNCIONAVA
 
-### **Sprint 2 - Forms e Critérios** ✅ CONCLUÍDO (26/11/2025)
+### **Sprint 2 - Forms e Critérios** ✅ CONCLUÍDO (28/11/2025)
 4. ✅ Adicionar inputs de critérios de aceitação no form - DEPLOYADO
-5. ⏳ Conectar botão "Gerar Laudo" - PENDENTE
+5. ✅ Conectar botão "Gerar Laudo" - DEPLOYADO
 6. ⏳ UI de detecção de duplicatas - PENDENTE
 
 ### **Sprint 3 - Sistema de Ciclos** ✅ CONCLUÍDO (26/11/2025)
@@ -288,7 +272,7 @@ const filteredData = useMemo(() => {
 
 ### Features Implementadas
 - [x] Formulário de validação permite configurar min/max temp e umidade ✅
-- [ ] Botão "Gerar Laudo" funciona e navega para relatório ou faz download ⏳
+- [x] Botão "Gerar Laudo" funciona e navega para relatório ou faz download ✅
 - [ ] Importação detecta duplicatas e pede confirmação ⏳
 - [x] Sistema de ciclos permite criar/editar/excluir ciclos ✅
 - [ ] Estatísticas são calculadas por ciclo e período completo ⏳ EM IMPLEMENTAÇÃO
@@ -298,7 +282,7 @@ const filteredData = useMemo(() => {
 - [ ] Criar cliente → criar validação com critérios → importar dados → verificar contagem
 - [ ] Ver gráficos de temperatura E umidade
 - [ ] Criar ciclo "Porta Aberta" → ver estatísticas do ciclo
-- [ ] Gerar laudo → download PDF ou visualização
+- [x] Gerar laudo → download PDF ou visualização
 - [ ] Importar mesmo arquivo 2x → sistema avisa sobre duplicatas
 
 ---
