@@ -1,0 +1,98 @@
+import { Request, Response } from 'express';
+import { AuthenticatedRequest } from '../types/auth.js';
+import { logger } from '../utils/logger.js';
+import { AuditService } from '../services/auditService.js';
+import { prisma } from '../lib/prisma.js';
+
+/**
+ * Generate PDF from editor template with validation data
+ * Separated module to avoid editing large controller file
+ */
+export async function generatePDFFromTemplate(req: Request, res: Response): Promise<void> {
+    try {
+        const authReq = req as AuthenticatedRequest;
+        const { id } = req.params;
+        const { validationId } = req.body;
+
+        // Validate authentication
+        if (!authReq.user?.id) {
+            res.status(401).json({
+                success: false,
+                error: 'Usuário não autenticado',
+            });
+            return;
+        }
+
+        // Validate required fields
+        if (!validationId) {
+            res.status(400).json({
+                success: false,
+                error: 'validationId é obrigatório',
+            });
+            return;
+        }
+
+        // Import PDF generation service dynamically
+        const { pdfGenerationService } = await import('../services/pdfGenerationService.js');
+
+        logger.info('Generating PDF from editor template', {
+            templateId: id,
+            validationId,
+            userId: authReq.user.id,
+        });
+
+        // Generate PDF from editor template
+        const pdfBuffer = await pdfGenerationService.generateFromEditorTemplate(
+            id,
+            validationId,
+            authReq.user.id
+        );
+
+        // Get template name for filename
+        const template = await prisma.editorTemplate.findUnique({
+            where: { id },
+            select: { name: true },
+        });
+
+        const filename = `${template?.name?.replace(/[^a-zA-Z0-9]/g, '_') || 'relatorio'}_${Date.now()}.pdf`;
+
+        // Audit log
+        await AuditService.log({
+            action: 'generate_pdf_from_template',
+            entityType: 'editor_template',
+            entityId: id,
+            userId: authReq.user.id,
+            metadata: {
+                validationId,
+                filename,
+                size: pdfBuffer.length,
+            },
+        });
+
+        logger.info('PDF generated successfully from editor template', {
+            templateId: id,
+            validationId,
+            filename,
+            size: pdfBuffer.length,
+            processingTime: 'tracked_in_service',
+        });
+
+        // Return PDF as download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+    } catch (error) {
+        logger.error('Generate PDF from template error:', {
+            error: error instanceof Error ? error.message : error,
+            stack: error instanceof Error ? error.stack : undefined,
+            templateId: req.params.id,
+            validationId: req.body.validationId,
+        });
+
+        res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Erro ao gerar PDF',
+        });
+    }
+}
