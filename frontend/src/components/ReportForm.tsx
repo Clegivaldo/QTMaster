@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useCreateReport, useUpdateReport, useActiveReportTemplates } from '../hooks/useReports';
 import { useValidations } from '../hooks/useValidations';
 import { Report, CreateReportData, UpdateReportData, ReportStatus } from '../types/report';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 
 interface ReportFormProps {
   report?: Report | null;
@@ -200,7 +201,7 @@ export function ReportForm({ report, onClose }: ReportFormProps) {
                 <p><strong>Cliente:</strong> {report.client.name}</p>
                 <p><strong>Validação:</strong> {report.validation.name}</p>
                 <p><strong>Template:</strong> {report.template.name}</p>
-                <p><strong>Criado em:</strong> {new Date(report.createdAt).toLocaleDateString('pt-BR')}</p>
+                <p><strong>Criado em:</strong> {formatBRShort(report.createdAt)}</p>
               </div>
             </div>
           )}

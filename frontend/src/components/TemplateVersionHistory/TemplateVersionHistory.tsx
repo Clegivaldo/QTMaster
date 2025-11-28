@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTemplateVersions } from '../../hooks/useTemplateVersioning';
+import { formatBRShort } from '@/utils/parseDate';
 import type { TemplateVersion } from '../../hooks/useTemplateVersioning';
 
 interface TemplateVersionHistoryProps {
@@ -189,7 +190,7 @@ export const TemplateVersionHistory: React.FC<TemplateVersionHistoryProps> = ({
                   <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
                     <span>Por: {version.createdBy}</span>
                     <span>
-                      {new Date(version.createdAt).toLocaleString('pt-BR')}
+                      {formatBRShort(version.createdAt)}
                     </span>
                   </div>
                 </div>

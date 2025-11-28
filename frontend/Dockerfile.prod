@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (dev needed for TypeScript build)
-RUN npm ci
+RUN npm ci && npm install xlsx --no-audit --no-fund --prefer-offline --no-progress
 
 # Copy source code
 COPY . .

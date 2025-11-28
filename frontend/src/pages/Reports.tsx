@@ -13,6 +13,7 @@ import {
   Printer as PrinterIcon,
 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
+import { parseToDate, formatDisplayTime } from '@/utils/parseDate';
 import { useReports, useDeleteReport, useReportStatistics, useGeneratePdf, usePreviewPdf, useDownloadReport } from '../hooks/useReports';
 import { useClients } from '../hooks/useClients';
 import { Report, ReportFilters, ReportStatus } from '../types/report';
@@ -103,13 +104,7 @@ export default function Reports() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDisplayTime(parseToDate(dateString));
   };
 
   if (error) {

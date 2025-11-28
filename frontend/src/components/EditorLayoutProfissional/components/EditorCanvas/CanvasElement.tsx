@@ -5,6 +5,7 @@ import ImageElement from '../Elements/ImageElement';
 import TableElement from '../Elements/TableElement';
 import LineElement from '../Elements/LineElement';
 import ShapeElement from '../Elements/ShapeElement';
+import ChartElement from '../Elements/ChartElement';
 
 interface CanvasElementProps {
   element: TemplateElement;
@@ -35,7 +36,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
   // Calcular estilos do elemento
   const getElementStyles = useCallback(() => {
     const { styles } = element;
-    
+
     return {
       position: 'absolute' as const,
       left: element.position.x * zoom,
@@ -43,7 +44,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       width: element.size.width * zoom,
       height: element.size.height * zoom,
       zIndex: element.zIndex,
-      
+
       // Estilos de texto
       fontSize: styles.fontSize ? `${styles.fontSize * zoom}px` : undefined,
       fontFamily: styles.fontFamily,
@@ -58,36 +59,36 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       // map our logical verticalAlign ('top'|'middle'|'bottom') to CSS flex alignItems
       ...(element.type === 'text' || element.type === 'heading'
         ? {
-            display: 'flex' as const,
-            flexDirection: 'column' as const,
-            justifyContent:
-              styles.verticalAlign === 'middle'
-                ? 'center'
-                : styles.verticalAlign === 'bottom'
+          display: 'flex' as const,
+          flexDirection: 'column' as const,
+          justifyContent:
+            styles.verticalAlign === 'middle'
+              ? 'center'
+              : styles.verticalAlign === 'bottom'
                 ? 'flex-end'
                 : 'flex-start',
-            alignItems: 'stretch'
-          }
+          alignItems: 'stretch'
+        }
         : {}),
-      
+
       // Estilos de layout
       backgroundColor: styles.backgroundColor,
       borderRadius: styles.borderRadius ? `${styles.borderRadius * zoom}px` : undefined,
       opacity: styles.opacity,
-      
+
       // Bordas
-      border: styles.border ? 
-        `${styles.border.width * zoom}px ${styles.border.style} ${styles.border.color}` : 
+      border: styles.border ?
+        `${styles.border.width * zoom}px ${styles.border.style} ${styles.border.color}` :
         undefined,
-      
+
       // Padding e margin (escalados com zoom)
-      padding: styles.padding ? 
-        `${(styles.padding.top || 0) * zoom}px ${(styles.padding.right || 0) * zoom}px ${(styles.padding.bottom || 0) * zoom}px ${(styles.padding.left || 0) * zoom}px` : 
+      padding: styles.padding ?
+        `${(styles.padding.top || 0) * zoom}px ${(styles.padding.right || 0) * zoom}px ${(styles.padding.bottom || 0) * zoom}px ${(styles.padding.left || 0) * zoom}px` :
         undefined,
-      
+
       // Cursor
       cursor: isDragging ? 'grabbing' : 'grab',
-      
+
       // Seleção visual
       outline: isSelected ? `2px solid #3b82f6` : 'none',
       outlineOffset: isSelected ? '2px' : '0',
@@ -99,7 +100,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
     // Perform selection on click, honoring multi-select (Ctrl/Cmd)
     try {
       // debug log to help trace clicks reaching the element in the browser
-  if (typeof window !== 'undefined' && (import.meta as any).env?.MODE !== 'test') {
+      if (typeof window !== 'undefined' && (import.meta as any).env?.MODE !== 'test') {
         // eslint-disable-next-line no-console
         console.debug('[CanvasElement] click', { id: element.id, multi: e.ctrlKey || e.metaKey });
       }
@@ -128,7 +129,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
     // This also makes header/footer child elements reliably selectable when dragging starts.
     try {
       // debug log to help trace mousedown events in browser console
-  if (typeof window !== 'undefined' && (import.meta as any).env?.MODE !== 'test') {
+      if (typeof window !== 'undefined' && (import.meta as any).env?.MODE !== 'test') {
         // eslint-disable-next-line no-console
         console.debug('[CanvasElement] mousedown', { id: element.id, clientX: e.clientX, clientY: e.clientY });
       }
@@ -142,7 +143,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       x: e.clientX - element.position.x * zoom,
       y: e.clientY - element.position.y * zoom
     });
-    
+
     e.preventDefault();
     e.stopPropagation();
   }, [element.id, element.position, zoom, isSelected, onSelect]);
@@ -180,7 +181,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
         x: element.position.x + dragOffset.x,
         y: element.position.y + dragOffset.y
       };
-      
+
       onMove?.(element.id, newPosition);
     }
 
@@ -211,7 +212,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
         return (
           <div
             className="w-full h-full outline-none overflow-hidden"
-            style={{ 
+            style={{
               wordWrap: 'break-word',
               whiteSpace: 'pre-wrap',
               overflowWrap: 'break-word',
@@ -288,6 +289,15 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
           </div>
         );
 
+      case 'chart':
+        return (
+          <ChartElement
+            element={element as any}
+            isSelected={isSelected}
+            zoom={zoom}
+          />
+        );
+
       default:
         return (
           <div className="w-full h-full flex items-center justify-center text-gray-500">
@@ -305,8 +315,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       data-element-id={element.id}
       style={{
         ...getElementStyles(),
-        transform: isDragging ? 
-          `translate(${dragOffset.x * zoom}px, ${dragOffset.y * zoom}px)` : 
+        transform: isDragging ?
+          `translate(${dragOffset.x * zoom}px, ${dragOffset.y * zoom}px)` :
           undefined
       }}
       onClick={handleElementClick}
@@ -319,7 +329,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       `}
     >
       {renderContent()}
-      
+
       {/* Alças de redimensionamento */}
       {isSelected && onResize && onMove && !element.locked && (
         <SelectionHandles

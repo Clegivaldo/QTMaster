@@ -420,7 +420,7 @@ const ProcessingStatusDisplay: React.FC<ProcessingStatusDisplayProps> = ({ statu
       {/* Completion Info */}
       {status.status === 'completed' && status.completedAt && (
         <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4">
-          <span>Concluído em: {new Date(status.completedAt).toLocaleString('pt-BR')}</span>
+          <span>Concluído em: {formatCompletedAt(status.completedAt)}</span>
           {status.processingTime && (
             <span>Tempo total: {Math.round(status.processingTime / 1000)} segundos</span>
           )}
@@ -428,6 +428,20 @@ const ProcessingStatusDisplay: React.FC<ProcessingStatusDisplayProps> = ({ statu
       )}
     </div>
   );
+};
+
+// Local helper to format a timestamp as dd/MM/yy HH:mm (treat input as naive — strip timezone suffix)
+const formatCompletedAt = (input?: string) => {
+  if (!input) return '';
+  const s = String(input).trim().replace(/(?:Z|[+-]\d{2}:?\d{2})$/, '');
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return '';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}/${mm}/${yy} ${hh}:${mi}`;
 };
 
 export default FileUpload;

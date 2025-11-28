@@ -1,6 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import ResponsiveModal from './ResponsiveModal';
+import { parseToDate } from '@/utils/parseDate';
 import { Sensor, SensorFormData, SensorType } from '@/types/sensor';
 
 interface SensorFormProps {
@@ -29,7 +30,7 @@ const SensorForm: React.FC<SensorFormProps> = ({
       serialNumber: sensor?.serialNumber || '',
       model: sensor?.model || '',
       typeId: sensor?.typeId || '',
-      calibrationDate: sensor?.calibrationDate ? new Date(sensor.calibrationDate).toISOString().split('T')[0] : '',
+      calibrationDate: sensor?.calibrationDate ? parseToDate(sensor.calibrationDate).toISOString().split('T')[0] : '',
     },
   });
 

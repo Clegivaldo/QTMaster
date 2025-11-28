@@ -26,6 +26,7 @@ const clientEquipmentSchema = z.object({
   equipmentTypeId: z.string().min(1, 'Tipo é obrigatório'),
   brandId: z.string().min(1, 'Marca é obrigatória'),
   modelId: z.string().min(1, 'Modelo é obrigatório'),
+  name: z.string().optional(),
   serialNumber: z.string().min(1, 'Número de série é obrigatório'),
   assetNumber: z.string().optional(),
   tag: z.string().optional(),
@@ -242,6 +243,7 @@ export class EquipmentController {
         equipmentTypeId?: string;
         brandId?: string;
         modelId?: string;
+        name?: string;
         serialNumber?: string;
         assetNumber?: string | undefined;
         tag?: string | undefined;
@@ -254,6 +256,7 @@ export class EquipmentController {
       if (validatedPayload.equipmentTypeId !== undefined) payload.equipmentTypeId = validatedPayload.equipmentTypeId;
       if (validatedPayload.brandId !== undefined) payload.brandId = validatedPayload.brandId;
       if (validatedPayload.modelId !== undefined) payload.modelId = validatedPayload.modelId;
+      if (validatedPayload.name !== undefined) payload.name = validatedPayload.name;
       if (validatedPayload.serialNumber !== undefined) payload.serialNumber = validatedPayload.serialNumber;
       if (validatedPayload.assetNumber !== undefined) payload.assetNumber = validatedPayload.assetNumber;
       if (validatedPayload.tag !== undefined) payload.tag = validatedPayload.tag;

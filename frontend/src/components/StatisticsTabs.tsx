@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { parseToDate, formatDisplayTime } from '@/utils/parseDate';
 import { Thermometer, Droplets, Clock, Activity, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface CycleStatistic {
@@ -299,7 +300,7 @@ export default function StatisticsTabs({ validationId }: StatisticsTabsProps) {
 
                     {/* Date Range */}
                     <div className="text-xs text-gray-500 mb-3">
-                      {new Date(cycle.startAt).toLocaleString('pt-BR')} → {new Date(cycle.endAt).toLocaleString('pt-BR')}
+                      {formatDisplayTime(parseToDate(cycle.startAt))} → {formatDisplayTime(parseToDate(cycle.endAt))}
                     </div>
 
                     {/* Statistics */}

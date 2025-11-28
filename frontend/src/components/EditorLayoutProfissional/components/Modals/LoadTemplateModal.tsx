@@ -18,6 +18,7 @@ import {
 import ResponsiveModal from '../../../ResponsiveModal';
 import { EditorTemplate } from '../../../../types/editor';
 import { useTemplateStorage } from '../../../../hooks/useTemplateStorage';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 
 interface LoadTemplateModalProps {
   isOpen: boolean;
@@ -139,8 +140,8 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
       } else {
-        aValue = new Date(aValue).getTime();
-        bValue = new Date(bValue).getTime();
+        aValue = parseToDate(aValue).getTime();
+        bValue = parseToDate(bValue).getTime();
       }
       
       if (filters.sortOrder === 'asc') {
@@ -220,13 +221,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
   };
   
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatBRShort(dateString);
   };
   
   const getCategoryLabel = (category: string) => {

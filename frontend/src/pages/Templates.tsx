@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatBRShort } from '@/utils/parseDate';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FileText, Eye, Palette, Copy, Trash2 } from 'lucide-react';
 import { apiService } from '../services/api';
@@ -84,7 +85,7 @@ const Templates: React.FC = () => {
           name: template.name || 'Template',
           filename: template.name ? `${template.name}.hbs` : 'template.hbs',
           type: 'Editor Template',
-          lastModified: template.updatedAt || new Date().toLocaleDateString('pt-BR'),
+          lastModified: formatBRShort(template.updatedAt || new Date()),
           size: template.size || Math.floor(Math.random() * 50) + 10 // KB simulado
         }));
         setTemplates(templateData);

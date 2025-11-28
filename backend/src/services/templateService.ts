@@ -15,14 +15,15 @@ export class TemplateService {
    * Registra helpers do Handlebars
    */
   private registerHelpers() {
-    // Helper para formatar datas
+    // Helper para formatar datas (dd/MM/yy HH:mm)
+    const { formatDateShort } = require('../utils/formatDate.js');
     Handlebars.registerHelper('formatDate', (date: Date) => {
-      return date.toLocaleDateString('pt-BR');
+      return formatDateShort(date);
     });
 
     // Helper para formatar data e hora
     Handlebars.registerHelper('formatDateTime', (date: Date) => {
-      return date.toLocaleString('pt-BR');
+      return formatDateShort(date);
     });
 
     // Helper para formatar números

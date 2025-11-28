@@ -1,4 +1,5 @@
 import React from 'react';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 import { 
   Edit, 
   Trash2, 
@@ -66,7 +67,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return formatBRShort(dateString);
   };
 
   if (isLoading) {

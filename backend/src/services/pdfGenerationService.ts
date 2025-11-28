@@ -138,7 +138,7 @@ export class PDFGenerationService {
     try {
       // Renderizar template HTML
       const html = await this.renderHTMLTemplate(templateContent, data);
-      
+
       // Adicionar estilos CSS
       const styledHTML = await this.addStyles(html, finalOptions);
 
@@ -209,7 +209,7 @@ export class PDFGenerationService {
     };
   }> {
     const startTime = Date.now();
-    
+
     try {
       // Buscar template
       const template = await this.getTemplate(templateId);
@@ -252,9 +252,128 @@ export class PDFGenerationService {
     }
   }
 
+  async generateFromEditorTemplate(
+    templateId: string,
+    validationId: string,
+    userId: string,
+    options: Partial<PDFGenerationOptions> = {}
+  ): Promise<Buffer> {
+    const startTime = Date.now();
+
+    try {
+      // Import renderer dynamically to avoid circular dependencies
+      const { editorTemplateRenderer } = await import('./editorTemplateRenderer.js');
+      const { prisma } = await import('../lib/prisma.js');
+
+      // Fetch validation data
+      const validation = await prisma.validation.findUnique({
+        where: { id: validationId },
+        include: {
+          client: true,
+          equipment: {
+            include: {
+              equipmentType: true,
+            },
+          },
+          sensorData: {
+            include: {
+              sensor: {
+                include: {
+                  equipmentType: true,
+                },
+              },
+            },
+            orderBy: {
+              timestamp: 'asc',
+            },
+          },
+        },
+      });
+
+      if (!validation) {
+        throw new Error(`Validation not found: ${validationId}`);
+      }
+
+      // Get user info
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      // Calculate statistics
+      const temperatures = validation.sensorData.map(d => d.temperature).filter(t => t !== null);
+      const humidities = validation.sensorData.map(d => d.humidity).filter(h => h !== null);
+
+      const temperatureStats = temperatures.length > 0 ? {
+        min: Math.min(...temperatures),
+        max: Math.max(...temperatures),
+        avg: temperatures.reduce((a, b) => a + b, 0) / temperatures.length,
+      } : { min: 0, max: 0, avg: 0 };
+
+      const humidityStats = humidities.length > 0 ? {
+        min: Math.min(...humidities),
+        max: Math.max(...humidities),
+        avg: humidities.reduce((a, b) => a + b, 0) / humidities.length,
+      } : undefined;
+
+      // Prepare template data
+      const templateData = {
+        client: {
+          name: validation.client.name,
+          document: validation.client.cnpj || validation.client.cpf,
+          email: validation.client.email || undefined,
+          phone: validation.client.phone || undefined,
+        },
+        validation: {
+          id: validation.id,
+          startDate: new Date(validation.createdAt),
+          endDate: new Date(validation.updatedAt),
+          temperatureStats,
+          humidityStats,
+        },
+        sensors: validation.equipment.map(eq => ({
+          id: eq.id,
+          name: eq.name || undefined,
+          serialNumber: eq.serialNumber,
+          model: eq.equipmentType.model,
+        })),
+        sensorData: validation.sensorData.map(sd => ({
+          timestamp: new Date(sd.timestamp),
+          temperature: sd.temperature,
+          humidity: sd.humidity || undefined,
+          sensorId: sd.sensorId,
+        })),
+        report: {
+          generatedAt: new Date(),
+          generatedBy: user?.name || 'Sistema',
+        },
+      };
+
+      // Render template to HTML
+      const html = await editorTemplateRenderer.renderToHTML(templateId, templateData);
+
+      // Generate PDF
+      const pdfBuffer = await this.generatePDF(html, {}, {
+        ...this.getDefaultReportOptions(),
+        ...options,
+      });
+
+      const processingTime = Date.now() - startTime;
+      logger.info(`PDF gerado de editor template em ${processingTime}ms`, {
+        templateId,
+        validationId,
+        size: pdfBuffer.length,
+      });
+
+      return pdfBuffer;
+    } catch (error) {
+      logger.error('Erro ao gerar PDF de editor template', { error, templateId, validationId });
+      throw error;
+    }
+  }
+
   private async renderHTMLTemplate(templateContent: string, data: any): Promise<string> {
     const cacheKey = `pdf_template:${Buffer.from(templateContent).toString('base64').slice(0, 30)}`;
-    
+
     // Verificar cache
     if (this.templateCache.has(cacheKey)) {
       const compiledTemplate = this.templateCache.get(cacheKey)!;
@@ -263,7 +382,7 @@ export class PDFGenerationService {
 
     // Compilar template
     let compiledTemplate: handlebars.TemplateDelegate;
-    
+
     try {
       compiledTemplate = handlebars.compile(templateContent, {
         strict: false,
@@ -282,7 +401,7 @@ export class PDFGenerationService {
         this.templateCache.delete(firstKey);
       }
     }
-    
+
     this.templateCache.set(cacheKey, compiledTemplate);
 
     // Renderizar
@@ -481,28 +600,23 @@ export class PDFGenerationService {
   }
 
   private setupHandlebarsHelpers(): void {
-    // Helper para formatação de data
+    // Helper para formatação de data (padroniza para dd/MM/yy HH:mm)
+    const { formatDateShort, formatDateLong } = require('../utils/formatDate.js');
     handlebars.registerHelper('formatDate', (date, format) => {
       if (!date) return '';
-      const dateObj = new Date(date);
-      
       switch (format) {
         case 'short':
-          return dateObj.toLocaleDateString('pt-BR');
+          return formatDateShort(date);
         case 'long':
-          return dateObj.toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-          });
+          return formatDateLong(date);
         case 'datetime':
-          return dateObj.toLocaleString('pt-BR');
+          return formatDateShort(date);
         case 'iso':
-          return dateObj.toISOString();
+          return new Date(date).toISOString();
         case 'time':
-          return dateObj.toLocaleTimeString('pt-BR');
+          return formatDateShort(date).split(' ')[1] || '';
         default:
-          return dateObj.toLocaleDateString('pt-BR');
+          return formatDateShort(date);
       }
     });
 
@@ -626,7 +740,7 @@ export class PDFGenerationService {
         return await operation();
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         if (attempt === this.RETRY_OPTIONS.maxRetries) {
           logger.error(`${operationName} falhou após ${attempt} tentativas`, {
             error: lastError.message,
@@ -758,15 +872,15 @@ export class PDFGenerationService {
     if (outputPath) {
       return outputPath;
     }
-    
+
     // Gerar gráfico simples usando HTML/CSS
     const chartHTML = this.generateSimpleChart(chartData);
     const chartBuffer = await this.generatePDFFromHTML(chartHTML);
-    
+
     // Salvar como imagem (simplificado)
     const tempPath = `/tmp/chart_${Date.now()}.png`;
     await fs.writeFile(tempPath, chartBuffer);
-    
+
     return tempPath;
   }
 
@@ -787,7 +901,7 @@ export class PDFGenerationService {
     }
 
     const page = await this.browser!.newPage();
-    
+
     try {
       await page.setContent(html, { waitUntil: 'networkidle0' });
       return Buffer.from(await page.screenshot({ type: 'png', fullPage: true }));

@@ -535,25 +535,20 @@ export class TemplateEngineService {
 
   private setupDefaultHelpers(): void {
     // Helper para formatação de data
+    const { formatDateShort, formatDateLong } = require('../utils/formatDate.js');
     handlebars.registerHelper('formatDate', (date, format) => {
       if (!date) return '';
-      const dateObj = new Date(date);
-      
       switch (format) {
         case 'short':
-          return dateObj.toLocaleDateString('pt-BR');
+          return formatDateShort(date);
         case 'long':
-          return dateObj.toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-          });
+          return formatDateLong(date);
         case 'datetime':
-          return dateObj.toLocaleString('pt-BR');
+          return formatDateShort(date);
         case 'iso':
-          return dateObj.toISOString();
+          return new Date(date).toISOString();
         default:
-          return dateObj.toLocaleDateString('pt-BR');
+          return formatDateShort(date);
       }
     });
 

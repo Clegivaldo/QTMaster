@@ -214,6 +214,7 @@ model ClientEquipment {
   equipmentTypeId   String
   brandId           String
   modelId           String
+  name              String?
   serialNumber      String
   assetNumber       String?
   tag               String?

@@ -32,6 +32,7 @@ export interface ClientEquipment {
   equipmentTypeId: string;
   brandId: string;
   modelId: string;
+  name?: string;
   serialNumber: string;
   assetNumber?: string;
   tag?: string;
@@ -85,6 +86,8 @@ export interface ValidationDataPoint {
 export interface BrandFormData {
   name: string;
   description?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface EquipmentModelFormData {
@@ -105,6 +108,7 @@ export interface ClientEquipmentFormData {
   equipmentTypeId: string;
   brandId: string;
   modelId: string;
+  name?: string;
   serialNumber: string;
   assetNumber?: string;
   tag?: string;

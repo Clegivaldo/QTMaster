@@ -8,6 +8,7 @@ import os
 import pandas as pd
 import psycopg2
 from datetime import datetime
+import re
 
 # Configuração do banco
 DB_CONFIG = {
@@ -149,12 +150,14 @@ def main():
             temp_raw = row[temp_col]
             humidity_raw = row[humidity_col] if humidity_col else None
             
-            # Converter timestamp
+            # Converter timestamp (strip timezone suffix to keep naive local time)
             if pd.isna(timestamp_raw):
                 failed += 1
                 continue
-            
-            timestamp = pd.to_datetime(timestamp_raw, dayfirst=True, errors='coerce')
+
+            ts_raw_str = str(timestamp_raw).strip()
+            ts_no_tz = re.sub(r'(?:Z|[+-]\d{2}:?\d{2})$', '', ts_raw_str)
+            timestamp = pd.to_datetime(ts_no_tz, dayfirst=True, errors='coerce')
             if pd.isna(timestamp):
                 failed += 1
                 continue

@@ -122,6 +122,7 @@ export class EquipmentService {
     equipmentTypeId: string;
     brandId: string;
     modelId: string;
+    name?: string;
     serialNumber: string;
     assetNumber?: string | undefined;
     tag?: string | undefined;
@@ -138,6 +139,7 @@ export class EquipmentService {
       model: { connect: { id: payload.modelId } },
       serialNumber: payload.serialNumber,
     };
+    if (payload.name !== undefined) data.name = payload.name;
     if (payload.assetNumber !== undefined) data.assetNumber = payload.assetNumber;
     if (payload.tag !== undefined) data.tag = payload.tag;
     if (payload.acceptanceMinTemp !== undefined) data.acceptanceMinTemp = payload.acceptanceMinTemp;
@@ -154,6 +156,7 @@ export class EquipmentService {
       equipmentTypeId?: string;
       brandId?: string;
       modelId?: string;
+      name?: string;
       serialNumber?: string;
       assetNumber?: string | undefined;
       tag?: string | undefined;
@@ -168,6 +171,7 @@ export class EquipmentService {
     if (payload.equipmentTypeId !== undefined) data.equipmentType = { connect: { id: payload.equipmentTypeId } };
     if (payload.brandId !== undefined) data.brand = { connect: { id: payload.brandId } };
     if (payload.modelId !== undefined) data.model = { connect: { id: payload.modelId } };
+    if (payload.name !== undefined) data.name = payload.name;
     if (payload.serialNumber !== undefined) data.serialNumber = payload.serialNumber;
     if (payload.assetNumber !== undefined) data.assetNumber = payload.assetNumber;
     if (payload.tag !== undefined) data.tag = payload.tag;

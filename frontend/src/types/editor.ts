@@ -26,6 +26,7 @@ export interface TextElement extends BaseElement {
   type: 'text';
   properties: {
     content: string;
+    isDynamic?: boolean; // If true, content can contain {{variable}} templates
     fontSize: number;
     fontFamily: string;
     color: string;
@@ -175,7 +176,7 @@ export interface ShapeElement extends BaseElement {
 }
 
 // Tipos de elementos unidos
-export type EditorElement = 
+export type EditorElement =
   | TextElement
   | TableElement
   | ChartElement

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSharing, SharedLinkInfo, LinkStatistics } from '../../hooks/useReportSecurity';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 
 interface SharingPanelProps {
   reportId: string;
@@ -85,7 +86,7 @@ export const SharingPanel: React.FC<SharingPanelProps> = ({ reportId, reportName
     }
   };
 
-  const isExpired = (date: Date) => new Date(date) < new Date();
+  const isExpired = (date: Date | string) => parseToDate(date as any).getTime() < Date.now();
   const isLimitReached = (link: SharedLinkInfo) => link.maxAccess > 0 && link.accessCount >= link.maxAccess;
 
   return (
@@ -244,10 +245,10 @@ export const SharingPanel: React.FC<SharingPanelProps> = ({ reportId, reportName
                       )}
                     </div>
                     <p className="text-xs text-gray-600">
-                      Criado em {new Date(link.createdAt).toLocaleString('pt-BR')}
+                      Criado em {formatBRShort(link.createdAt)}
                     </p>
                     <p className="text-xs text-gray-600">
-                      Expira em {new Date(link.expiresAt).toLocaleString('pt-BR')}
+                      Expira em {formatBRShort(link.expiresAt)}
                     </p>
                   </div>
 
@@ -343,12 +344,12 @@ export const SharingPanel: React.FC<SharingPanelProps> = ({ reportId, reportName
               </div>
 
               {/* Último Acesso */}
-              {selectedLinkStats.stats.lastAccess && (
+                  {selectedLinkStats.stats.lastAccess && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <p className="text-sm text-gray-600 mb-1">Último Acesso</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {new Date(selectedLinkStats.stats.lastAccess).toLocaleString('pt-BR')}
-                  </p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {formatBRShort(selectedLinkStats.stats.lastAccess)}
+                    </p>
                 </div>
               )}
 
@@ -379,7 +380,7 @@ export const SharingPanel: React.FC<SharingPanelProps> = ({ reportId, reportName
                       >
                         <div className="flex-1">
                           <p className="font-mono text-gray-700">{access.ip}</p>
-                          <p className="text-gray-500">{new Date(access.timestamp).toLocaleString('pt-BR')}</p>
+                          <p className="text-gray-500">{formatBRShort(access.timestamp)}</p>
                         </div>
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${

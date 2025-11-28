@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, Package, AlertTriangle, Edit, Trash2, Calendar } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 import { useSuitcases, useDeleteSuitcase, useCreateSuitcase, useUpdateSuitcase } from '@/hooks/useSuitcases';
 import { Suitcase, SuitcaseFilters } from '@/types/suitcase';
 import SuitcaseForm from '@/components/SuitcaseForm';
@@ -66,7 +67,7 @@ const Suitcases: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return formatBRShort(dateString);
   };
 
   return (

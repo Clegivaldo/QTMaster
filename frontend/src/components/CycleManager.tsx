@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, X, Clock, Calendar } from 'lucide-react';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 import { useToast } from './ToastContext';
 
 interface Cycle {
@@ -59,8 +60,8 @@ const CycleManager: React.FC<CycleManagerProps> = ({ validationId, cycles, onUpd
       setFormData({
         name: cycle.name,
         cycleType: cycle.cycleType,
-        startAt: new Date(cycle.startAt).toISOString().slice(0, 16),
-        endAt: new Date(cycle.endAt).toISOString().slice(0, 16),
+        startAt: parseToDate(cycle.startAt).toISOString().slice(0, 16),
+        endAt: parseToDate(cycle.endAt).toISOString().slice(0, 16),
         notes: cycle.notes || ''
       });
     } else {
@@ -94,8 +95,8 @@ const CycleManager: React.FC<CycleManagerProps> = ({ validationId, cycles, onUpd
         },
         body: JSON.stringify({
           ...formData,
-          startAt: new Date(formData.startAt).toISOString(),
-          endAt: new Date(formData.endAt).toISOString()
+          startAt: parseToDate(formData.startAt).toISOString(),
+          endAt: parseToDate(formData.endAt).toISOString()
         })
       });
 
@@ -147,18 +148,12 @@ const CycleManager: React.FC<CycleManagerProps> = ({ validationId, cycles, onUpd
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatBRShort(dateString);
   };
 
   const calculateDuration = (startAt: string, endAt: string) => {
-    const start = new Date(startAt);
-    const end = new Date(endAt);
+    const start = parseToDate(startAt);
+    const end = parseToDate(endAt);
     const hours = Math.abs(end.getTime() - start.getTime()) / 36e5;
     
     if (hours < 24) {

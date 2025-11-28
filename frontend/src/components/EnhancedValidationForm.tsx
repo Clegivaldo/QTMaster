@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { parseToDate } from '@/utils/parseDate';
 import { useForm } from 'react-hook-form';
 import ResponsiveModal from './ResponsiveModal';
 import { ValidationFormData, Validation } from '@/types/validation';
@@ -99,7 +100,7 @@ const EnhancedValidationForm: React.FC<EnhancedValidationFormProps> = ({
       tag: '',
       name: validation?.name || '',
       description: validation?.description || '',
-      startDate: validation ? new Date(validation.createdAt).toISOString().split('T')[0] : '',
+      startDate: validation ? parseToDate(validation.createdAt).toISOString().split('T')[0] : '',
       endDate: '',
       cycles: [],
       parameters: {

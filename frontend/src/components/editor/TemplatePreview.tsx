@@ -6,6 +6,7 @@ import { Alert } from '../ui/Alert';
 import { useTemplateEngine } from '../../hooks/useTemplateEngine';
 import { TemplateVariable, RenderContext } from '../../types/editor';
 import { Eye, Download, RefreshCw, Settings, FileText, AlertCircle } from 'lucide-react';
+import { formatBRShort } from '@/utils/parseDate';
 
 interface TemplatePreviewProps {
   template: string;
@@ -116,7 +117,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
           calibrationDate: '2023-11-15',
         },
       ],
-      currentDate: new Date().toLocaleDateString('pt-BR'),
+      currentDate: formatBRShort(new Date()),
       currentTime: new Date().toLocaleTimeString('pt-BR'),
       user: {
         name: 'João Silva',

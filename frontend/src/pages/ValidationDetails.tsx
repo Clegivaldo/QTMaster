@@ -16,6 +16,7 @@ import {
 import PageHeader from '@/components/Layout/PageHeader';
 import CycleManager from '@/components/CycleManager';
 import StatisticsTabs from '@/components/StatisticsTabs';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 
 interface SensorDataRow {
   id: string;
@@ -80,12 +81,84 @@ const ValidationDetails: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeDataTab, setActiveDataTab] = useState<'temperature' | 'humidity'>('temperature');
+  const [toleranceSec, setToleranceSec] = useState<number>(() => {
+    const saved = localStorage.getItem('validationToleranceSec');
+    return saved ? Number(saved) : 30;
+  });
+  const handleExportXLSX = async () => {
+    if (!data) return;
+    const XLSX = await import('xlsx');
+
+    // Use first three sensors (Sensor 1..3) for columns B..D
+    const firstThreeSensors = sensors.slice(0, 3);
+    const tempHeaders = ['Data/Hora', 'Sensor 1', 'Sensor 2', 'Sensor 3'];
+    const humHeaders = ['Data/Hora', 'Sensor 1', 'Sensor 2', 'Sensor 3'];
+
+    const tempRows: any[][] = [tempHeaders];
+    const humRows: any[][] = [humHeaders];
+    pivotRows.forEach(pr => {
+      const dt = formatBRShort(pr.ts);
+      const tRow: any[] = [dt];
+      const hRow: any[] = [dt];
+      // Fill columns B..D with the first three sensors (or empty string if missing)
+      for (let i = 0; i < 3; i++) {
+        const s = firstThreeSensors[i];
+        if (!s) {
+          tRow.push('');
+          hRow.push('');
+          continue;
+        }
+        const r = pr.readings.get(s.serialNumber);
+        tRow.push(r ? Number(r.temperature.toFixed(2)) : '');
+        hRow.push(r && r.humidity !== null ? Number(r.humidity.toFixed(2)) : '');
+      }
+      tempRows.push(tRow);
+      humRows.push(hRow);
+    });
+
+    const wb = XLSX.utils.book_new();
+    const wsTemp = XLSX.utils.aoa_to_sheet(tempRows);
+    // Ensure column A (Data/Hora) is written as Excel date cells with format dd/mm/yy hh:mm
+    try {
+      for (let i = 0; i < pivotRows.length; i++) {
+        const rowIndex = i + 1; // aoa_to_sheet has header at row 0
+        const cellAddr = XLSX.utils.encode_cell({ c: 0, r: rowIndex });
+        const tsMs = pivotRows[i].ts; // stored as numeric ms
+        if (tsMs == null) continue;
+        // overwrite cell with date type
+        wsTemp[cellAddr] = { t: 'd', v: new Date(Number(tsMs)), z: 'dd/mm/yy hh:mm' } as any;
+      }
+    } catch (err) {
+      // If any error, fall back to string cells (already present)
+      console.warn('Could not set date cells for XLSX Temperatura sheet', err);
+    }
+    XLSX.utils.book_append_sheet(wb, wsTemp, 'Temperatura');
+    if (data.statistics?.humidity) {
+      const wsHum = XLSX.utils.aoa_to_sheet(humRows);
+      try {
+        for (let i = 0; i < pivotRows.length; i++) {
+          const rowIndex = i + 1;
+          const cellAddr = XLSX.utils.encode_cell({ c: 0, r: rowIndex });
+          const tsMs = pivotRows[i].ts;
+          if (tsMs == null) continue;
+          wsHum[cellAddr] = { t: 'd', v: new Date(Number(tsMs)), z: 'dd/mm/yy hh:mm' } as any;
+        }
+      } catch (err) {
+        console.warn('Could not set date cells for XLSX Umidade sheet', err);
+      }
+      XLSX.utils.book_append_sheet(wb, wsHum, 'Umidade');
+    }
+    const fileName = `validacao_${data.validationNumber}_pivot.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
 
   React.useEffect(() => {
     if (id) {
       fetchValidationDetails();
     }
   }, [id]);
+
+  // Using shared parseToDate from utils for deterministic parsing
 
   const fetchValidationDetails = async () => {
     try {
@@ -147,59 +220,48 @@ const ValidationDetails: React.FC = () => {
   const handleExportCSV = () => {
     if (!data) return;
 
-    // Pivot: cada sensor em sua(s) coluna(s)
-    // Obter lista única de sensores preservando ordem de aparecimento
-    const sensorOrderMap = new Map<string, SensorDataRow['sensor']>();
-    data.sensorData.forEach(r => {
-      if (!sensorOrderMap.has(r.sensor.serialNumber)) {
-        sensorOrderMap.set(r.sensor.serialNumber, r.sensor);
-      }
-    });
-    const sensors = Array.from(sensorOrderMap.values());
+    // Use first three sensors for CSV columns B..D
+    const firstThreeSensors = sensors.slice(0, 3);
+    const tempHeaders = ['Data/Hora', 'Sensor 1', 'Sensor 2', 'Sensor 3'];
+    const humHeaders = ['Data/Hora', 'Sensor 1', 'Sensor 2', 'Sensor 3'];
 
-    // Agrupar leituras por timestamp ISO (normalizado)
-    const groupMap = new Map<string, Map<string, SensorDataRow>>();
-    data.sensorData.forEach(r => {
-      const tsKey = new Date(r.timestamp).toISOString();
-      if (!groupMap.has(tsKey)) groupMap.set(tsKey, new Map());
-      groupMap.get(tsKey)!.set(r.sensor.serialNumber, r);
-    });
-    const sortedTimestamps = Array.from(groupMap.keys()).sort();
-
-    // Definir cabeçalhos dinâmicos
-    // Coluna de data/hora + para cada sensor: Temperatura e, se existir algum valor de umidade, coluna de umidade
-    const anyHumidity = data.sensorData.some(r => r.humidity !== null);
-    const headers = ['Data/Hora'];
-    sensors.forEach(s => {
-      headers.push(`${s.serialNumber} Temperatura (°C)`);
-      if (anyHumidity) headers.push(`${s.serialNumber} Umidade (%RH)`);
-    });
-
-    const rows: string[][] = [];
-    sortedTimestamps.forEach(ts => {
-      const sensorMap = groupMap.get(ts)!;
-      const row: string[] = [new Date(ts).toLocaleString('pt-BR')];
-      sensors.forEach(s => {
-        const reading = sensorMap.get(s.serialNumber);
-        if (reading) {
-          row.push(reading.temperature.toFixed(2));
-          if (anyHumidity) row.push(reading.humidity !== null ? reading.humidity.toFixed(2) : '');
-        } else {
-          // Sem leitura para este timestamp/sensor
-          row.push('');
-          if (anyHumidity) row.push('');
+    // Linhas usando pivotRows (já alinhado pela tolerância)
+    const tempRows: string[][] = [];
+    const humRows: string[][] = [];
+    pivotRows.forEach(pr => {
+      const dt = formatBRShort(pr.ts);
+      const tRow: string[] = [dt];
+      const hRow: string[] = [dt];
+      for (let i = 0; i < 3; i++) {
+        const s = firstThreeSensors[i];
+        if (!s) {
+          tRow.push('');
+          hRow.push('');
+          continue;
         }
-      });
-      rows.push(row);
+        const r = pr.readings.get(s.serialNumber);
+        tRow.push(r ? r.temperature.toFixed(2) : '');
+        hRow.push(r && r.humidity !== null ? r.humidity.toFixed(2) : '');
+      }
+      tempRows.push(tRow);
+      humRows.push(hRow);
     });
 
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const tempsCsv = [tempHeaders.join(','), ...tempRows.map(r => r.join(','))].join('\n');
+    const humCsv = [humHeaders.join(','), ...humRows.map(r => r.join(','))].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `validacao_${data.validationNumber}_pivot.csv`;
-    link.click();
+    const downloadCsv = (content: string, name: string) => {
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = name;
+      link.click();
+    };
+
+    downloadCsv(tempsCsv, `validacao_${data.validationNumber}_temperaturas.csv`);
+    if (data.statistics?.humidity) {
+      downloadCsv(humCsv, `validacao_${data.validationNumber}_umidades.csv`);
+    }
   };
 
   const handleDeleteSensorData = async () => {
@@ -269,20 +331,14 @@ const ValidationDetails: React.FC = () => {
   // De-duplicar linhas por timestamp+sensor para evitar repetição 3x
   const uniqueRowsMap = new Map<string, SensorDataRow>();
   data.sensorData.forEach((row) => {
-    const key = `${new Date(row.timestamp).toISOString()}|${row.sensor.id}`;
+    const dt = parseToDate(row.timestamp);
+    const key = `${dt.toISOString()}|${row.sensor.id}`;
     if (!uniqueRowsMap.has(key)) uniqueRowsMap.set(key, row);
   });
   const uniqueRows = Array.from(uniqueRowsMap.values());
 
   // Util: formatar data como dd/mm/aa hh:mm
-  const formatBRShort = (d: Date) => {
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yy = String(d.getFullYear()).slice(-2);
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mi = String(d.getMinutes()).padStart(2, '0');
-    return `${dd}/${mm}/${yy} ${hh}:${mi}`;
-  };
+  // Using shared formatBRShort from utils
 
   // PIVOT VIEW: construir linhas por timestamp com cada sensor em colunas, alinhando por tolerância
   const sensorOrderMap = new Map<string, SensorDataRow['sensor']>();
@@ -302,10 +358,10 @@ const ValidationDetails: React.FC = () => {
   });
   sensors.forEach(s => {
     const arr = readingsBySensor.get(s.serialNumber)!;
-    arr.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    arr.sort((a, b) => parseToDate(a.timestamp).getTime() - parseToDate(b.timestamp).getTime());
   });
 
-  const TOLERANCE_SECONDS = 30; // alinhar leituras até 30s de diferença
+  const TOLERANCE_SECONDS = toleranceSec; // alinhar leituras conforme configuração
   const primarySensor = sensors[0]?.serialNumber;
   const primaryTimeline = primarySensor ? readingsBySensor.get(primarySensor)! : [];
 
@@ -316,7 +372,7 @@ const ValidationDetails: React.FC = () => {
     let best: SensorDataRow | undefined;
     let bestDiff = Number.POSITIVE_INFINITY;
     for (const r of arr) {
-      const diff = Math.abs(new Date(r.timestamp).getTime() - targetMs) / 1000;
+      const diff = Math.abs(parseToDate(r.timestamp).getTime() - targetMs) / 1000;
       if (diff < bestDiff) {
         bestDiff = diff;
         best = r;
@@ -328,7 +384,7 @@ const ValidationDetails: React.FC = () => {
 
   // Construir pivotRows a partir da linha do sensor primário, alinhando os demais
   const pivotRows = primaryTimeline.map(base => {
-    const baseMs = new Date(base.timestamp).getTime();
+    const baseMs = parseToDate(base.timestamp).getTime();
     const map = new Map<string, SensorDataRow>();
     // sempre incluir leitura do sensor primário
     map.set(base.sensor.serialNumber, base);
@@ -340,7 +396,8 @@ const ValidationDetails: React.FC = () => {
       if (nearest) map.set(s.serialNumber, nearest);
     });
     return {
-      ts: new Date(baseMs).toISOString(),
+      // store timestamp as numeric ms since epoch (naive) — formatting happens on demand
+      ts: baseMs,
       readings: map
     };
   });
@@ -500,12 +557,35 @@ const ValidationDetails: React.FC = () => {
             Exibindo {paginatedData.length} de {uniqueRows.length} leituras (agrupadas por timestamp)
           </div>
           <div className="flex gap-2">
+            <div className="flex items-center gap-2 mr-4">
+              <label className="text-sm text-gray-700">Tolerância (s):</label>
+              <select
+                className="border rounded px-2 py-1 text-sm"
+                value={toleranceSec}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setToleranceSec(v);
+                  localStorage.setItem('validationToleranceSec', String(v));
+                }}
+              >
+                <option value={15}>15</option>
+                <option value={30}>30</option>
+                <option value={60}>60</option>
+              </select>
+            </div>
             <button
               onClick={handleExportCSV}
               className="btn-secondary flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
               Exportar CSV Pivot
+            </button>
+            <button
+              onClick={handleExportXLSX}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Exportar XLSX (2 abas)
             </button>
             {data.sensorData.length > 0 && (
               <button
@@ -558,7 +638,7 @@ const ValidationDetails: React.FC = () => {
                   {paginatedData.map(pivot => (
                     <tr key={pivot.ts}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatBRShort(new Date(pivot.ts))}
+                        {formatBRShort(pivot.ts)}
                       </td>
                       {sensors.map(s => {
                         const reading = pivot.readings.get(s.serialNumber);
@@ -598,7 +678,7 @@ const ValidationDetails: React.FC = () => {
                   {paginatedData.map(pivot => (
                     <tr key={pivot.ts}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatBRShort(new Date(pivot.ts))}
+                        {formatBRShort(pivot.ts)}
                       </td>
                       {sensors.map(s => {
                         const reading = pivot.readings.get(s.serialNumber);

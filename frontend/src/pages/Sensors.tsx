@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 import { useSensors, useSensorTypes, useCreateSensor, useUpdateSensor, useDeleteSensor } from '@/hooks/useSensors';
 import { SensorFilters } from '@/types/sensor';
 import SensorForm from '@/components/SensorForm';
@@ -164,7 +165,7 @@ const Sensors: React.FC = () => {
                           </p>
                           {sensor.calibrationDate && (
                             <p className="text-xs text-gray-400">
-                              Calibrado em: {new Date(sensor.calibrationDate).toLocaleDateString('pt-BR')}
+                              Calibrado em: {formatBRShort(sensor.calibrationDate)}
                             </p>
                           )}
                         </div>

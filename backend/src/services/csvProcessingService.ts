@@ -48,60 +48,60 @@ export class CSVProcessingService {
     options: CSVProcessingOptions
   ): Promise<CSVProcessingResult> {
     const startTime = Date.now();
-    
+
     try {
       // Validações iniciais
       await this.validateFile(filePath, originalName);
-      
+
       // Detectar encoding e delimitador automaticamente
       const encoding = options.encoding || await this.detectEncoding(filePath);
       const delimiter = options.delimiter || await this.detectDelimiter(filePath, encoding);
-      
+
       const result = await this.parseAndProcessCSVStream(filePath, {
         ...options,
         delimiter,
         encoding
       });
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       logger.info(`Processamento CSV concluído: ${originalName}`, {
         totalRows: result.totalRows,
         processedRows: result.processedRows,
         failedRows: result.failedRows,
         processingTime
       });
-      
+
       return {
         ...result,
         processingTime
       };
-      
+
     } catch (error) {
       logger.error(`Erro ao processar arquivo CSV: ${originalName}`, error);
       throw error;
     }
   }
-  
+
   private async validateFile(filePath: string, originalName: string): Promise<void> {
     const stats = await fs.stat(filePath);
-    
+
     // Validar tamanho do arquivo
     if (stats.size > this.MAX_FILE_SIZE) {
       throw new Error(`Arquivo muito grande. Máximo permitido: 50MB`);
     }
-    
+
     // Validar extensão
     if (!originalName.toLowerCase().endsWith('.csv')) {
       throw new Error('Arquivo deve ter extensão .csv');
     }
   }
-  
+
   private async detectEncoding(filePath: string): Promise<BufferEncoding> {
     try {
       // Ler uma amostra do arquivo para detectar encoding
       const buffer = await fs.readFile(filePath, null);
-      
+
       // Tentar diferentes encodings
       for (const encoding of this.SUPPORTED_ENCODINGS) {
         try {
@@ -114,7 +114,7 @@ export class CSVProcessingService {
           continue;
         }
       }
-      
+
       // Default para UTF-8 se não conseguir detectar
       return 'utf8';
     } catch (error) {
@@ -122,7 +122,7 @@ export class CSVProcessingService {
       return 'utf8';
     }
   }
-  
+
   private isValidText(text: string): boolean {
     // Verificar se o texto não tem muitos caracteres de controle inválidos
     const invalidChars = text.match(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g);
@@ -131,25 +131,25 @@ export class CSVProcessingService {
     }
     return true;
   }
-  
+
   private async detectDelimiter(filePath: string, encoding: BufferEncoding): Promise<string> {
     try {
       // Ler primeiras linhas do arquivo
       const content = await fs.readFile(filePath, encoding);
       const lines = content.split('\n').slice(0, 10); // Primeiras 10 linhas
-      
+
       // Testar diferentes delimitadores
       const delimiterScores = new Map<string, number>();
-      
+
       for (const delimiter of this.COMMON_DELIMITERS) {
         let totalColumns = 0;
         let consistentColumns = 0;
-        
+
         for (const line of lines) {
           if (line.trim()) {
             const columns = line.split(delimiter);
             totalColumns += columns.length;
-            
+
             // Verificar consistência de número de colunas
             if (consistentColumns === 0) {
               consistentColumns = columns.length;
@@ -158,30 +158,30 @@ export class CSVProcessingService {
             }
           }
         }
-        
+
         const avgColumns = totalColumns / lines.filter(line => line.trim()).length;
         const score = avgColumns > 1 ? (consistentColumns / lines.length) * avgColumns : 0;
         delimiterScores.set(delimiter, score);
       }
-      
+
       // Escolher delimitador com melhor pontuação
       let bestDelimiter = ',';
       let bestScore = 0;
-      
+
       for (const [delimiter, score] of delimiterScores) {
         if (score > bestScore) {
           bestScore = score;
           bestDelimiter = delimiter;
         }
       }
-      
+
       return bestDelimiter;
     } catch (error) {
       logger.warn('Erro ao detectar delimitador, usando vírgula como padrão', error);
       return ',';
     }
   }
-  
+
   private async parseAndProcessCSVStream(
     filePath: string,
     options: CSVProcessingOptions
@@ -198,7 +198,7 @@ export class CSVProcessingService {
     let buffer: any[] = [];
     let mapping: ColumnMapping | null = null;
     let processedCount = 0;
-    
+
     return new Promise((resolve, reject) => {
       const stream = fsStream.createReadStream(filePath, { encoding: options.encoding || 'utf8' });
       const parser = parse({
@@ -207,7 +207,7 @@ export class CSVProcessingService {
         skip_empty_lines: true,
         trim: true
       });
-      
+
       const processBuffer = async () => {
         if (buffer.length === 0) return;
         try {
@@ -230,7 +230,7 @@ export class CSVProcessingService {
           reject(err);
         }
       };
-      
+
       parser.on('readable', async () => {
         let record;
         // @ts-ignore
@@ -244,11 +244,11 @@ export class CSVProcessingService {
           }
         }
       });
-      
+
       parser.on('error', (err) => {
         results.errors.push(`Erro de parsing CSV: ${err.message}`);
       });
-      
+
       parser.on('end', () => {
         (async () => {
           await processBuffer();
@@ -256,16 +256,16 @@ export class CSVProcessingService {
           resolve({ ...results, processingTime });
         })().catch(reject);
       });
-      
+
       stream.on('error', (err) => reject(err));
       stream.pipe(parser);
     });
   }
-  
+
   private detectColumnStructure(firstRow: any): ColumnMapping {
     const mapping: ColumnMapping = {};
     const columns = Object.keys(firstRow);
-    
+
     const possibleTimestampColumns = [
       'timestamp', 'data', 'hora', 'time', 'date', 'data_hora', 'datetime',
       'data/hora', 'data e hora', 'timestamp_leitura', 'leitura_data'
@@ -280,10 +280,10 @@ export class CSVProcessingService {
       'sensor', 'sensor_id', 'serial', 'serial_number', 'numero_serie',
       'sensor_serial', 'id_sensor', 'sensor_id'
     ];
-    
+
     columns.forEach(column => {
       const lowerColumn = column.toLowerCase().trim();
-      
+
       if (possibleTimestampColumns.some(col => lowerColumn.includes(col))) {
         mapping.timestamp = column;
       } else if (possibleTemperatureColumns.some(col => lowerColumn.includes(col))) {
@@ -294,10 +294,10 @@ export class CSVProcessingService {
         mapping.sensorId = column;
       }
     });
-    
+
     return mapping;
   }
-  
+
   private async processChunk(
     chunk: any[],
     mapping: ColumnMapping,
@@ -308,14 +308,14 @@ export class CSVProcessingService {
     const warnings = [];
     let successful = 0;
     let failed = 0;
-    
+
     for (let index = 0; index < chunk.length; index++) {
       const row = chunk[index];
       const rowNumber = index + 1;
-      
+
       try {
         const parsedData = this.parseRow(row, mapping);
-        
+
         // Validar dados se solicitado
         if (options.validateData) {
           const validation = await validateSensorData(parsedData);
@@ -324,12 +324,12 @@ export class CSVProcessingService {
             failed++;
             continue;
           }
-          
+
           if (validation.warnings && validation.warnings.length > 0) {
             warnings.push(`Linha ${rowNumber}: ${validation.warnings.join(', ')}`);
           }
         }
-        
+
         // Prefer forced sensor id (from suitcase matching). If not present, use parsed sensor id when valid.
         const finalSensorId = options.forceSensorId ?? ((parsedData.sensorId && parsedData.sensorId !== 'unknown') ? parsedData.sensorId : null);
         // Normalize sensor id to avoid hidden characters or extra whitespace
@@ -351,14 +351,14 @@ export class CSVProcessingService {
           validationId: options.validationId ?? null,
           createdAt: new Date()
         });
-        
+
         successful++;
       } catch (error) {
         failed++;
         errors.push(`Linha ${rowNumber}: ${(error as any)?.message ?? String(error)}`);
       }
     }
-    
+
     // Inserir dados válidos em lote
     if (sensorDataToCreate.length > 0) {
       try {
@@ -418,7 +418,7 @@ export class CSVProcessingService {
 
           try {
             console.log('EXISTING_SENSOR_HEX', JSON.stringify({ jobId: options.jobId, fileName: options.fileName, sensorHexes }));
-          } catch (e) {}
+          } catch (e) { }
         } catch (e) {
           // ignore
         }
@@ -461,22 +461,22 @@ export class CSVProcessingService {
             sensorIds: sensorDataToCreate.map(d => d.sensorId),
             sample: sensorDataToCreate.slice(0, 10)
           });
-            // Also print snapshot to stdout so it's visible in plain container logs
-            try {
-              console.log('BATCH_PAYLOAD_SNAPSHOT', JSON.stringify({ jobId: options.jobId, fileName: options.fileName, count: sensorDataToCreate.length, sensorIds: sensorDataToCreate.map(d => d.sensorId), sample: sensorDataToCreate.slice(0,10) }));
-            } catch (e) {
-              // ignore
-            }
+          // Also print snapshot to stdout so it's visible in plain container logs
+          try {
+            console.log('BATCH_PAYLOAD_SNAPSHOT', JSON.stringify({ jobId: options.jobId, fileName: options.fileName, count: sensorDataToCreate.length, sensorIds: sensorDataToCreate.map(d => d.sensorId), sample: sensorDataToCreate.slice(0, 10) }));
+          } catch (e) {
+            // ignore
+          }
         } catch (e) {
           // ignore snapshot failures
         }
         errors.push('Erro ao inserir dados no banco de dados');
       }
     }
-    
+
     return { successful, failed, errors, warnings };
   }
-  
+
   private parseRow(row: any, mapping: ColumnMapping): any {
     return {
       sensorId: this.parseSensorId(row[mapping.sensorId || '']),
@@ -485,7 +485,7 @@ export class CSVProcessingService {
       humidity: mapping.humidity ? this.parseHumidity(row[mapping.humidity]) : null
     };
   }
-  
+
   private parseSensorId(value: any): string {
     if (!value || value === null || value === '') {
       return 'unknown';
@@ -505,49 +505,78 @@ export class CSVProcessingService {
       return String(value).trim();
     }
   }
-  
+
   private parseTimestamp(value: any): Date {
     if (!value) {
       throw new Error('Timestamp não pode ser vazio');
     }
-    
-    // Tentar diferentes formatos de data
+
+    const strValue = String(value).trim();
+
+    // Elitech format: YYYY-MM-DD HH:MM:SS (common in Elitech logs)
+    // Convert to ISO format (YYYY-MM-DDTHH:MM:SS) for reliable parsing
+    if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(strValue)) {
+      return new Date(strValue.replace(' ', 'T'));
+    }
+
+    // DD/MM/YYYY HH:MM:SS or DD/MM/YYYY HH:MM
+    const brMatch = strValue.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+    if (brMatch) {
+      const [_, day, month, year, hour, minute, second] = brMatch;
+      return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour || 0),
+        Number(minute || 0),
+        Number(second || 0)
+      );
+    }
+
+    // Tentar parsing nativo
     const date = new Date(value);
     if (isNaN(date.getTime())) {
+      // Try parsing Excel serial date (if it's a number)
+      const numValue = Number(value);
+      if (!isNaN(numValue) && numValue > 25569) { // > 1970
+        // Excel date to JS date: (ExcelDate - 25569) * 86400 * 1000
+        return new Date((numValue - 25569) * 86400 * 1000);
+      }
+
       throw new Error(`Formato de timestamp inválido: ${value}`);
     }
-    
+
     return date;
   }
-  
+
   private parseTemperature(value: any): number {
     const temp = parseFloat(value);
     if (isNaN(temp)) {
       throw new Error(`Temperatura inválida: ${value}`);
     }
-    
+
     // Validar faixa razoável
     if (temp < -50 || temp > 100) {
       throw new Error(`Temperatura fora da faixa aceitável (-50°C a 100°C): ${temp}°C`);
     }
-    
+
     return temp;
   }
-  
+
   private parseHumidity(value: any): number {
     const humidity = parseFloat(value);
     if (isNaN(humidity)) {
       throw new Error(`Umidade inválida: ${value}`);
     }
-    
+
     // Validar faixa de umidade
     if (humidity < 0 || humidity > 100) {
       throw new Error(`Umidade fora da faixa aceitável (0% a 100%): ${humidity}%`);
     }
-    
+
     return humidity;
   }
-  
+
   private async updateJobProgress(jobId: string, progress: any): Promise<void> {
     try {
       await redisService.set(`job:progress:${jobId}`, JSON.stringify(progress), 3600); // 1 hora

@@ -1,5 +1,6 @@
 
 import { X as XMarkIcon, Download as ArrowDownTrayIcon, Edit as PencilIcon } from 'lucide-react';
+import { parseToDate, formatDisplayTime } from '@/utils/parseDate';
 import { Report, ReportStatus } from '../types/report';
 
 interface ReportDetailsModalProps {
@@ -23,13 +24,7 @@ const statusLabels: Record<ReportStatus, string> = {
 
 export function ReportDetailsModal({ report, onClose, onEdit, onDownload }: ReportDetailsModalProps) {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDisplayTime(parseToDate(dateString));
   };
 
   return (

@@ -6,10 +6,10 @@ import { logger } from '../utils/logger.js';
 import { redisService } from './redisService.js';
 import { performanceService } from './performanceService.js';
 import { processingMetricsService } from './processingMetricsService.js';
-import { 
-  sensorDataRowSchema, 
+import {
+  sensorDataRowSchema,
   sensorDataBatchSchema,
-  type SensorDataRow 
+  type SensorDataRow
 } from '../validators/dataImportSchemas.js';
 import { z } from 'zod';
 
@@ -66,12 +66,12 @@ export class ExcelProcessingService {
     options: ProcessingOptions
   ): Promise<ProcessingResult> {
     const startTime = Date.now();
-      logger.info('processExcelFile entry', { filePath, originalName, suitcaseId: options.suitcaseId });
-      processingMetricsService.startTracking(options.jobId, originalName, options.vendorGuess || undefined, 'excel');
+    logger.info('processExcelFile entry', { filePath, originalName, suitcaseId: options.suitcaseId });
+    processingMetricsService.startTracking(options.jobId, originalName, options.vendorGuess || undefined, 'excel');
     try {
-        logger.info('Validating file', { filePath });
+      logger.info('Validating file', { filePath });
       await this.validateFile(filePath, originalName);
-        logger.info('File validated, reading workbook', { filePath });
+      logger.info('File validated, reading workbook', { filePath });
       const XLSXLib: any = (XLSX as any)?.default ?? XLSX;
       const timeoutMs = Number(process.env.XLS_READ_TIMEOUT_MS || 10000);
       const readStart = Date.now();
@@ -176,19 +176,19 @@ export class ExcelProcessingService {
       this.validateColumnMapping(mapping);
       const chunkSize = Math.min(options.chunkSize || 1000, this.MAX_ROWS_PER_BATCH);
       const totalRows = range.e.r - range.s.r;
-        logger.info('Starting chunk processing loop', { totalRows, chunkSize, startRow: range.s.r + 1, endRow: range.e.r });
+      logger.info('Starting chunk processing loop', { totalRows, chunkSize, startRow: range.s.r + 1, endRow: range.e.r });
       let successful = 0;
       let failed = 0;
       const errors: string[] = [];
       const warnings: string[] = [];
       for (let start = range.s.r + 1; start <= range.e.r; start += chunkSize) {
         const end = Math.min(start + chunkSize - 1, range.e.r);
-          logger.info('Processing chunk', { start, end, chunkSize });
+        logger.info('Processing chunk', { start, end, chunkSize });
         const rows = XLSXLib.utils.sheet_to_json(worksheet, { header: 1, range: { s: { r: start, c: range.s.c }, e: { r: end, c: range.e.c } }, defval: null, raw: false }) as any[];
         const objects = rows.map((arr: any[]) => Object.fromEntries(headers.map((h, idx) => [h, arr[idx]])));
-          logger.info('Calling processChunk', { rowCount: objects.length });
+        logger.info('Calling processChunk', { rowCount: objects.length });
         const chunkResults = await this.processChunk(objects, mapping, options);
-          logger.info('processChunk returned', { successful: chunkResults.successful, failed: chunkResults.failed });
+        logger.info('processChunk returned', { successful: chunkResults.successful, failed: chunkResults.failed });
         successful += chunkResults.successful;
         failed += chunkResults.failed;
         errors.push(...chunkResults.errors);
@@ -214,25 +214,25 @@ export class ExcelProcessingService {
       throw error;
     }
   }
-  
+
   private async validateFile(filePath: string, originalName: string): Promise<void> {
     const stats = fs.statSync(filePath);
-    
+
     // Validar tamanho do arquivo
     if (stats.size > this.MAX_FILE_SIZE) {
       throw new Error(`Arquivo muito grande. Máximo permitido: 50MB`);
     }
-    
+
     // Validar extensão
     const ext = originalName.toLowerCase().substring(originalName.lastIndexOf('.'));
     if (!this.ACCEPTED_FORMATS.includes(ext)) {
       throw new Error(`Formato de arquivo não suportado. Formatos aceitos: ${this.ACCEPTED_FORMATS.join(', ')}`);
     }
   }
-  
+
   private detectColumnStructure(firstRow: any): ColumnMapping {
     const mapping: ColumnMapping = {};
-    
+
     const possibleTimestampColumns = [
       'tempo',
       'timestamp', 'data', 'hora', 'time', 'date', 'data_hora', 'datetime',
@@ -248,10 +248,10 @@ export class ExcelProcessingService {
       'sensor', 'sensor_id', 'serial', 'serial_number', 'numero_serie',
       'sensor_serial', 'id_sensor', 'sensor_id'
     ];
-    
+
     Object.keys(firstRow).forEach(column => {
       const lowerColumn = column.toLowerCase().trim();
-      
+
       if (possibleTimestampColumns.some(col => lowerColumn.includes(col))) {
         mapping.timestamp = column;
       } else if (possibleTemperatureColumns.some(col => lowerColumn.includes(col))) {
@@ -262,10 +262,10 @@ export class ExcelProcessingService {
         mapping.sensorId = column;
       }
     });
-    
+
     return mapping;
   }
-  
+
   private validateColumnMapping(mapping: ColumnMapping): void {
     if (!mapping.timestamp) {
       throw new Error('Coluna de timestamp não encontrada no arquivo');
@@ -274,7 +274,7 @@ export class ExcelProcessingService {
       throw new Error('Coluna de temperatura não encontrada no arquivo');
     }
   }
-  
+
   private async processInChunks(
     data: any[],
     mapping: ColumnMapping,
@@ -282,32 +282,32 @@ export class ExcelProcessingService {
   ): Promise<{ successful: number; failed: number; errors: string[]; warnings: string[] }> {
     const chunkSize = Math.min(options.chunkSize || 1000, this.MAX_ROWS_PER_BATCH);
     const results = { successful: 0, failed: 0, errors: [] as string[], warnings: [] as string[] };
-    
+
     for (let i = 0; i < data.length; i += chunkSize) {
       const chunk = data.slice(i, i + chunkSize);
       const chunkResults = await this.processChunk(chunk, mapping, options);
-      
+
       results.successful += chunkResults.successful;
       results.failed += chunkResults.failed;
       results.errors.push(...chunkResults.errors);
       results.warnings.push(...chunkResults.warnings);
-      
+
       // Atualizar progresso no Redis
       await this.updateJobProgress(options.jobId, {
         processed: i + chunk.length,
         total: data.length,
         percentage: Math.round(((i + chunk.length) / data.length) * 100)
       });
-      
+
       // Pequena pausa para não sobrecarregar o sistema
       if (i + chunkSize < data.length) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
-    
+
     return results;
   }
-  
+
   private async processChunk(
     chunk: any[],
     mapping: ColumnMapping,
@@ -318,12 +318,12 @@ export class ExcelProcessingService {
     const warnings = [];
     let successful = 0;
     let failed = 0;
-    
+
     for (let index = 0; index < chunk.length; index++) {
       const row = chunk[index];
       const rowNumber = index + 1;
-      
-        try {
+
+      try {
         const parsedData = this.parseRow(row, mapping);
         // Temporary debug: log first few parsed rows to help diagnose parsing issues
         try {
@@ -337,7 +337,7 @@ export class ExcelProcessingService {
         if ((parsedData.sensorId === 'unknown' || !parsedData.sensorId) && options.fileSensorSerial) {
           parsedData.sensorId = options.fileSensorSerial;
         }
-        
+
         // Validação com Zod schema
         if (options.validateData) {
           try {
@@ -347,7 +347,7 @@ export class ExcelProcessingService {
               temperature: parsedData.temperature,
               humidity: parsedData.humidity,
             });
-            
+
             // Validação adicional customizada
             const validation = await validateSensorData(parsedData);
             if (!validation.isValid) {
@@ -356,12 +356,12 @@ export class ExcelProcessingService {
               failed++;
               continue;
             }
-            
+
             if (validation.warnings && validation.warnings.length > 0) {
               const warningDetails = validation.warnings.map(w => `[${w}]`).join(' ');
               warnings.push(`Linha ${rowNumber}: ${warningDetails}`);
             }
-            
+
             sensorDataToCreate.push({
               sensorId: validatedData.sensorId,
               timestamp: validatedData.timestamp,
@@ -372,12 +372,12 @@ export class ExcelProcessingService {
               validationId: options.validationId ?? null,
               createdAt: new Date()
             });
-            
+
             successful++;
-            
+
           } catch (zodError) {
             if (zodError instanceof z.ZodError) {
-              const fieldErrors = zodError.issues.map((e: any) => 
+              const fieldErrors = zodError.issues.map((e: any) =>
                 `${e.path.join('.')}: ${e.message}`
               ).join('; ');
               errors.push(`Linha ${rowNumber}: ${fieldErrors}`);
@@ -406,7 +406,7 @@ export class ExcelProcessingService {
         const errorMsg = error instanceof Error ? error.message : String(error);
         const errorStack = error instanceof Error ? error.stack : '';
         errors.push(`Linha ${rowNumber}: ${errorMsg}`);
-        
+
         // Log detalhado para debugging
         logger.debug('Error processing row', {
           rowNumber,
@@ -416,7 +416,7 @@ export class ExcelProcessingService {
         });
       }
     }
-    
+
     // Inserir dados válidos em lote
     if (sensorDataToCreate.length > 0) {
       try {
@@ -429,16 +429,16 @@ export class ExcelProcessingService {
         errors.push('Erro ao inserir dados no banco de dados');
       }
     }
-    
+
     return { successful, failed, errors, warnings };
   }
-  
+
   private parseRow(row: any, mapping: ColumnMapping): ParsedRow {
     const sensorIdCol = mapping.sensorId ?? '';
     const timestampCol = mapping.timestamp ?? '';
     const tempCol = mapping.temperature ?? '';
     const humidityCol = mapping.humidity ?? '';
-    
+
     return {
       sensorId: this.parseSensorId(row[sensorIdCol]),
       timestamp: this.parseTimestamp(row[timestampCol]),
@@ -446,24 +446,45 @@ export class ExcelProcessingService {
       humidity: humidityCol ? this.parseHumidity(row[humidityCol]) : null
     };
   }
-  
+
   private parseSensorId(value: any): string {
     if (!value || value === null || value === '') {
       return 'unknown';
     }
     return String(value).trim();
   }
-  
+
   private parseTimestamp(value: any): Date {
     if (!value) {
       throw new Error('Timestamp não pode ser vazio');
     }
-    
+
     // Detectar formato automático
     if (typeof value === 'number') {
       // Excel serial date
       return this.excelSerialToDate(value);
     } else if (typeof value === 'string') {
+      const strValue = value.trim();
+
+      // Elitech format: YYYY-MM-DD HH:MM:SS
+      if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(strValue)) {
+        return new Date(strValue.replace(' ', 'T'));
+      }
+
+      // DD/MM/YYYY HH:MM:SS or DD/MM/YYYY HH:MM
+      const brMatch = strValue.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+      if (brMatch) {
+        const [_, day, month, year, hour, minute, second] = brMatch;
+        return new Date(
+          Number(year),
+          Number(month) - 1,
+          Number(day),
+          Number(hour || 0),
+          Number(minute || 0),
+          Number(second || 0)
+        );
+      }
+
       // Tentar parsear diferentes formatos
       const formats = [
         'YYYY-MM-DD HH:mm:ss',
@@ -473,57 +494,57 @@ export class ExcelProcessingService {
         'DD-MM-YYYY HH:mm:ss',
         'YYYY/MM/DD HH:mm:ss'
       ];
-      
+
       for (const format of formats) {
         const date = this.tryParseDate(value, format);
         if (date) return date;
       }
     }
-    
+
     throw new Error(`Formato de timestamp inválido: ${value}`);
   }
-  
+
   private parseTemperature(value: any): number {
     const temp = parseFloat(value);
     if (isNaN(temp)) {
       throw new Error(`Temperatura inválida: ${value}`);
     }
-    
+
     // Validar faixa razoável
     if (temp < -50 || temp > 100) {
       throw new Error(`Temperatura fora da faixa aceitável (-50°C a 100°C): ${temp}°C`);
     }
-    
+
     return temp;
   }
-  
+
   private parseHumidity(value: any): number {
     const humidity = parseFloat(value);
     if (isNaN(humidity)) {
       throw new Error(`Umidade inválida: ${value}`);
     }
-    
+
     // Validar faixa de umidade
     if (humidity < 0 || humidity > 100) {
       throw new Error(`Umidade fora da faixa aceitável (0% a 100%): ${humidity}%`);
     }
-    
+
     return humidity;
   }
-  
+
   private excelSerialToDate(serial: number): Date {
     const excelEpoch = new Date(1900, 0, 1);
     const days = serial - 2; // Excel bug com 29/02/1900
     return new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000);
   }
-  
+
   private tryParseDate(value: string, format: string): Date | null {
     try {
       if (format === 'ISO8601') {
         const date = new Date(value);
         return isNaN(date.getTime()) ? null : date;
       }
-      
+
       // Implementar parsing para outros formatos
       // Por simplicidade, vamos usar o construtor Date por enquanto
       const date = new Date(value);
@@ -532,7 +553,7 @@ export class ExcelProcessingService {
       return null;
     }
   }
-  
+
   private async updateJobProgress(jobId: string, progress: any): Promise<void> {
     try {
       await redisService.set(`job:progress:${jobId}`, JSON.stringify(progress), 3600); // 1 hora

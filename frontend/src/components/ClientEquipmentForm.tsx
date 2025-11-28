@@ -46,6 +46,7 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
       equipmentTypeId: equipment?.equipmentTypeId || '',
       brandId: equipment?.brandId || '',
       modelId: equipment?.modelId || '',
+      name: equipment?.name || '',
       serialNumber: equipment?.serialNumber || '',
       assetNumber: equipment?.assetNumber || '',
       tag: equipment?.tag || '',
@@ -234,6 +235,18 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
             {/* Identification Numbers */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
+                <label htmlFor="name" className="mobile-form-label">
+                  Nome (Opcional)
+                </label>
+                <input
+                  {...register('name')}
+                  type="text"
+                  className="mobile-form-input h-10 w-full"
+                  placeholder="Nome do sensor"
+                />
+              </div>
+
+              <div>
                 <label htmlFor="serialNumber" className="mobile-form-label">
                   Número de Série *
                 </label>
@@ -282,7 +295,7 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
             {/* Acceptance Conditions */}
             <div className="border border-gray-200 rounded-lg p-4">
               <h4 className="text-lg font-medium text-gray-900 mb-4">Condições de Aceitação</h4>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Temperature */}
                 <div>
@@ -361,15 +374,15 @@ const ClientEquipmentForm: React.FC<ClientEquipmentFormProps> = ({
                 </div>
               </div>
 
-              {(errors.acceptanceConditions?.minTemperature || errors.acceptanceConditions?.maxTemperature || 
+              {(errors.acceptanceConditions?.minTemperature || errors.acceptanceConditions?.maxTemperature ||
                 errors.acceptanceConditions?.minHumidity || errors.acceptanceConditions?.maxHumidity) && (
-                <p className="mt-2 text-sm text-red-600">
-                  {errors.acceptanceConditions.minTemperature?.message || 
-                   errors.acceptanceConditions.maxTemperature?.message ||
-                   errors.acceptanceConditions.minHumidity?.message ||
-                   errors.acceptanceConditions.maxHumidity?.message}
-                </p>
-              )}
+                  <p className="mt-2 text-sm text-red-600">
+                    {errors.acceptanceConditions.minTemperature?.message ||
+                      errors.acceptanceConditions.maxTemperature?.message ||
+                      errors.acceptanceConditions.minHumidity?.message ||
+                      errors.acceptanceConditions.maxHumidity?.message}
+                  </p>
+                )}
             </div>
 
             {/* Notes */}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSignature, SignatureVerification } from '../../hooks/useReportSecurity';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 
 interface SignaturePanelProps {
   reportId: string;
@@ -112,7 +113,7 @@ export const SignaturePanel: React.FC<SignaturePanelProps> = ({ reportId, onSign
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Data:</span>
                 <span className="font-medium text-gray-900">
-                  {new Date(signatureInfo.signedAt).toLocaleString('pt-BR')}
+                  {formatBRShort(signatureInfo.signedAt)}
                 </span>
               </div>
             )}

@@ -18,6 +18,7 @@ import { useToast } from '@/components/ToastContext';
 
 import ValidationCreationModal, { ValidationCreationData } from '@/components/ValidationCreationModal';
 import { parseApiError } from '@/utils/apiErrors';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 
 
 const Validations: React.FC = () => {
@@ -137,13 +138,7 @@ const Validations: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatBRShort(dateString);
   };
 
   const formatPercentage = (value: number) => {

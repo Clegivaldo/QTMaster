@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { parseToDate } from '@/utils/parseDate';
 import { apiService } from '../services/api';
 import { EditorTemplate, ExportFormat, ExportOptions } from '../types/editor';
 import { useErrorHandler, EditorErrorType } from './useErrorHandler';
@@ -336,8 +337,8 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
         if (!t.globalStyles) t.globalStyles = { fontFamily: 'Arial', fontSize: 12, color: '#000000', backgroundColor: '#ffffff', lineHeight: 1.4 };
         return {
           ...t,
-          createdAt: new Date(t.createdAt),
-          updatedAt: new Date(t.updatedAt)
+          createdAt: parseToDate(t.createdAt),
+          updatedAt: parseToDate(t.updatedAt)
         };
       }
 
@@ -355,8 +356,8 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
         cachedTemplatesRef[templateId] = { data: template, expiresAt: Date.now() + cacheTtlMs };
         return {
           ...template,
-          createdAt: new Date(template.createdAt),
-          updatedAt: new Date(template.updatedAt)
+          createdAt: parseToDate(template.createdAt),
+          updatedAt: parseToDate(template.updatedAt)
         };
       }
 
@@ -481,8 +482,8 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
       
       return {
         ...duplicatedTemplate,
-        createdAt: new Date(duplicatedTemplate.createdAt),
-        updatedAt: new Date(duplicatedTemplate.updatedAt)
+        createdAt: parseToDate(duplicatedTemplate.createdAt),
+        updatedAt: parseToDate(duplicatedTemplate.updatedAt)
       };
       
     } catch (error) {

@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer';
 import type { TemplateService } from './templateService.js';
 import { getTemplateService } from './templateServiceInstance.js';
 import { prisma } from '../lib/prisma.js';
+import { formatDateShort } from '../utils/formatDate.js';
 
 export interface ReportData {
   validation: {
@@ -177,7 +178,7 @@ export class ReportGenerationService {
    */
   prepareChartData(sensorData: ReportData['sensorData']) {
     const temperatureData = {
-      labels: sensorData.map(d => d.timestamp.toLocaleString('pt-BR')),
+      labels: sensorData.map(d => formatDateShort(d.timestamp)),
       datasets: [{
         label: 'Temperatura (°C)',
         data: sensorData.map(d => d.temperature),
@@ -189,7 +190,7 @@ export class ReportGenerationService {
 
     const humidityData = sensorData.filter(d => d.humidity !== null && d.humidity !== undefined);
     const humidityChartData = humidityData.length > 0 ? {
-      labels: humidityData.map(d => d.timestamp.toLocaleString('pt-BR')),
+      labels: humidityData.map(d => formatDateShort(d.timestamp)),
       datasets: [{
         label: 'Umidade (%)',
         data: humidityData.map(d => d.humidity!),

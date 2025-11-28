@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SignaturePanel } from '@/components/ReportSignature/SignaturePanel';
+import { parseToDate, formatBRShort } from '@/utils/parseDate';
 import { SharingPanel } from '@/components/ReportSharing/SharingPanel';
 
 interface Report {
@@ -87,7 +88,7 @@ export const ReportDetails: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{report.name}</h1>
-            <p className="text-gray-600 mt-1">Criado em {new Date(report.createdAt).toLocaleDateString('pt-BR')}</p>
+            <p className="text-gray-600 mt-1">Criado em {formatBRShort(report.createdAt)}</p>
           </div>
           <span
             className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -160,7 +161,7 @@ export const ReportDetails: React.FC = () => {
               <div>
                 <dt className="text-sm font-medium text-gray-500">Data de Criação</dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {new Date(report.createdAt).toLocaleString('pt-BR')}
+                  {formatBRShort(report.createdAt)}
                 </dd>
               </div>
             </dl>

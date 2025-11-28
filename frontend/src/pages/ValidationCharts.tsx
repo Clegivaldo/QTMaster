@@ -14,6 +14,7 @@ import {
   , ReferenceArea
 } from 'recharts';
 import PageHeader from '@/components/Layout/PageHeader';
+import { parseToDate, formatDisplayTime } from '@/utils/parseDate';
 
 interface SensorReading {
   timestamp: string;
@@ -22,6 +23,7 @@ interface SensorReading {
   sensor: {
     id: string;
     serialNumber: string;
+    name?: string;
   };
 }
 
@@ -53,7 +55,7 @@ const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'
 const ValidationCharts: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<ValidationData | null>(null);
   const [showTemperature, setShowTemperature] = useState(true);
@@ -72,7 +74,10 @@ const ValidationCharts: React.FC = () => {
   const [showSettings, setShowSettings] = useState(true);
   const [showCycleBands, setShowCycleBands] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [alignmentBucketSec, setAlignmentBucketSec] = useState<number>(60); // agrupar leituras por janela (s)
+  const [alignmentBucketSec, setAlignmentBucketSec] = useState<number>(() => {
+    const saved = localStorage.getItem('validationToleranceSec');
+    return saved ? Math.max(1, Number(saved)) : 60;
+  }); // agrupar leituras por janela (s)
 
   const getCycleLegend = () => {
     if (!data?.cycles || data.cycles.length === 0) return [] as Array<{ type: string; color: string; label: string }>;
@@ -92,8 +97,8 @@ const ValidationCharts: React.FC = () => {
       const cycle = data.cycles.find(c => c.id === selectedCycleId);
       if (cycle) {
         setDateRange({
-          start: new Date(cycle.startAt).toISOString().slice(0, 16),
-          end: new Date(cycle.endAt).toISOString().slice(0, 16)
+          start: parseToDate(cycle.startAt).toISOString().slice(0, 16),
+          end: parseToDate(cycle.endAt).toISOString().slice(0, 16)
         });
       }
     }
@@ -119,31 +124,31 @@ const ValidationCharts: React.FC = () => {
       if (validationData.sensorData && validationData.sensorData.length > 0) {
         const sensorIds = [...new Set(validationData.sensorData.map((d: SensorReading) => d.sensor.id))] as string[];
         setVisibleSensors(new Set(sensorIds));
-        
+
         // Calcular range de datas
-        const timestamps = validationData.sensorData.map((d: SensorReading) => new Date(d.timestamp).getTime());
+        const timestamps = validationData.sensorData.map((d: SensorReading) => parseToDate(d.timestamp).getTime());
         const minDate = new Date(Math.min(...timestamps));
         const maxDate = new Date(Math.max(...timestamps));
         setDateRange({
           start: minDate.toISOString().slice(0, 16),
           end: maxDate.toISOString().slice(0, 16)
         });
-        
+
         // Auto-ajustar eixo Y baseado nos dados
         const temps = validationData.sensorData.map((d: SensorReading) => d.temperature);
         const tempMin = Math.floor(Math.min(...temps) - 2);
         const tempMax = Math.ceil(Math.max(...temps) + 2);
-        
+
         const humidities = validationData.sensorData
           .map((d: SensorReading) => d.humidity)
           .filter((h: number | null) => h !== null) as number[];
-        
+
         console.log('Has humidity data:', humidities.length > 0, 'count:', humidities.length);
-        
+
         // DEBUG: Analisar sensores únicos
         console.log('=== VALIDATION CHARTS DEBUG ===');
         console.log('Total sensorData records:', validationData.sensorData.length);
-        
+
         const uniqueSensorMap = new Map();
         validationData.sensorData.forEach((reading: SensorReading) => {
           if (!uniqueSensorMap.has(reading.sensor.id)) {
@@ -153,17 +158,17 @@ const ValidationCharts: React.FC = () => {
             });
           }
         });
-        
+
         console.log('Unique sensors count:', uniqueSensorMap.size);
         console.log('Sensor details:', Array.from(uniqueSensorMap.values()));
         console.log('First 5 readings:', validationData.sensorData.slice(0, 5));
         console.log('===============================');
-        
+
         // Habilitar checkbox de umidade se houver dados (FIXADO: remover dependência de min/maxHumidity)
         if (humidities.length > 0) {
           setShowHumidity(true);
         }
-        
+
         setYAxisConfig(prev => ({
           ...prev,
           tempMin,
@@ -196,10 +201,10 @@ const ValidationCharts: React.FC = () => {
     // Filtrar por range de datas
     let filtered = data.sensorData;
     if (dateRange) {
-      const startTime = new Date(dateRange.start).getTime();
-      const endTime = new Date(dateRange.end).getTime();
+      const startTime = parseToDate(dateRange.start).getTime();
+      const endTime = parseToDate(dateRange.end).getTime();
       filtered = filtered.filter(d => {
-        const time = new Date(d.timestamp).getTime();
+        const time = parseToDate(d.timestamp).getTime();
         return time >= startTime && time <= endTime;
       });
     }
@@ -210,46 +215,31 @@ const ValidationCharts: React.FC = () => {
     // Agrupar por bucket temporal (alinhamento entre sensores)
     const bucketMs = Math.max(1, alignmentBucketSec) * 1000;
     const grouped = filtered.reduce((acc: any, reading) => {
-      const ts = new Date(reading.timestamp).getTime();
+      const ts = parseToDate(reading.timestamp).getTime();
       const bucketTs = Math.round(ts / bucketMs) * bucketMs; // arredonda para o mais próximo
-      const bucketISO = new Date(bucketTs).toISOString();
-      if (!acc[bucketISO]) {
-        acc[bucketISO] = {
-          timestamp: bucketISO,
+      const key = String(bucketTs);
+      if (!acc[key]) {
+        acc[key] = {
           timestampNum: bucketTs,
-          displayTime: new Date(bucketTs).toLocaleString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-          })
+          displayTime: formatDisplayTime(bucketTs)
         };
       }
 
       const sensorKey = reading.sensor.serialNumber;
       // Se houver múltiplas leituras do mesmo sensor no mesmo bucket, mantemos a última
-      acc[bucketISO][`temp_${sensorKey}`] = reading.temperature;
+      acc[key][`temp_${sensorKey}`] = reading.temperature;
       if (reading.humidity !== null) {
-        acc[bucketISO][`hum_${sensorKey}`] = reading.humidity;
+        acc[key][`hum_${sensorKey}`] = reading.humidity;
       }
       return acc;
     }, {} as Record<string, any>);
 
-    return Object.values(grouped).sort((a: any, b: any) => 
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+    return Object.values(grouped).sort((a: any, b: any) => a.timestampNum - b.timestampNum);
   };
 
-  const formatDisplayTime = (dateStr: string) => new Date(dateStr).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
 
   const getCycleBands = () => {
-    if (!data?.cycles || data.cycles.length === 0) return [] as Array<{ x1: string; x2: string; label: string; type: string }>; 
+    if (!data?.cycles || data.cycles.length === 0) return [] as Array<{ x1: string; x2: string; label: string; type: string }>;
     const cyclesToShow = selectedCycleId
       ? data.cycles.filter(c => c.id === selectedCycleId)
       : data.cycles;
@@ -273,17 +263,18 @@ const ValidationCharts: React.FC = () => {
 
   const getSensorInfo = () => {
     if (!data || !data.sensorData) return [];
-    
+
     const sensorMap = new Map();
     data.sensorData.forEach(reading => {
       if (!sensorMap.has(reading.sensor.id)) {
         sensorMap.set(reading.sensor.id, {
           id: reading.sensor.id,
-          serialNumber: reading.sensor.serialNumber
+          serialNumber: reading.sensor.serialNumber,
+          name: reading.sensor.name
         });
       }
     });
-    
+
     const sensors = Array.from(sensorMap.values());
     console.log('getSensorInfo() returning', sensors.length, 'sensors:', sensors.map(s => s.serialNumber).join(', '));
     return sensors;
@@ -359,7 +350,7 @@ const ValidationCharts: React.FC = () => {
         {showSettings && (
           <div className="bg-white p-6 rounded-lg shadow-md space-y-6">
             <h3 className="text-lg font-semibold mb-4">Configurações do Gráfico</h3>
-            
+
             {/* Cycle Filter */}
             {data.cycles && data.cycles.length > 0 && (
               <div>
@@ -374,7 +365,7 @@ const ValidationCharts: React.FC = () => {
                   <option value="">Todos os dados (sem filtro)</option>
                   {data.cycles.map(cycle => (
                     <option key={cycle.id} value={cycle.id}>
-                      {cycle.name} ({cycle.cycleType}) - {new Date(cycle.startAt).toLocaleDateString('pt-BR')}
+                      {cycle.name} ({cycle.cycleType}) - {formatDisplayTime(cycle.startAt)}
                     </option>
                   ))}
                 </select>
@@ -684,7 +675,7 @@ const ValidationCharts: React.FC = () => {
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
+                <XAxis
                   dataKey="displayTime"
                   angle={-45}
                   textAnchor="end"
@@ -694,9 +685,9 @@ const ValidationCharts: React.FC = () => {
                 {showCycleBands && getCycleBands().map((c, idx) => (
                   <ReferenceArea key={`t-area-${idx}`} x1={c.x1} x2={c.x2} y1={yAxisConfig.tempMin} y2={yAxisConfig.tempMax} fill={cycleColor(c.type)} strokeOpacity={0} />
                 ))}
-                <YAxis 
+                <YAxis
                   domain={[yAxisConfig.tempMin, yAxisConfig.tempMax]}
-                  ticks={(function(){
+                  ticks={(function () {
                     const min = yAxisConfig.tempMin;
                     const max = yAxisConfig.tempMax;
                     const step = Math.max(1, yAxisConfig.tempTick);
@@ -711,21 +702,21 @@ const ValidationCharts: React.FC = () => {
                 />
                 <Tooltip />
                 <Legend />
-                
+
                 {/* Reference Lines */}
-                <ReferenceLine 
-                  y={data.minTemperature} 
-                  stroke="red" 
-                  strokeDasharray="5 5" 
+                <ReferenceLine
+                  y={data.minTemperature}
+                  stroke="red"
+                  strokeDasharray="5 5"
                   label={{ value: `Min: ${data.minTemperature}°C`, position: 'right' }}
                 />
-                <ReferenceLine 
-                  y={data.maxTemperature} 
-                  stroke="red" 
-                  strokeDasharray="5 5" 
+                <ReferenceLine
+                  y={data.maxTemperature}
+                  stroke="red"
+                  strokeDasharray="5 5"
                   label={{ value: `Max: ${data.maxTemperature}°C`, position: 'right' }}
                 />
-                
+
                 {/* Lines for each sensor */}
                 {sensors.filter(s => visibleSensors.has(s.id)).map((sensor, idx) => (
                   <Line
@@ -733,7 +724,7 @@ const ValidationCharts: React.FC = () => {
                     type="monotone"
                     dataKey={`temp_${sensor.serialNumber}`}
                     stroke={COLORS[idx % COLORS.length]}
-                    name={`${sensor.serialNumber} (Temp)`}
+                    name={sensor.name ? `${sensor.name} (Temp)` : `${sensor.serialNumber} (Temp)`}
                     dot={false}
                     strokeWidth={2}
                   />
@@ -750,7 +741,7 @@ const ValidationCharts: React.FC = () => {
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
+                <XAxis
                   dataKey="displayTime"
                   angle={-45}
                   textAnchor="end"
@@ -760,9 +751,9 @@ const ValidationCharts: React.FC = () => {
                 {showCycleBands && getCycleBands().map((c, idx) => (
                   <ReferenceArea key={`h-area-${idx}`} x1={c.x1} x2={c.x2} y1={yAxisConfig.humMin} y2={yAxisConfig.humMax} fill={cycleColor(c.type)} strokeOpacity={0} />
                 ))}
-                <YAxis 
+                <YAxis
                   domain={[yAxisConfig.humMin, yAxisConfig.humMax]}
-                  ticks={(function(){
+                  ticks={(function () {
                     const min = yAxisConfig.humMin;
                     const max = yAxisConfig.humMax;
                     const step = Math.max(1, yAxisConfig.humTick);
@@ -776,25 +767,25 @@ const ValidationCharts: React.FC = () => {
                 />
                 <Tooltip />
                 <Legend />
-                
+
                 {/* Reference Lines */}
                 {data.minHumidity !== null && (
-                  <ReferenceLine 
-                    y={data.minHumidity} 
-                    stroke="red" 
-                    strokeDasharray="5 5" 
+                  <ReferenceLine
+                    y={data.minHumidity}
+                    stroke="red"
+                    strokeDasharray="5 5"
                     label={{ value: `Min: ${data.minHumidity}%`, position: 'right' }}
                   />
                 )}
                 {data.maxHumidity !== null && (
-                  <ReferenceLine 
-                    y={data.maxHumidity} 
-                    stroke="red" 
-                    strokeDasharray="5 5" 
+                  <ReferenceLine
+                    y={data.maxHumidity}
+                    stroke="red"
+                    strokeDasharray="5 5"
                     label={{ value: `Max: ${data.maxHumidity}%`, position: 'right' }}
                   />
                 )}
-                
+
                 {/* Lines for each sensor */}
                 {sensors.filter(s => visibleSensors.has(s.id)).map((sensor, idx) => (
                   <Line
@@ -802,7 +793,7 @@ const ValidationCharts: React.FC = () => {
                     type="monotone"
                     dataKey={`hum_${sensor.serialNumber}`}
                     stroke={COLORS[idx % COLORS.length]}
-                    name={`${sensor.serialNumber} (Umid)`}
+                    name={sensor.name ? `${sensor.name} (Umid)` : `${sensor.serialNumber} (Umid)`}
                     dot={false}
                     strokeWidth={2}
                   />
