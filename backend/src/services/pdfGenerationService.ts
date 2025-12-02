@@ -167,9 +167,10 @@ export class PDFGenerationService {
         deviceScaleFactor: 1,
       });
 
-      // Increase navigation timeout for complex templates
-      await page.setDefaultNavigationTimeout(120000);
-      await page.setDefaultTimeout(120000);
+      // Increase navigation timeout for complex templates (use env var if available)
+      const reportTimeout = Number(process.env.REPORT_GENERATION_TIMEOUT) || 120000;
+      await page.setDefaultNavigationTimeout(reportTimeout);
+      await page.setDefaultTimeout(reportTimeout);
 
       // Configure request interception to avoid external third-party resources
       // (e.g. Google fonts/analytics) that may stall rendering.
