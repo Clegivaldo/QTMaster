@@ -242,10 +242,11 @@ const EditorLayout: React.FC = () => {
     setGeneratingPdf(true);
     try {
       const templateId = editor.template.id;
+      const timeout = Number((import.meta as any).env?.VITE_REPORT_GENERATION_TIMEOUT) || 120000;
       const response = await apiService.api.post(
         `/editor-templates/${templateId}/generate-pdf`,
         { validationId },
-        { responseType: 'arraybuffer' }
+        { responseType: 'arraybuffer', timeout }
       );
 
       const blob = new Blob([response.data], { type: 'application/pdf' });

@@ -68,7 +68,11 @@ export class ReportService {
   }
 
   async generatePdf(id: string): Promise<{ reportId: string; pdfPath: string }> {
-    const response = await apiService.api.post(`/reports/${id}/generate-pdf`);
+    const timeout = Number((import.meta as any).env?.VITE_REPORT_GENERATION_TIMEOUT) || 120000;
+    const response = await apiService.api.post(`/reports/${id}/generate-pdf`, null, {
+      responseType: 'blob',
+      timeout,
+    });
     return response.data.data;
   }
 

@@ -20,6 +20,7 @@ import ValidationCreationModal, { ValidationCreationData } from '@/components/Va
 import { parseApiError } from '@/utils/apiErrors';
 import { parseToDate, formatBRShort } from '@/utils/parseDate';
 import TemplateSelectionModal from '@/components/TemplateSelectionModal';
+import { apiService } from '@/services/api';
 
 
 const Validations: React.FC = () => {
@@ -156,26 +157,15 @@ const Validations: React.FC = () => {
 
     try {
       setGeneratingReport(selectedValidationForReport.id);
-      const token = localStorage.getItem('accessToken');
-      
-      const response = await fetch(`/api/editor-templates/${templateId}/generate-pdf`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          validationId: selectedValidationForReport.id
-        })
-      });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erro ao gerar PDF');
-      }
+      const timeout = Number((import.meta as any).env?.VITE_REPORT_GENERATION_TIMEOUT) || 120000;
+      const response = await apiService.api.post(
+        `/editor-templates/${templateId}/generate-pdf`,
+        { validationId: selectedValidationForReport.id },
+        { responseType: 'blob', timeout }
+      );
 
-      // The response is a PDF file, so we need to handle it as a download
-      const blob = await response.blob();
+      const blob = response.data as Blob;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -186,9 +176,10 @@ const Validations: React.FC = () => {
       document.body.removeChild(a);
 
       toast.success('PDF gerado com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating PDF:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao gerar PDF');
+      const message = error?.response?.data?.message || error?.message || 'Erro ao gerar PDF';
+      toast.error(message);
     } finally {
       setGeneratingReport(null);
       setSelectedValidationForReport(null);
@@ -393,7 +384,7 @@ const Validations: React.FC = () => {
                       <button 
                         onClick={() => handleGenerateReport(validation)}
                         className="btn-primary text-sm"
-                        disabled={!validation.statistics || (validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}
+                        disabled={(validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}
                         title={(validation._count?.sensorData || 0) === 0 ? 'Importe dados antes de gerar laudo' : 'Criar relatório/laudo desta validação'}
                       >
                         {generatingReport === validation.id ? '⏳ Gerando...' : '📊 Gerar Laudo'}
