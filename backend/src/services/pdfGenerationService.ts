@@ -47,6 +47,9 @@ interface ChartGenerationOptions {
 
 export class PDFGenerationService {
   private browser: Browser | null = null;
+  private maxConcurrentReports: number = 5;
+  private currentReports: number = 0;
+  private pendingReports: Array<() => void> = [];
   private templateCache = new Map<string, handlebars.TemplateDelegate>();
   private readonly MAX_CACHE_SIZE = 50;
   private readonly RETRY_OPTIONS: RetryOptions = {
@@ -72,6 +75,7 @@ export class PDFGenerationService {
 
   constructor() {
     this.setupHandlebarsHelpers();
+    this.maxConcurrentReports = Number(process.env.MAX_CONCURRENT_REPORTS) || 5;
   }
 
   async initialize(): Promise<void> {
@@ -163,6 +167,10 @@ export class PDFGenerationService {
         deviceScaleFactor: 1,
       });
 
+      // Increase navigation timeout for complex templates
+      await page.setDefaultNavigationTimeout(120000);
+      await page.setDefaultTimeout(120000);
+
       // Configure request interception to avoid external third-party resources
       // (e.g. Google fonts/analytics) that may stall rendering.
       try {
@@ -225,6 +233,26 @@ export class PDFGenerationService {
         await page.close().catch((err) => logger.warn('Erro ao fechar página', err));
       }
     }
+  }
+
+  private async acquireSlot(): Promise<void> {
+    if (this.currentReports < this.maxConcurrentReports) {
+      this.currentReports++;
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      this.pendingReports.push(() => {
+        this.currentReports++;
+        resolve();
+      });
+    });
+  }
+
+  private releaseSlot(): void {
+    this.currentReports = Math.max(0, this.currentReports - 1);
+    const next = this.pendingReports.shift();
+    if (next) next();
   }
 
   async generateReportPDF(
@@ -295,6 +323,7 @@ export class PDFGenerationService {
     const startTime = Date.now();
 
     try {
+      await this.acquireSlot();
       // Import renderer dynamically to avoid circular dependencies
       const { editorTemplateRenderer } = await import('./editorTemplateRenderer.js');
       const { prisma } = await import('../lib/prisma.js');
@@ -402,6 +431,9 @@ export class PDFGenerationService {
     } catch (error) {
       logger.error('Erro ao gerar PDF de editor template', { error, templateId, validationId });
       throw error;
+    } finally {
+      // Release the concurrency slot even on failure
+      this.releaseSlot();
     }
   }
 
