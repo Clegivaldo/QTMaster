@@ -7,6 +7,7 @@ import fs from 'fs';
 import routes from './routes/index.js';
 import { logger } from './utils/logger.js';
 import { redisService } from './services/redisService.js';
+import { pdfQueueService } from './services/pdfQueueService.js';
 import { 
   generalRateLimit, 
   authRateLimit, 
@@ -246,6 +247,14 @@ app.listen(PORT, async () => {
     logger.info('🔴 Redis connected successfully');
   } catch (error) {
     logger.warn('🔴 Redis connection failed, continuing without cache:', error);
+  }
+  
+  // Initialize PDF Queue Service
+  try {
+    // pdfQueueService is initialized on import
+    logger.info('📄 PDF Queue service initialized');
+  } catch (error) {
+    logger.warn('📄 PDF Queue service initialization failed:', error);
   }
   
   // Initialize backup service

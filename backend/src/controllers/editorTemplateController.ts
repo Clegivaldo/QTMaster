@@ -1122,4 +1122,69 @@ export class EditorTemplateController {
       });
     }
   }
+
+  // Preview HTML for editor template (used by frontend to show HTML preview)
+  previewHTML = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { validationId } = req.body;
+
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          error: 'Usuário não autenticado',
+        });
+        return;
+      }
+
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          error: 'ID do template é obrigatório',
+        });
+        return;
+      }
+
+      if (!validationId) {
+        res.status(400).json({
+          success: false,
+          error: 'validationId é obrigatório',
+        });
+        return;
+      }
+
+      const html = await pdfGenerationService.generateHTMLFromEditorTemplate(id, validationId, req.user.id);
+
+      res.json({ success: true, data: { html } });
+    } catch (error) {
+      logger.error('Preview HTML error:', { error: error instanceof Error ? error.message : error });
+      res.status(500).json({
+        success: false,
+        error: 'Erro ao gerar preview HTML',
+      });
+    }
+  }
+
+  // Placeholder endpoint for job status. The project currently generates PDFs synchronously
+  // via `generatePDF`. This endpoint returns a helpful message so clients can degrade gracefully.
+  getPDFJobStatus = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { jobId } = req.params as any;
+
+      if (!jobId) {
+        res.status(400).json({ success: false, error: 'jobId é obrigatório' });
+        return;
+      }
+
+      // Currently there is no async job queue implemented for PDF generation in this controller.
+      // Return 501 Not Implemented with guidance so callers can fallback to synchronous behavior.
+      res.status(501).json({
+        success: false,
+        error: 'Sistema de fila de jobs para geração de PDF não implementado. Tente gerar o PDF diretamente via POST /generate-pdf.',
+      });
+    } catch (error) {
+      logger.error('Get PDF job status error:', { error: error instanceof Error ? error.message : error });
+      res.status(500).json({ success: false, error: 'Erro ao consultar status do job' });
+    }
+  }
 }

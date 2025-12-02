@@ -1,0 +1,48 @@
+
+  const handleValidateTemplate = useCallback(() => {
+    if (!editor.template) return;
+    const results = validateTemplate(editor.template);
+    setValidationResults(results);
+    setShowValidationModal(true);
+  }, [editor.template]);
+
+  const handleOpenPDFPreview = useCallback(() => {
+    setShowValidationSelector(true);
+  }, []);
+
+  const handleValidationSelect = useCallback((validation: any) => {
+    setSelectedValidationId(validation.id);
+    setShowValidationSelector(false);
+    setShowPDFPreview(true);
+  }, []);
+
+  const handleGeneratePDF = useCallback(async (validationId: string) => {
+    setIsGeneratingPDF(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/editor-templates/${templateId}/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ validationId })
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao gerar PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio_${templateId}_${Date.now()}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  }, [templateId]);

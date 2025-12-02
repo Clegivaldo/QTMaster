@@ -41,11 +41,13 @@ export async function generatePDFFromTemplate(req: Request, res: Response): Prom
         });
 
         // Generate PDF from editor template
-        const pdfBuffer = await pdfGenerationService.generateFromEditorTemplate(
+        const result = await pdfGenerationService.generateFromEditorTemplate(
             id,
             validationId,
             authReq.user!.id
         );
+
+        const pdfBuffer = result.pdfBuffer;
 
         // Get template name for filename
         const template = await prisma.editorTemplate.findUnique({

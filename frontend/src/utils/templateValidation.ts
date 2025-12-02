@@ -18,12 +18,12 @@ export interface ValidationOptions {
  * Valida um template antes da exportação ou salvamento
  */
 export const validateTemplate = (
-  template: EditorTemplate, 
+  template: EditorTemplate,
   options: ValidationOptions = {}
 ): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
-  
+
   const {
     requireElements = false,
     requireName = true,
@@ -84,7 +84,7 @@ export const validateTemplate = (
       if (template.elements.length === 0 && requireElements) {
         errors.push('Template deve conter pelo menos um elemento');
       }
-      
+
       if (template.elements.length > maxElements) {
         errors.push(`Template possui muitos elementos (${template.elements.length}). Máximo permitido: ${maxElements}`);
       }
@@ -162,6 +162,36 @@ export const validateTemplate = (
 };
 
 /**
+ * Valida variáveis dinâmicas no conteúdo
+ */
+const validateDynamicVariables = (content: string): string[] => {
+  const errors: string[] = [];
+
+  // Check for unclosed brackets
+  const openBrackets = (content.match(/\{\{/g) || []).length;
+  const closeBrackets = (content.match(/\}\}/g) || []).length;
+
+  if (openBrackets !== closeBrackets) {
+    errors.push(`Desbalanço de chaves em variáveis dinâmicas: ${openBrackets} abertas vs ${closeBrackets} fechadas`);
+  }
+
+  // Check variable format
+  const regex = /\{\{([^}]+)\}\}/g;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    const variable = match[1].trim();
+    if (!variable) {
+      errors.push(`Variável vazia encontrada: {{}}`);
+    } else if (!/^[a-zA-Z0-9_.]+$/.test(variable)) {
+      errors.push(`Variável com formato inválido: {{${variable}}}`);
+    }
+  }
+
+  return errors;
+};
+
+/**
  * Valida um elemento individual
  */
 const validateElement = (element: TemplateElement, index: number): string[] => {
@@ -205,6 +235,12 @@ const validateElement = (element: TemplateElement, index: number): string[] => {
   if (element.type === 'text' || element.type === 'heading') {
     if (typeof element.content !== 'string') {
       errors.push(`Elemento ${index} de texto deve ter conteúdo string`);
+    } else {
+      // Validar variáveis dinâmicas
+      const variableErrors = validateDynamicVariables(element.content);
+      if (variableErrors.length > 0) {
+        variableErrors.forEach(err => errors.push(`Elemento ${index}: ${err}`));
+      }
     }
   } else if (element.type === 'image') {
     const imageContent = element.content as any;
@@ -239,8 +275,8 @@ const validatePageSettings = (pageSettings: any): string[] => {
     errors.push('Margens da página não definidas');
   } else {
     const { top, right, bottom, left } = pageSettings.margins;
-    if (typeof top !== 'number' || typeof right !== 'number' || 
-        typeof bottom !== 'number' || typeof left !== 'number') {
+    if (typeof top !== 'number' || typeof right !== 'number' ||
+      typeof bottom !== 'number' || typeof left !== 'number') {
       errors.push('Margens da página devem ser números');
     } else if (top < 0 || right < 0 || bottom < 0 || left < 0) {
       errors.push('Margens da página não podem ser negativas');

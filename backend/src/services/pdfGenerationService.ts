@@ -2,6 +2,7 @@ import puppeteer, { Browser } from 'puppeteer';
 import handlebars from 'handlebars';
 import path from 'path';
 import * as fs from 'fs/promises';
+import { existsSync } from 'fs';
 import { logger } from '../utils/logger.js';
 import { redisService } from './redisService.js';
 import { templateEngineService } from './templateEngineService.js';
@@ -106,11 +107,41 @@ export class PDFGenerationService {
         headless: true,
         args: defaultArgs,
       };
+
+      // If user provided an explicit executable path via env var, use it.
       if (process.env.PUPPETEER_EXECUTABLE_PATH) {
         launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+      } else {
+        // Probe common Chromium/Chrome locations inside containers
+        const candidates = [
+          '/usr/bin/chromium',
+          '/usr/bin/chromium-browser',
+          '/usr/bin/google-chrome-stable',
+          '/usr/bin/google-chrome',
+          '/snap/bin/chromium',
+        ];
+
+        for (const p of candidates) {
+          try {
+            if (existsSync(p)) {
+              launchOptions.executablePath = p;
+              logger.debug('Found Chromium executable', { path: p });
+              break;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
       }
+
       logger.debug('Launching Puppeteer with options', { launchOptions });
-      this.browser = await puppeteer.launch(launchOptions);
+
+      try {
+        this.browser = await puppeteer.launch(launchOptions);
+      } catch (launchErr) {
+        logger.error('Puppeteer launch failed, dumping stderr/stack', launchErr instanceof Error ? launchErr.stack : String(launchErr));
+        throw launchErr;
+      }
 
       logger.info('Serviço de geração de PDF inicializado com sucesso');
     } catch (error) {
@@ -320,7 +351,16 @@ export class PDFGenerationService {
     validationId: string,
     userId: string,
     options: Partial<PDFGenerationOptions> = {}
-  ): Promise<Buffer> {
+  ): Promise<{
+    pdfBuffer: Buffer;
+    metadata: {
+      pageCount: number;
+      fileSize: number;
+      processingTime: number;
+      warnings: string[];
+      errors: string[];
+    };
+  }> {
     const startTime = Date.now();
 
     try {
@@ -428,7 +468,16 @@ export class PDFGenerationService {
         size: pdfBuffer.length,
       });
 
-      return pdfBuffer;
+      return {
+        pdfBuffer,
+        metadata: {
+          pageCount: await this.getPageCount(pdfBuffer),
+          fileSize: pdfBuffer.length,
+          processingTime,
+          warnings: [],
+          errors: [],
+        },
+      };
     } catch (error) {
       logger.error('Erro ao gerar PDF de editor template', { error, templateId, validationId });
       throw error;

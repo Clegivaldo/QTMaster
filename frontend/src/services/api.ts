@@ -1,12 +1,13 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { LoginCredentials, LoginResponse, User, ApiResponse } from '@/types/auth';
+import { API_CONFIG } from '@/config/api';
 
 class ApiService {
   public api: AxiosInstance;
   public baseURL: string;
 
   constructor() {
-    this.baseURL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || '/api';
+    this.baseURL = API_CONFIG.baseURL || '/api';
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 30000,

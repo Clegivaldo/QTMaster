@@ -36,8 +36,14 @@ router.delete('/:id', requirePermission(Permission.TEMPLATE_DELETE), editorTempl
 // POST /api/editor-templates/:id/duplicate - Duplicate template
 router.post('/:id/duplicate', requirePermission(Permission.TEMPLATE_CREATE), editorTemplateController.duplicateTemplate.bind(editorTemplateController));
 
+// POST /api/editor-templates/:id/preview-html - Preview template as HTML
+router.post('/:id/preview-html', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.previewHTML);
+
 // POST /api/editor-templates/:id/generate-pdf - Generate PDF from template with validation data
 router.post('/:id/generate-pdf', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.generatePDF);
+
+// GET /api/editor-templates/:id/generate-pdf/:jobId/status - Get PDF generation job status
+router.get('/:id/generate-pdf/:jobId/status', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.getPDFJobStatus);
 
 // POST /api/editor-templates/:id/export - Export template
 router.post('/:id/export', requirePermission(Permission.TEMPLATE_READ), editorTemplateController.exportTemplate.bind(editorTemplateController));

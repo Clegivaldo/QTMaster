@@ -6,8 +6,8 @@ export async function generatePDFFromTemplate(
   userId: string
 ): Promise<Buffer> {
   try {
-    const pdfBuffer = await pdfGenerationService.generateFromEditorTemplate(templateId, validationId, userId);
-    return pdfBuffer;
+    const result = await pdfGenerationService.generateFromEditorTemplate(templateId, validationId, userId);
+    return result.pdfBuffer;
   } catch (error) {
     // Let caller handle logging and response
     throw error;

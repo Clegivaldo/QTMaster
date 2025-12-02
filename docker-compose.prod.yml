@@ -18,7 +18,7 @@ services:
     networks:
       - laudo-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -137,8 +137,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_API_URL: ${VITE_API_URL:-/api}
-        VITE_APP_NAME: ${VITE_APP_NAME:-Sistema de Laudos Térmicos}
+        # Fix VITE_API_URL at build time to avoid accidental double-prefixing
+        VITE_API_URL: /api
+        VITE_APP_NAME: "Sistema de Laudos Térmicos"
     container_name: laudo-frontend
     restart: unless-stopped
     volumes:

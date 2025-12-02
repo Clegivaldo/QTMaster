@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import { buildApiUrl } from '@/config/api';
 
 export const SharedReport: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -22,7 +21,7 @@ export const SharedReport: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/shared/${token}`, {
+      const response = await fetch(buildApiUrl(`/reports/shared/${token}`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

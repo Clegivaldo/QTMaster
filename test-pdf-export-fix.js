@@ -11,8 +11,8 @@
  * 5. Download button works correctly
  */
 
-const http = require('http');
-const https = require('https');
+import http from 'http';
+import https from 'https';
 
 const BASE_URL = 'http://localhost:3000';
 const API_BASE = `${BASE_URL}/api`;
@@ -105,7 +105,7 @@ async function runTests() {
   try {
     const loginResp = await makeRequest('POST', '/auth/login', {
       email: 'admin@example.com',
-      password: 'AdminPassword123!'
+      password: 'admin123'
     });
 
     if (loginResp.status === 200 && loginResp.data?.data?.token) {

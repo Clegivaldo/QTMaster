@@ -1,0 +1,23 @@
+
+
+      <ValidationResultModal
+        isOpen={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        result={validationResults}
+      />
+
+      <ValidationSelectorModal
+        isOpen={showValidationSelector}
+        onClose={() => setShowValidationSelector(false)}
+        onSelect={handleValidationSelect}
+        templateId={templateId}
+        onGeneratePDF={handleGeneratePDF}
+      />
+
+      <PDFPreviewModal
+        isOpen={showPDFPreview}
+        onClose={() => setShowPDFPreview(false)}
+        templateId={templateId}
+        validationId={selectedValidationId || ''}
+        onGeneratePDF={handleGeneratePDF}
+      />

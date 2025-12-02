@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import { buildApiUrl } from '@/config/api';
 
 // ==================== Interfaces ====================
 
@@ -86,7 +85,7 @@ export const useSignature = (reportId: string) => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/${reportId}/signature`, {
+      const response = await fetch(buildApiUrl(`/reports/${reportId}/signature`), {
         headers: getAuthHeaders(),
       });
 
@@ -115,7 +114,7 @@ export const useSignature = (reportId: string) => {
       setError(null);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/reports/${reportId}/sign`, {
+        const response = await fetch(buildApiUrl(`/reports/${reportId}/sign`), {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify(options || {}),
@@ -151,7 +150,7 @@ export const useSignature = (reportId: string) => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/${reportId}/signature/verify`);
+      const response = await fetch(buildApiUrl(`/reports/${reportId}/signature/verify`));
 
       const result = await response.json();
 
@@ -181,7 +180,7 @@ export const useSignature = (reportId: string) => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/${reportId}/signature`, {
+      const response = await fetch(buildApiUrl(`/reports/${reportId}/signature`), {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
@@ -242,7 +241,7 @@ export const useSharing = (reportId: string) => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/${reportId}/share`, {
+      const response = await fetch(buildApiUrl(`/reports/${reportId}/share`), {
         headers: getAuthHeaders(),
       });
 
@@ -271,7 +270,7 @@ export const useSharing = (reportId: string) => {
       setError(null);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/reports/${reportId}/share`, {
+        const response = await fetch(buildApiUrl(`/reports/${reportId}/share`), {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify(options || {}),
@@ -308,7 +307,7 @@ export const useSharing = (reportId: string) => {
       setError(null);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/reports/share/${linkId}`, {
+        const response = await fetch(buildApiUrl(`/reports/share/${linkId}`), {
           method: 'DELETE',
           headers: getAuthHeaders(),
         });
@@ -343,7 +342,7 @@ export const useSharing = (reportId: string) => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/share/${linkId}/stats`, {
+      const response = await fetch(buildApiUrl(`/reports/share/${linkId}/stats`), {
         headers: getAuthHeaders(),
       });
 

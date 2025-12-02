@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiService } from '@/services/api';
 import { X, FileText, Loader2 } from 'lucide-react';
 
 interface Template {
@@ -38,19 +39,8 @@ const TemplateSelectionModal: React.FC<TemplateSelectionModalProps> = ({
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/editor-templates', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao carregar templates');
-      }
-
-      const data = await response.json();
-      setTemplates(data.data?.templates || []);
+      const response = await apiService.api.get('/editor-templates');
+      setTemplates(response.data.data?.templates || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar templates');
     } finally {

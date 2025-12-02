@@ -26,6 +26,13 @@ import LoadTemplateModal from './components/Modals/LoadTemplateModal';
 import ExportModal from './components/Modals/ExportModal';
 import PreviewModal from './components/Modals/PreviewModal';
 import PageSettingsModal from './components/Modals/PageSettingsModal';
+import ValidationResultModal from './components/Modals/ValidationResultModal';
+import PDFPreviewModal from './components/Modals/PDFPreviewModal';
+import ValidationSelectorModal from './components/Modals/ValidationSelectorModal';
+import { validateTemplate } from '../../utils/templateValidation';
+import type { ValidationResult } from '../../utils/templateValidation';
+import LoadingButton from '../common/LoadingButton';
+import { FileCheck, FileSearch } from 'lucide-react';
 
 const EditorLayoutProfissional: React.FC<EditorProps> = ({
   isOpen,
@@ -90,6 +97,14 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   const [showPageSettingsModal, setShowPageSettingsModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [galleryTarget, setGalleryTarget] = useState<'element' | 'background'>('element');
+
+  // Novos estados para valida��o e preview
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [validationResults, setValidationResults] = useState<ValidationResult | null>(null);
+  const [showValidationSelector, setShowValidationSelector] = useState(false);
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
+  const [selectedValidationId, setSelectedValidationId] = useState<string | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Hook para configurações de página
   // Use page-specific settings when available (multi-page support)
@@ -255,6 +270,54 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
   const handlePreview = useCallback(() => {
     setShowPreviewModal(true);
   }, []);
+  const handleValidateTemplate = useCallback(() => {
+    if (!editor.template) return;
+    const results = validateTemplate(editor.template);
+    setValidationResults(results);
+    setShowValidationModal(true);
+  }, [editor.template]);
+
+  const handleOpenPDFPreview = useCallback(() => {
+    setShowValidationSelector(true);
+  }, []);
+
+  const handleValidationSelect = useCallback((validation: any) => {
+    setSelectedValidationId(validation.id);
+    setShowValidationSelector(false);
+    setShowPDFPreview(true);
+  }, []);
+
+  const handleGeneratePDF = useCallback(async (validationId: string) => {
+    setIsGeneratingPDF(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/editor-templates/${templateId}/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ validationId })
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao gerar PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio_${templateId}_${Date.now()}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  }, [templateId]);
+
 
   // Atalhos de teclado usando hook dedicado
   useKeyboardShortcuts({
@@ -627,6 +690,23 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
             >
               <Save className="h-4 w-4" />
             </button>
+            <button
+              onClick={handleValidateTemplate}
+              className="bg-yellow-600 hover:bg-yellow-700 p-2 rounded-full flex items-center justify-center transition-colors"
+              title="Validar Template"
+            >
+              <FileCheck className="h-4 w-4" />
+            </button>
+
+            <button
+              onClick={handleOpenPDFPreview}
+              className="bg-orange-600 hover:bg-orange-700 p-2 rounded-full flex items-center justify-center transition-colors"
+              title="Preview PDF"
+            >
+              <FileSearch className="h-4 w-4" />
+            </button>
+
+
 
             <button
               onClick={handlePreview}
@@ -902,6 +982,29 @@ const EditorLayoutProfissional: React.FC<EditorProps> = ({
           setShowExportModal(true);
         }}
       />
+
+      <ValidationResultModal
+        isOpen={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        result={validationResults}
+      />
+
+      <ValidationSelectorModal
+        isOpen={showValidationSelector}
+        onClose={() => setShowValidationSelector(false)}
+        onSelect={handleValidationSelect}
+        templateId={templateId}
+        onGeneratePDF={handleGeneratePDF}
+      />
+
+      <PDFPreviewModal
+        isOpen={showPDFPreview}
+        onClose={() => setShowPDFPreview(false)}
+        templateId={templateId}
+        validationId={selectedValidationId || ''}
+        onGeneratePDF={handleGeneratePDF}
+      />
+
 
       {/* Sistema de notificações de erro */}
       <ErrorNotification

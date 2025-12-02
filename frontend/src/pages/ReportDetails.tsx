@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SignaturePanel } from '@/components/ReportSignature/SignaturePanel';
 import { parseToDate, formatBRShort } from '@/utils/parseDate';
+import { buildApiUrl } from '@/config/api';
 import { SharingPanel } from '@/components/ReportSharing/SharingPanel';
 
 interface Report {
@@ -25,7 +26,8 @@ export const ReportDetails: React.FC = () => {
 
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/reports/${id}`, {
+
+        const response = await fetch(buildApiUrl(`/reports/${id}`), {
           headers: {
             Authorization: `Bearer ${token}`,
           },

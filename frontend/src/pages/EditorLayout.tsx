@@ -242,14 +242,42 @@ const EditorLayout: React.FC = () => {
     setGeneratingPdf(true);
     try {
       const templateId = editor.template.id;
-      const timeout = Number((import.meta as any).env?.VITE_REPORT_GENERATION_TIMEOUT) || 120000;
       const response = await apiService.api.post(
         `/editor-templates/${templateId}/generate-pdf`,
-        { validationId },
-        { responseType: 'arraybuffer', timeout }
+        { validationId }
       );
 
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const { jobId, statusUrl } = response.data.data;
+
+      // Poll for completion
+      const pollForCompletion = async (jobId: string): Promise<Blob> => {
+        while (true) {
+          const statusResponse = await apiService.api.get(statusUrl.replace(':jobId', jobId), {
+            responseType: 'blob'
+          });
+          const contentType = statusResponse.headers['content-type'];
+
+          if (contentType === 'application/pdf') {
+            // PDF is ready
+            return statusResponse.data as Blob;
+          } else {
+            // Still processing, parse JSON
+            const text = await statusResponse.data.text();
+            const statusData = JSON.parse(text);
+            const { status, error } = statusData.data;
+
+            if (status === 'failed') {
+              throw new Error(error || 'PDF generation failed');
+            }
+
+            // Wait 2 seconds before checking again
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      };
+
+      const blob = await pollForCompletion(jobId);
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

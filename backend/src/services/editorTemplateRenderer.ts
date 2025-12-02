@@ -66,9 +66,12 @@ export class EditorTemplateRenderer {
         throw new Error(`Template not found: ${templateId}`);
       }
 
-      // Convert elements to HTML
+      // Convert elements to HTML asynchronously
       const elements = (template.elements as unknown as EditorElement[]) || [];
-      const elementsHTML = elements.map(el => this.convertElementToHTML(el, data)).join('');
+      const elementsHTMLArray = await Promise.all(
+        elements.map(el => this.convertElementToHTML(el, data))
+      );
+      const elementsHTML = elementsHTMLArray.join('');
 
       // Build complete HTML document
       const html = this.buildHTMLDocument(elementsHTML, template.pageSettings, template.globalStyles);
@@ -84,7 +87,7 @@ export class EditorTemplateRenderer {
   /**
    * Convert a single element to HTML
    */
-  private convertElementToHTML(element: EditorElement, data: TemplateData): string {
+  private async convertElementToHTML(element: EditorElement, data: TemplateData): Promise<string> {
     const { type, position, size, content, styles, properties } = element;
 
     // Apply positioning
@@ -101,6 +104,7 @@ export class EditorTemplateRenderer {
         return this.renderImageElement(element, combinedStyles);
 
       case 'chart':
+        // For now, return placeholder. Chart rendering will be added in Phase 4
         return this.renderChartPlaceholder(element, combinedStyles);
 
       case 'rectangle':
@@ -148,7 +152,10 @@ export class EditorTemplateRenderer {
       const trimmedPath = path.trim();
       const value = this.resolveDataPath(trimmedPath, data);
 
+      logger.debug('Processing dynamic text', { match, path: trimmedPath, value, valueType: typeof value });
+
       if (value === undefined || value === null) {
+        logger.warn('Undefined value in dynamic text', { path: trimmedPath, availableData: Object.keys(data) });
         return '';
       }
 
@@ -163,11 +170,15 @@ export class EditorTemplateRenderer {
     const parts = path.split('.');
     let current = data;
 
+    logger.debug('Resolving data path', { path, parts, dataKeys: Object.keys(data || {}) });
+
     for (const part of parts) {
       if (current === null || current === undefined) {
+        logger.warn('Path resolution failed', { path, part, current, currentType: typeof current });
         return undefined;
       }
       current = current[part];
+      logger.debug('Path part resolved', { part, current, currentType: typeof current });
     }
 
     return current;
@@ -277,12 +288,18 @@ export class EditorTemplateRenderer {
    * Get position styles (absolute positioning)
    */
   private getPositionStyles(position: { x: number; y: number }, size: { width: number; height: number }): string {
+    // Provide default values if position or size are undefined - FIXED FOR UNDEFINED VALUES
+    const x = position?.x ?? 0;
+    const y = position?.y ?? 0;
+    const width = size?.width ?? 100;
+    const height = size?.height ?? 50;
+
     return `
       position: absolute;
-      left: ${position.x}mm;
-      top: ${position.y}mm;
-      width: ${size.width}mm;
-      height: ${size.height}mm;
+      left: ${x}mm;
+      top: ${y}mm;
+      width: ${width}mm;
+      height: ${height}mm;
     `;
   }
 
