@@ -56,8 +56,8 @@ services:
       FRONTEND_URL: http://localhost:3000
       # FastReport System Environment Variables
       TEMPLATE_EDITOR_ENABLED: true
-      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: false
-      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
       REPORT_GENERATION_TIMEOUT: 30000
       MAX_CONCURRENT_REPORTS: 5
     ports:

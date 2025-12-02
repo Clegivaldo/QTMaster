@@ -41,8 +41,9 @@ RUN apk add --no-cache \
   py3-pip
 
 # Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
+# Use a consistent executable path and ensure skipping download during build.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+  PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Copy package files
 COPY package*.json ./
@@ -66,6 +67,20 @@ RUN adduser -S nodejs -u 1001
 
 # Change ownership of the app directory
 RUN chown -R nodejs:nodejs /app
+
+# Ensure a home directory and Puppeteer cache exist for the non-root user
+RUN mkdir -p /home/nodejs && \
+  mkdir -p /home/nodejs/.cache/puppeteer && \
+  chown -R nodejs:nodejs /home/nodejs && \
+  chown -R nodejs:nodejs /home/nodejs/.cache/puppeteer
+
+# Set HOME to the node user's home
+ENV HOME=/home/nodejs
+
+# Ensure consistent chromium binary name (create symlink if necessary)
+RUN if [ -f /usr/bin/chromium-browser ]; then ln -sf /usr/bin/chromium-browser /usr/bin/chromium; \
+  elif [ -f /usr/bin/chromium ]; then ln -sf /usr/bin/chromium /usr/bin/chromium-browser; fi
+
 USER nodejs
 
 # Expose port (documented default); the container reads $PORT at runtime

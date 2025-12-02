@@ -80,30 +80,40 @@ export class PDFGenerationService {
     }
 
     try {
+      const defaultArgs = [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--disable-dev-shm-usage',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu',
+      ];
+
+      // Avoid passing --single-process on Windows (known issues on Win32)
+      // Note: --single-process can cause Chromium to crash on some Linux/Alpine builds.
+      // We avoid adding it by default; set FORCE_SINGLE_PROCESS=true to enable if needed.
+      if (process.env.FORCE_SINGLE_PROCESS === 'true') {
+        defaultArgs.push('--single-process');
+      }
+
       const launchOptions: any = {
         headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-          '--disable-dev-shm-usage',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process', // <- this one doesn't works in Windows
-          '--disable-gpu',
-        ],
+        args: defaultArgs,
       };
       if (process.env.PUPPETEER_EXECUTABLE_PATH) {
         launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
       }
+      logger.debug('Launching Puppeteer with options', { launchOptions });
       this.browser = await puppeteer.launch(launchOptions);
 
       logger.info('Serviço de geração de PDF inicializado com sucesso');
     } catch (error) {
       logger.error('Erro ao inicializar Puppeteer', error);
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`Falha ao inicializar serviço de PDF: ${errorMsg}`);
+      const hint = 'Verifique se o Chromium está disponível ou defina PUPPETEER_EXECUTABLE_PATH.';
+      throw new Error(`Falha ao inicializar serviço de PDF: ${errorMsg} - ${hint}`);
     }
   }
 
@@ -153,14 +163,37 @@ export class PDFGenerationService {
         deviceScaleFactor: 1,
       });
 
-      // Definir conteúdo da página
+      // Configure request interception to avoid external third-party resources
+      // (e.g. Google fonts/analytics) that may stall rendering.
+      try {
+        await page.setRequestInterception(true);
+        page.on('request', (req) => {
+          const url = req.url();
+          // Block remote fonts and analytics to speed up rendering and avoid timeouts
+          if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com') || url.includes('google-analytics.com') || url.includes('googletagmanager.com')) {
+            req.abort();
+            return;
+          }
+          // Allow other resources
+          req.continue();
+        });
+      } catch (err) {
+        logger.debug('Request interception not supported or already enabled', err instanceof Error ? err.message : String(err));
+      }
+
+      // Definir conteúdo da página e aguardar carregamento com uma timeout maior para templates grandes
       await page.setContent(styledHTML, {
-        waitUntil: 'networkidle0',
-        timeout: 30000,
+        waitUntil: ['load', 'networkidle2'],
+        timeout: 60000,
       });
 
-      // Aguardar carregamento de fontes e imagens
-      await page.evaluateHandle('document.fonts.ready');
+      // Aguardar carregamento de fontes e imagens (se houver)
+      try {
+        await page.evaluateHandle('document.fonts.ready');
+      } catch (err) {
+        // Não bloquear caso não seja suportado
+        logger.debug('document.fonts.ready not available or timed out', err instanceof Error ? err.message : String(err));
+      }
 
       // Gerar PDF
       const pdfBuffer = await page.pdf({
@@ -368,6 +401,112 @@ export class PDFGenerationService {
       return pdfBuffer;
     } catch (error) {
       logger.error('Erro ao gerar PDF de editor template', { error, templateId, validationId });
+      throw error;
+    }
+  }
+
+  async generateHTMLFromEditorTemplate(
+    templateId: string,
+    validationId: string,
+    userId: string
+  ): Promise<string> {
+    try {
+      // Import renderer dynamically to avoid circular dependencies
+      const { editorTemplateRenderer } = await import('./editorTemplateRenderer.js');
+      const { prisma } = await import('../lib/prisma.js');
+
+      // Fetch validation data
+      const validation = await prisma.validation.findUnique({
+        where: { id: validationId },
+        include: {
+          client: true,
+          equipment: {
+            include: {
+              equipmentType: true,
+            },
+          },
+          sensorData: {
+            include: {
+              sensor: {
+                include: {
+                  type: true,
+                },
+              },
+            },
+            orderBy: {
+              timestamp: 'asc',
+            },
+          },
+        },
+      });
+
+      if (!validation) {
+        throw new Error(`Validation not found: ${validationId}`);
+      }
+
+      // Get user info
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      // Calculate statistics
+      const temperatures = validation.sensorData.map((d: any) => d.temperature).filter((t: any) => t !== null);
+      const humidities = validation.sensorData.map((d: any) => d.humidity).filter((h: any) => h !== null);
+
+      const temperatureStats = temperatures.length > 0 ? {
+        min: Math.min(...temperatures),
+        max: Math.max(...temperatures),
+        avg: temperatures.reduce((a: number, b: number) => a + b, 0) / temperatures.length,
+      } : { min: 0, max: 0, avg: 0 };
+
+      const humidityStats = humidities.length > 0 ? {
+        min: Math.min(...humidities),
+        max: Math.max(...humidities),
+        avg: humidities.reduce((a: number, b: number) => a + b, 0) / humidities.length,
+      } : undefined;
+
+      // Prepare template data
+      const templateData = {
+        client: {
+          name: validation.client.name,
+          document: validation.client.cnpj || '',
+          email: validation.client.email || undefined,
+          phone: validation.client.phone || undefined,
+        },
+        validation: {
+          id: validation.id,
+          startDate: new Date(validation.createdAt),
+          endDate: new Date(validation.updatedAt),
+          temperatureStats,
+          humidityStats,
+        },
+        sensors: validation.equipment ? [{
+          id: validation.equipment.id,
+          name: validation.equipment.name || undefined,
+          serialNumber: validation.equipment.serialNumber,
+          model: validation.equipment.equipmentType.name || 'Unknown',
+        }] : [],
+        sensorData: validation.sensorData.map((sd: any) => ({
+          timestamp: new Date(sd.timestamp),
+          temperature: sd.temperature,
+          humidity: sd.humidity || undefined,
+          sensorId: sd.sensorId,
+        })),
+        report: {
+          generatedAt: new Date(),
+          generatedBy: user?.name || 'Sistema',
+        },
+      };
+
+      // Render template to HTML
+      const html = await editorTemplateRenderer.renderToHTML(templateId, templateData as any);
+
+      // Add styles for preview
+      const styledHTML = await this.addStyles(html, this.DEFAULT_OPTIONS);
+
+      return styledHTML;
+    } catch (error) {
+      logger.error('Erro ao gerar HTML de editor template', { error, templateId, validationId });
       throw error;
     }
   }

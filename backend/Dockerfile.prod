@@ -1,11 +1,24 @@
 # Multi-stage build for production
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
+
+# Install build dependencies required for compiling native modules (canvas, node-gyp, etc.)
+RUN apk update && apk add --no-cache \
+    python3 \
+    py3-pip \
+    build-base \
+    cairo-dev \
+    pango-dev \
+    giflib-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    pkgconfig \
+    && rm -rf /var/cache/apk/*
 
 # Install all dependencies (including dev dependencies for build)
 RUN npm ci
@@ -19,8 +32,11 @@ RUN npx prisma generate
 # Build the application
 RUN npm run build
 
+# Remove dev dependencies to keep node_modules production-only for the next stage
+RUN npm prune --production
+
 # Production stage
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 
 # Install security updates and Python for fallback parser
 RUN apk update && apk upgrade && apk add --no-cache \
@@ -28,6 +44,14 @@ RUN apk update && apk upgrade && apk add --no-cache \
     wget \
     python3 \
     py3-pip \
+    # Required for PDF generation with Puppeteer/Chromium
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ttf-freefont \
+    fontconfig \
+    ca-certificates \
     && rm -rf /var/cache/apk/*
 
 WORKDIR /app
@@ -36,11 +60,11 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
-
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
+
+# Copy node_modules already prepared in builder (pruned to production)
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Copy Python fallback parser (from source, not builder)
@@ -52,17 +76,27 @@ RUN if [ -f python/requirements.txt ]; then \
     fi
 
 # Create necessary directories
-RUN mkdir -p uploads templates logs backups
+RUN mkdir -p uploads templates logs backups /home/nodejs/.cache/puppeteer
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 -G nodejs
 
-# Set proper permissions
-RUN chown -R nodejs:nodejs /app && \
+# Set proper permissions and Puppeteer cache ownership
+RUN chown -R nodejs:nodejs /app /home/nodejs && \
+    chown -R nodejs:nodejs /home/nodejs/.cache/puppeteer && \
     chmod -R 755 /app
 
-# Switch to non-root user
+# Environment for Puppeteer/Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
+    PUPPETEER_CACHE_DIR=/home/nodejs/.cache/puppeteer \
+    HOME=/home/nodejs
+
+# Ensure consistent chromium binary name and switch to non-root user
+RUN if [ -f /usr/bin/chromium-browser ]; then ln -sf /usr/bin/chromium-browser /usr/bin/chromium; \
+    elif [ -f /usr/bin/chromium ]; then ln -sf /usr/bin/chromium /usr/bin/chromium-browser; fi
+
 USER nodejs
 
 # Expose port
