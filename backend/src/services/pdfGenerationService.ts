@@ -3,6 +3,7 @@ import handlebars from 'handlebars';
 import path from 'path';
 import * as fs from 'fs/promises';
 import { existsSync } from 'fs';
+import { createHash } from 'crypto';
 import { logger } from '../utils/logger.js';
 import { redisService } from './redisService.js';
 import { templateEngineService } from './templateEngineService.js';
@@ -1131,6 +1132,109 @@ export class PDFGenerationService {
     }
   }
 
+  /**
+   * Generate cache key for PDF based on template, validation and data
+   */
+  private generatePDFCacheKey(
+    templateId: string,
+    validationId: string,
+    additionalData?: any
+  ): string {
+    const dataString = JSON.stringify({
+      templateId,
+      validationId,
+      additional: additionalData || {},
+    });
+    const hash = createHash('sha256').update(dataString).digest('hex');
+    return `pdf:cache:${hash}`;
+  }
+
+  /**
+   * Get cached PDF if available
+   */
+  async getCachedPDF(
+    templateId: string,
+    validationId: string,
+    additionalData?: any
+  ): Promise<Buffer | null> {
+    try {
+      const cacheKey = this.generatePDFCacheKey(templateId, validationId, additionalData);
+      const cached = await redisService.get(cacheKey);
+      
+      if (cached) {
+        logger.info('PDF cache hit', { templateId, validationId });
+        // Redis stores as base64 string
+        return Buffer.from(cached, 'base64');
+      }
+      
+      logger.debug('PDF cache miss', { templateId, validationId });
+      return null;
+    } catch (error) {
+      logger.error('Error getting cached PDF', { error, templateId, validationId });
+      return null;
+    }
+  }
+
+  /**
+   * Cache PDF with TTL (default 1 hour)
+   */
+  async cachePDF(
+    templateId: string,
+    validationId: string,
+    pdfBuffer: Buffer,
+    ttl: number = 3600,
+    additionalData?: any
+  ): Promise<boolean> {
+    try {
+      const cacheKey = this.generatePDFCacheKey(templateId, validationId, additionalData);
+      // Store as base64 string in Redis
+      const base64PDF = pdfBuffer.toString('base64');
+      const success = await redisService.set(cacheKey, base64PDF, ttl);
+      
+      if (success) {
+        logger.info('PDF cached successfully', { 
+          templateId, 
+          validationId, 
+          size: pdfBuffer.length,
+          ttl 
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      logger.error('Error caching PDF', { error, templateId, validationId });
+      return false;
+    }
+  }
+
+  /**
+   * Invalidate PDF cache for a specific template or validation
+   */
+  async invalidatePDFCache(templateId?: string, validationId?: string): Promise<number> {
+    try {
+      let pattern = 'pdf:cache:*';
+      
+      if (templateId && validationId) {
+        // Invalidate specific cache
+        const cacheKey = this.generatePDFCacheKey(templateId, validationId);
+        const deleted = await redisService.del(cacheKey);
+        return deleted ? 1 : 0;
+      } else if (templateId || validationId) {
+        // Invalidate all caches matching pattern
+        // Note: This is a simplified approach. For production, consider storing
+        // a mapping of templateId/validationId to cache keys
+        const count = await redisService.invalidatePattern(pattern);
+        logger.info('Invalidated PDF cache', { templateId, validationId, count });
+        return count;
+      }
+      
+      return 0;
+    } catch (error) {
+      logger.error('Error invalidating PDF cache', { error, templateId, validationId });
+      return 0;
+    }
+  }
+
   async close(): Promise<void> {
     if (this.browser) {
       await this.browser.close();
@@ -1143,6 +1247,12 @@ export class PDFGenerationService {
   async clearCache(): Promise<void> {
     this.templateCache.clear();
     logger.info('Cache de templates limpo');
+  }
+
+  async clearPDFCache(): Promise<number> {
+    const count = await redisService.invalidatePattern('pdf:cache:*');
+    logger.info('PDF cache cleared', { count });
+    return count;
   }
 
   getCacheStats(): { size: number; maxSize: number } {

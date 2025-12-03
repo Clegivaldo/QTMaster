@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { seedTemplates } from './seeds/templates.js';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +9,7 @@ async function main() {
 
   // Create admin user
   const hashedPassword = await bcrypt.hash('admin123', 10);
-  
+
   await prisma.user.upsert({
     where: { email: 'admin@sistema.com' },
     update: {},
@@ -81,6 +82,10 @@ async function main() {
       },
     });
   }
+
+  // Seed editor templates
+  console.log('Seeding editor templates...');
+  await seedTemplates();
 
   console.log('🎉 Database seed completed!');
 }
