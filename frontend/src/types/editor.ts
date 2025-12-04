@@ -202,6 +202,12 @@ export interface EditorConfig {
   gridColor: string;
   zoom: number;
   theme: 'light' | 'dark';
+  watermark?: {
+    text: string;
+    opacity: number;
+    color: string;
+    size: number;
+  };
 }
 
 // Template completo
@@ -396,4 +402,45 @@ export interface TemplateListResponse {
     categories: string[];
   };
   error?: string;
+}
+// Props para o painel de propriedades
+export interface PropertiesPanelProps {
+  selectedElements: EditorElement[];
+  onUpdateStyles: (elementIds: string[], styles: any) => void;
+  onUpdateContent?: (elementId: string, content: any) => void;
+  onGroupElements?: () => void;
+  onUngroupElements?: () => void;
+  onBringToFront?: (elementId: string) => void;
+  onSendToBack?: (elementId: string) => void;
+  canGroup?: boolean;
+  canUngroup?: boolean;
+  isVisible: boolean;
+  onToggleVisibility: () => void;
+  region?: {
+    type: 'header' | 'footer';
+    data: any;
+    onUpdate: (data: any) => void;
+  };
+}
+
+// Estilos de elementos
+export interface ElementStyles {
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: string;
+  fontStyle?: string;
+  textDecoration?: string;
+  textAlign?: string;
+  verticalAlign?: string;
+  color?: string;
+  backgroundColor?: string;
+  opacity?: number;
+  border?: {
+    width: number;
+    style: string;
+    color: string;
+  };
+  borderRadius?: number;
+  padding?: number;
+  margin?: number;
 }

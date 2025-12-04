@@ -99,8 +99,8 @@ const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, onSelectIm
                   <Trash2 className="h-4 w-4 text-red-600" />
                 </button>
 
-                <div onClick={() => onSelectImage({ src: `${apiService.baseURL}/${img.path}`, alt: img.name, originalSize: img.dimensions || { width: 200, height: 200 } })}>
-                  <img src={`${apiService.baseURL}/${img.path}`} alt={img.name} className="w-full h-64 object-cover" />
+                <div onClick={() => onSelectImage({ src: (img as any).url || `${apiService.baseURL}/${img.path}`, alt: img.name, originalSize: img.dimensions || { width: 200, height: 200 } })}>
+                  <img src={(img as any).url || `${apiService.baseURL}/${img.path}`} alt={img.name} className="w-full h-64 object-cover" />
                   <div className="p-2 text-xs text-gray-700">{img.name}</div>
                 </div>
               </div>

@@ -221,3 +221,30 @@
 {"timestamp":"2025-11-28 10:56:08.805","level":"info","service":"laudo-termico-api","message":"Backup service initialized with daily backups at 2 AM","environment":"development","version":"0.0.0"}
 {"timestamp":"2025-11-28 10:56:08.806","level":"info","service":"laudo-termico-api","message":"💾 Backup service initialized","environment":"development","version":"0.0.0"}
 {"timestamp":"2025-11-28 10:57:53.180","level":"info","service":"laudo-termico-api","message":"SIGINT received, shutting down gracefully","environment":"development","version":"0.0.0"}
+{"timestamp":"2025-12-04 10:20:25.071","level":"info","service":"laudo-termico-api","message":"Seeding clients...","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.103","level":"info","service":"laudo-termico-api","message":"Created client Frios do Sul Indústria e Comércio Ltda","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.112","level":"info","service":"laudo-termico-api","message":"Created client Laboratório Central Saúde e Qualidade LTDA","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.116","level":"info","service":"laudo-termico-api","message":"Created client Distribuidora Norte Produtos Médicos","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.120","level":"info","service":"laudo-termico-api","message":"Created client Alimentos e Bebidas do Cerrado SA","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.125","level":"info","service":"laudo-termico-api","message":"Created client Clínica Vida e Saúde","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.126","level":"info","service":"laudo-termico-api","message":"Client seeds completed","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.127","level":"info","service":"laudo-termico-api","message":"Seeding equipment types/brands/models and client equipments...","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.213","level":"info","service":"laudo-termico-api","message":"Created client equipment SN-TC-0001","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.217","level":"info","service":"laudo-termico-api","message":"Created client equipment SN-LE-042-01","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.221","level":"info","service":"laudo-termico-api","message":"Created client equipment SN-CT-100A","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.221","level":"info","service":"laudo-termico-api","message":"Equipment seeds completed","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.223","level":"info","service":"laudo-termico-api","message":"Seeding sensor types and sensors...","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.262","level":"info","service":"laudo-termico-api","message":"Created sensor SEN-T-0001","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.268","level":"info","service":"laudo-termico-api","message":"Created sensor SEN-T-0002","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.274","level":"info","service":"laudo-termico-api","message":"Created sensor SEN-TMP-01","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.280","level":"info","service":"laudo-termico-api","message":"Created sensor SEN-TMP-02","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.301","level":"info","service":"laudo-termico-api","message":"Attached sensor SEN-T-0001 to suitcase","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.305","level":"info","service":"laudo-termico-api","message":"Attached sensor SEN-T-0002 to suitcase","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.312","level":"info","service":"laudo-termico-api","message":"Attached sensor SEN-TMP-01 to suitcase","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.315","level":"info","service":"laudo-termico-api","message":"Attached sensor SEN-TMP-02 to suitcase","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.315","level":"info","service":"laudo-termico-api","message":"Sensor seeds completed","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.316","level":"info","service":"laudo-termico-api","message":"Starting template seeds...","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.334","level":"info","service":"laudo-termico-api","message":"Template \"Laudo Técnico Padrão\" already exists, skipping...","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.336","level":"info","service":"laudo-termico-api","message":"Template \"Laudo com Gráficos Detalhados\" already exists, skipping...","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.338","level":"info","service":"laudo-termico-api","message":"Template \"Relatório Executivo\" already exists, skipping...","environment":"development","version":"1.0.0"}
+{"timestamp":"2025-12-04 10:20:25.338","level":"info","service":"laudo-termico-api","message":"Template seeds completed successfully!","environment":"development","version":"1.0.0"}

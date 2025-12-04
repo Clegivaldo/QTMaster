@@ -52,6 +52,24 @@ export class ReportController {
         fs.mkdirSync(reportsDir, { recursive: true });
       }
 
+      // Remover relatórios anteriores desta validação (substituir comportamento)
+      const existingReports = await prisma.report.findMany({ where: { validationId } });
+      for (const r of existingReports) {
+        if (r.pdfPath) {
+          const oldPath = path.join(process.cwd(), r.pdfPath);
+          try {
+            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+          } catch (err) {
+            console.warn('Falha ao remover arquivo antigo do relatório:', oldPath, err);
+          }
+        }
+        try {
+          await prisma.report.delete({ where: { id: r.id } });
+        } catch (err) {
+          console.warn('Falha ao remover registro antigo do relatório:', r.id, err);
+        }
+      }
+
       const filename = `laudo_${validationId}_${Date.now()}.pdf`;
       const filepath = path.join(reportsDir, filename);
       fs.writeFileSync(filepath, pdfBuffer);
@@ -69,11 +87,7 @@ export class ReportController {
         }
       });
 
-      // Retornar o PDF
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      
+      // Retornar informação do relatório gerado (não enviar o PDF direto aqui)
       return res.json({
         success: true,
         data: {
@@ -241,6 +255,8 @@ export class ReportController {
       
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      // Ensure proxies and browsers don't cache the PDF (always get the latest)
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       
       const fileStream = fs.createReadStream(filepath);
       fileStream.pipe(res);

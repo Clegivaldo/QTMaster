@@ -113,12 +113,12 @@ const exportOptionsSchema = z.object({
 // In-memory storage removed - now using Prisma for persistent database storage
 
 export class EditorTemplateController {
-  
+
   async getTemplates(req: Request, res: Response): Promise<void> {
     try {
       const authReq = req as AuthenticatedRequest;
       const { page, limit, category, tags, isPublic, createdBy, sortBy, sortOrder } = querySchema.parse(req.query);
-      
+
       if (!authReq.user?.id) {
         res.status(401).json({
           success: false,
@@ -126,7 +126,7 @@ export class EditorTemplateController {
         });
         return;
       }
-      
+
       // Build Prisma where condition
       const whereCondition: any = {
         OR: [
@@ -134,30 +134,30 @@ export class EditorTemplateController {
           { createdBy: authReq.user.id }
         ]
       };
-      
+
       if (category) {
         whereCondition.category = category;
       }
-      
+
       if (tags.length > 0) {
         whereCondition.tags = {
           hasSome: tags
         };
       }
-      
+
       if (isPublic !== undefined) {
         whereCondition.isPublic = isPublic;
       }
-      
+
       if (createdBy) {
         whereCondition.createdBy = createdBy;
       }
-      
+
       // Get total count
       const total = await prisma.editorTemplate.count({
         where: whereCondition
       });
-      
+
       // Get paginated templates
       const skip = (page - 1) * limit;
       const templates = await prisma.editorTemplate.findMany({
@@ -168,7 +168,7 @@ export class EditorTemplateController {
           [sortBy]: sortOrder
         }
       });
-      
+
       const totalPages = Math.ceil(total / limit);
 
       res.json({
@@ -364,14 +364,14 @@ export class EditorTemplateController {
     try {
       const authReq = req as AuthenticatedRequest;
       const { id } = req.params;
-      
+
       // Log detalhado para debug
       console.log('=== UPDATE TEMPLATE DEBUG ===');
       console.log('Template ID:', id);
       console.log('User ID:', authReq.user?.id);
       console.log('User:', authReq.user);
       console.log('Request body:', JSON.stringify(req.body).substring(0, 200));
-      
+
       const updateData = updateTemplateSchema.parse(req.body);
       console.log('✅ Schema validation passed');
 
@@ -478,7 +478,7 @@ export class EditorTemplateController {
       console.log('❌ UPDATE TEMPLATE ERROR:');
       console.log('Error type:', error?.constructor?.name);
       console.log('Error:', error);
-      
+
       if (error instanceof z.ZodError) {
         console.log('❌ Zod validation error:', JSON.stringify(error.issues, null, 2));
         res.status(400).json({
@@ -669,7 +669,7 @@ export class EditorTemplateController {
       }
 
       const query = q.toLowerCase();
-      
+
       // Search in database
       const searchResults = await prisma.editorTemplate.findMany({
         where: {
@@ -769,13 +769,13 @@ export class EditorTemplateController {
       if (exportOptions.format === 'pdf') {
         // Gerar PDF simples com pdfkit e enviar diretamente como blob
         const doc = new PDFDocument({ size: 'A4' });
-        
+
         // Coletar dados do PDF em um buffer
         const chunks: Buffer[] = [];
         doc.on('data', (chunk) => {
           chunks.push(chunk);
         });
-        
+
         doc.on('end', () => {
           const pdfBuffer = Buffer.concat(chunks);
           res.setHeader('Content-Type', 'application/pdf');
@@ -783,7 +783,7 @@ export class EditorTemplateController {
           res.setHeader('Content-Length', pdfBuffer.length);
           res.send(pdfBuffer);
         });
-        
+
         doc.on('error', (err) => {
           logger.error('PDF generation error:', err);
           res.status(500).json({
@@ -791,41 +791,41 @@ export class EditorTemplateController {
             error: 'Erro ao gerar PDF',
           });
         });
-        
+
         // Conteúdo do PDF
         doc.fontSize(18).text(template.name || 'Template', { align: 'center' });
         doc.moveDown();
         doc.fontSize(12).text(`Export gerado em: ${new Date().toLocaleString('pt-BR')}`);
         doc.moveDown();
-        
+
         // Renderizar elementos do template
         const elements = (template.elements as any[]) || [];
-        
+
         if (elements.length > 0) {
           doc.fontSize(14).text('Elementos do Template:', { underline: true });
           doc.moveDown();
-          
+
           // Mostrar contagem de elementos
           doc.fontSize(11).text(`Total de elementos: ${elements.length}`);
           doc.moveDown();
-          
+
           doc.fontSize(9).text('Detalhes dos elementos:');
           doc.moveDown();
-          
+
           // Mostrar detalhes resumidos de cada elemento (máximo 10 para não ficar muito grande)
           elements.slice(0, 10).forEach((el: any, idx: number) => {
             const elType = el.type || 'unknown';
             const elContent = el.content ? (typeof el.content === 'string' ? el.content : JSON.stringify(el.content).substring(0, 50)) : '(sem conteúdo)';
             doc.fontSize(8).text(`${idx + 1}. [${elType}] ${elContent}`);
           });
-          
+
           if (elements.length > 10) {
             doc.fontSize(8).text(`... e mais ${elements.length - 10} elemento${elements.length - 10 !== 1 ? 's' : ''}`);
           }
         } else {
           doc.fontSize(11).text('(Nenhum elemento no template)');
         }
-        
+
         // Informações adicionais
         doc.moveDown(2);
         doc.fontSize(9).text('Metadados:', { underline: true });
@@ -833,11 +833,11 @@ export class EditorTemplateController {
         doc.fontSize(8).text(`Versão: ${template.version || 1}`);
         doc.fontSize(8).text(`Criado em: ${new Date(template.createdAt).toLocaleString('pt-BR')}`);
         doc.fontSize(8).text(`Público: ${template.isPublic ? 'Sim' : 'Não'}`);
-        
+
         if (template.tags && (template.tags as any[]).length > 0) {
           doc.fontSize(8).text(`Tags: ${(template.tags as any[]).join(', ')}`);
         }
-        
+
         doc.end();
       } else if (exportOptions.format === 'png') {
         // Retornar PNG placeholder (1x1 transparente)
@@ -909,7 +909,7 @@ export class EditorTemplateController {
         res.status(400).json({ success: false, error: 'Template is required' });
         return;
       }
-      
+
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `${(template.name || 'template').replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.${exportOptions.format}`;
       const exportsDir = process.env.EXPORTS_PATH || path.join(process.cwd(), 'exports');
@@ -953,44 +953,12 @@ export class EditorTemplateController {
     }
   }
 
-  async validateTemplate(req: Request, res: Response): Promise<void> {
-    try {
-      const templateData = createTemplateSchema.parse(req.body);
-
-      res.json({
-        success: true,
-        data: {
-          isValid: true,
-          errors: [],
-          warnings: []
-        },
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.json({
-          success: true,
-          data: {
-            isValid: false,
-            errors: error.issues.map((err: any) => err.message),
-            warnings: []
-          },
-        });
-        return;
-      }
-
-      logger.error('Validate editor template error:', { error: error instanceof Error ? error.message : error });
-      res.status(500).json({
-        success: false,
-        error: 'Internal server error',
-      });
-    }
-  }
-
+ 
   async exportTemplateData(req: Request, res: Response): Promise<void> {
     try {
       const authReq = req as AuthenticatedRequest;
       const { template, options } = req.body;
-      
+
       if (!authReq.user?.id) {
         res.status(401).json({
           success: false,
@@ -1015,7 +983,7 @@ export class EditorTemplateController {
         return;
       }
 
-      const exportOptions = { 
+      const exportOptions = {
         format: options.format,
         quality: Math.max(1, Math.min(100, options.quality ?? 100)),
         dpi: Math.max(72, Math.min(600, options.dpi || 300)),
@@ -1170,21 +1138,78 @@ export class EditorTemplateController {
   getPDFJobStatus = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { jobId } = req.params as any;
-
       if (!jobId) {
         res.status(400).json({ success: false, error: 'jobId é obrigatório' });
         return;
       }
 
-      // Currently there is no async job queue implemented for PDF generation in this controller.
-      // Return 501 Not Implemented with guidance so callers can fallback to synchronous behavior.
-      res.status(501).json({
-        success: false,
-        error: 'Sistema de fila de jobs para geração de PDF não implementado. Tente gerar o PDF diretamente via POST /generate-pdf.',
-      });
+      // No background job queue is implemented; return a placeholder response
+      res.json({ success: true, data: { jobId, status: 'not_implemented' } });
     } catch (error) {
       logger.error('Get PDF job status error:', { error: error instanceof Error ? error.message : error });
       res.status(500).json({ success: false, error: 'Erro ao consultar status do job' });
+    }
+  }
+
+
+  async validateTemplate(req: Request, res: Response): Promise<void> {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const { id } = req.params;
+      if (!authReq.user?.id) { res.status(401).json({ success: false, error: 'Não autenticado' }); return; }
+      if (!id) { res.status(400).json({ success: false, error: 'ID obrigatório' }); return; }
+      const template = await prisma.editorTemplate.findUnique({ where: { id } });
+      if (!template) { res.status(404).json({ success: false, error: 'Template não encontrado' }); return; }
+      if (!template.isPublic && template.createdBy !== authReq.user.id) { res.status(403).json({ success: false, error: 'Acesso negado' }); return; }
+      const { templateValidationService } = await import('../services/templateValidationService.js');
+      const { sampleDataGenerator } = await import('../services/sampleDataGenerator.js');
+      const result = await templateValidationService.validateTemplate(template.elements as any, sampleDataGenerator.generateValidationData() as any);
+      res.json({ success: true, data: result });
+    } catch (error) {
+      logger.error('Validate error:', error);
+      res.status(500).json({ success: false, error: 'Erro na validação' });
+    }
+  }
+
+  async testTemplate(req: Request, res: Response): Promise<void> {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const { id } = req.params;
+      const { data: testData, useSampleData = true } = req.body;
+      if (!authReq.user?.id) { res.status(401).json({ success: false, error: 'Não autenticado' }); return; }
+      if (!id) { res.status(400).json({ success: false, error: 'ID obrigatório' }); return; }
+      const template = await prisma.editorTemplate.findUnique({ where: { id } });
+      if (!template) { res.status(404).json({ success: false, error: 'Template não encontrado' }); return; }
+      if (!template.isPublic && template.createdBy !== authReq.user.id) { res.status(403).json({ success: false, error: 'Acesso negado' }); return; }
+      const { templateValidationService } = await import('../services/templateValidationService.js');
+      const { sampleDataGenerator } = await import('../services/sampleDataGenerator.js');
+      const dataToUse = useSampleData ? sampleDataGenerator.generateValidationData() : testData;
+      if (!dataToUse) { res.status(400).json({ success: false,error: 'Dados obrigatórios' }); return; }
+      const validationResult = await templateValidationService.validateTemplate(template.elements as any, dataToUse as any);
+      if (!validationResult.isValid) { res.json({ success: true, data: { ...validationResult, rendered: false } }); return; }
+      try {
+        const { editorTemplateRenderer } = await import('../services/editorTemplateRenderer.js');
+        const html = await (editorTemplateRenderer as any).renderTemplate(template.elements as any, dataToUse as any, template.pageSettings as any);
+        res.json({ success: true, data: { ...validationResult, rendered: true, html } });
+      } catch (renderError) {
+        res.json({ success: true, data: { ...validationResult, rendered: false, renderError: renderError instanceof Error ? renderError.message : 'Error' } });
+      }
+    } catch (error) {
+      logger.error('Test error:', error);
+      res.status(500).json({ success: false, error: 'Erro no teste' });
+    }
+  }
+
+  async getSampleData(req: Request, res: Response): Promise<void> {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      if (!authReq.user?.id) { res.status(401).json({ success: false, error: 'Não autenticado' }); return; }
+      const { sampleDataGenerator } = await import('../services/sampleDataGenerator.js');
+      const data = req.query.type === 'minimal' ? sampleDataGenerator.getMinimalData() : sampleDataGenerator.generateValidationData();
+      res.json({ success: true, data });
+    } catch (error) {
+      logger.error('Sample data error:', error);
+      res.status(500).json({ success: false, error: 'Erro ao gerar dados' });
     }
   }
 }

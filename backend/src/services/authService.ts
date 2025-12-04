@@ -131,7 +131,16 @@ export class AuthService {
   async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
     try {
       // Verificar se o token JWT é válido
-      const decoded = (jwt as any).verify(refreshToken, this.jwtRefreshSecret) as TokenPayload;
+      let decoded: TokenPayload;
+      try {
+        decoded = (jwt as any).verify(refreshToken, this.jwtRefreshSecret) as TokenPayload;
+      } catch (jwtError: any) {
+        // Tratamento específico para tokens expirados ou inválidos
+        if (jwtError && (jwtError.name === 'TokenExpiredError' || jwtError.name === 'JsonWebTokenError')) {
+          throw new AppError('Invalid refresh token', 401);
+        }
+        throw jwtError;
+      }
 
       // Buscar usuário no banco
       const user = await this.prisma.user.findUnique({
@@ -151,7 +160,7 @@ export class AuthService {
     } catch (error) {
       if (error instanceof AppError) throw error;
       console.error('Erro ao atualizar token:', error);
-      throw new AppError('Erro ao atualizar token', 401);
+      throw new AppError('Erro ao atualizar token', 500);
     }
   }
 

@@ -10,7 +10,8 @@ class ApiService {
     this.baseURL = API_CONFIG.baseURL || '/api';
     this.api = axios.create({
       baseURL: this.baseURL,
-      timeout: 30000,
+      // Default timeout increased to accommodate long-running report generation.
+      timeout: Number((import.meta as any).env?.VITE_REPORT_GENERATION_TIMEOUT) || 120000,
       headers: {
         'Content-Type': 'application/json',
       },

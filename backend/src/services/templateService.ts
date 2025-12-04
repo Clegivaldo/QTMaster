@@ -2,6 +2,7 @@ import Handlebars from 'handlebars';
 import fs from 'fs';
 import path from 'path';
 import { ReportData } from './reportGenerationService.js';
+import { formatDateShort } from '../utils/formatDate.js';
 
 export class TemplateService {
   private templates: Map<string, HandlebarsTemplateDelegate> = new Map();
@@ -16,7 +17,6 @@ export class TemplateService {
    */
   private registerHelpers() {
     // Helper para formatar datas (dd/MM/yy HH:mm)
-    const { formatDateShort } = require('../utils/formatDate.js');
     Handlebars.registerHelper('formatDate', (date: Date) => {
       return formatDateShort(date);
     });

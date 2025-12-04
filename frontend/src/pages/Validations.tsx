@@ -158,24 +158,39 @@ const Validations: React.FC = () => {
     try {
       setGeneratingReport(selectedValidationForReport.id);
 
+      // Use reports generation endpoint which saves the PDF server-side and returns a download URL
       const timeout = Number((import.meta as any).env?.VITE_REPORT_GENERATION_TIMEOUT) || 120000;
-      const response = await apiService.api.post(
-        `/editor-templates/${templateId}/generate-pdf`,
-        { validationId: selectedValidationForReport.id },
-        { responseType: 'blob', timeout }
+
+      const resp = await apiService.api.post(
+        `/reports/generate/${selectedValidationForReport.id}`,
+        {},
+        { params: { templateId }, timeout }
       );
 
-      const blob = response.data as Blob;
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `laudo_${selectedValidationForReport.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const data = resp.data?.data;
+      if (data && data.downloadUrl) {
+        // Auto-download generated PDF once created, but keep record on server
+        try {
+          const dlResp = await apiService.api.get(data.downloadUrl, { responseType: 'blob', timeout: 60000 });
+          const blob = dlResp.data as Blob;
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = data.filename || `laudo_${selectedValidationForReport.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } catch (dlErr) {
+          // If download failed, still notify success and provide URL
+          console.warn('Generated but failed to auto-download:', dlErr);
+          toast.info('Laudo gerado — use o botão de download para baixar o arquivo.');
+        }
 
-      toast.success('PDF gerado com sucesso!');
+        toast.success('PDF gerado com sucesso!');
+      } else {
+        toast.error('Resposta inesperada do servidor ao gerar PDF');
+      }
     } catch (error: any) {
       console.error('Error generating PDF:', error);
       const message = error?.response?.data?.message || error?.message || 'Erro ao gerar PDF';
@@ -391,6 +406,42 @@ const Validations: React.FC = () => {
                       </button>
 
                       {/* Secondary Actions */}
+                      {/* Download existing report if present */}
+                      { (validation._count?.reports || 0) > 0 && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              setGeneratingReport(validation.id);
+                              // Fetch latest report for this validation
+                              const resp = await apiService.api.get(`/reports`, { params: { validationId: validation.id, page: 1, limit: 1 } });
+                              const reports = resp.data?.data?.reports || [];
+                              if (reports.length === 0) {
+                                toast.error('Nenhum relatório encontrado');
+                                return;
+                              }
+                              const report = reports[0];
+                              const dl = await apiService.api.get(`/reports/${report.id}/download`, { responseType: 'blob' });
+                              const blob = dl.data as Blob;
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = report.name?.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                            } catch (err) {
+                              console.error('Erro ao baixar relatório:', err);
+                              toast.error('Erro ao baixar relatório');
+                            } finally {
+                              setGeneratingReport(null);
+                            }
+                          }}
+                          className="btn-secondary text-sm"
+                        >
+                          📄 Baixar Laudo
+                        </button>
+                      )}
                       <button 
                         onClick={() => navigate(`/validations/${validation.id}/charts`)}
                         className="btn-secondary text-sm"

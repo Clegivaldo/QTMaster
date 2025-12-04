@@ -69,7 +69,8 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({ isOpen, onClose, 
   const handleSelectImage = useCallback(
     (image: GalleryImage) => {
       const imageData: ImageData = {
-        src: `${apiService.baseURL}/${image.path}`,
+        // Prefer explicit URL returned by backend; fallback to constructed path
+        src: (image as any).url || `${apiService.baseURL}/${image.path}`,
         alt: image.name,
         originalSize: image.dimensions,
         aspectRatio: image.dimensions.width / image.dimensions.height,
@@ -199,7 +200,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({ isOpen, onClose, 
                   onDoubleClick={() => handleSelectImage(image)}
                 >
                   <div className="aspect-square">
-                    <img src={image.thumbnail || `${apiService.baseURL}/${image.path}`} alt={image.name} className="w-full h-full object-cover" />
+                    <img src={image.thumbnail || (image as any).url || `${apiService.baseURL}/${image.path}`} alt={image.name} className="w-full h-full object-cover" />
                   </div>
 
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
@@ -245,7 +246,7 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({ isOpen, onClose, 
                   onClick={() => setSelectedImageId(image.id)}
                   onDoubleClick={() => handleSelectImage(image)}
                 >
-                  <img src={image.thumbnail || `${apiService.baseURL}/${image.path}`} alt={image.name} className="w-12 h-12 object-cover rounded" />
+                  <img src={image.thumbnail || (image as any).url || `${apiService.baseURL}/${image.path}`} alt={image.name} className="w-12 h-12 object-cover rounded" />
                   <div className="flex-1">
                     <div className="font-medium">{image.name}</div>
                     <div className="text-sm text-gray-500">{image.dimensions.width} × {image.dimensions.height} • {Math.round(image.size / 1024)}KB</div>

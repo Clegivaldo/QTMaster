@@ -1,6 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { seedTemplates } from './seeds/templates.js';
+import { seedClients } from './seeds/clients.js';
+import { seedEquipment } from './seeds/equipment.js';
+import { seedSensors } from './seeds/sensors.js';
 
 const prisma = new PrismaClient();
 
@@ -82,6 +85,19 @@ async function main() {
       },
     });
   }
+
+  // Additional realistic seeds (clients, equipment, sensors)
+  console.log('--- Running seedClients ---');
+  await seedClients();
+  console.log('--- Completed seedClients ---');
+
+  console.log('--- Running seedEquipment ---');
+  await seedEquipment();
+  console.log('--- Completed seedEquipment ---');
+
+  console.log('--- Running seedSensors ---');
+  await seedSensors();
+  console.log('--- Completed seedSensors ---');
 
   // Seed editor templates
   console.log('Seeding editor templates...');

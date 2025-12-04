@@ -68,6 +68,10 @@ router.post('/images', imageUpload.single('image'), async (req: Request, res: Re
         filename: req.file.filename,
         originalName: req.file.originalname,
         path: relativePath.replace(/\\/g, '/'), // Normalizar separadores para web
+        // Public URL to access the uploaded file via the public static mount (`/uploads/...`).
+        // Use the static prefix so the browser requests the file directly from the frontend/nginx
+        // (which serves /uploads) rather than through authenticated API routes.
+        url: `/${relativePath.replace(/\\/g, '/')}`,
         size: req.file.size,
         mimetype: req.file.mimetype,
         uploadedAt: new Date().toISOString()
@@ -111,6 +115,8 @@ router.get('/images/gallery', async (req: Request, res: Response): Promise<void>
         id: filename.replace(path.extname(filename), ''),
         name: filename,
         path: relativePath,
+        // Public URL for the file served from the static mount
+        url: `/${relativePath}`,
         size: stats.size,
         dimensions: { width: 0, height: 0 }, // Será calculado no frontend
         createdAt: stats.birthtime.toISOString()

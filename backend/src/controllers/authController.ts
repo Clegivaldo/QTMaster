@@ -123,7 +123,10 @@ export class AuthController {
         return;
       }
 
-      if (error instanceof Error && error.message === 'Invalid refresh token') {
+      if (
+        (error instanceof AppError && error.statusCode === 401) ||
+        (error instanceof Error && error.message === 'Invalid refresh token')
+      ) {
         res.status(401).json({
           error: 'Invalid or expired refresh token',
         });

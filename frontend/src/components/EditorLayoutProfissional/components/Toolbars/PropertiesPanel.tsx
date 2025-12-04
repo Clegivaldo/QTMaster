@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { X as IconX } from 'lucide-react';
 import DynamicTextControls from './DynamicTextControls';
+import { ChartElementConfig } from '../Elements/ChartElementConfig';
+import { TableBuilder } from '../Elements/TableBuilder';
 import { PropertiesPanelProps, ElementStyles } from '../../../../types/editor';
 import { AVAILABLE_FONTS, FONT_SIZES } from '../../../../types/editor-constants';
 
@@ -455,8 +457,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                       <button
                         onClick={() => toggleFormat('fontWeight', 'bold')}
                         className={`p-2 border rounded transition-colors ${getCommonStringStyle('fontWeight') === 'bold'
-                            ? 'bg-blue-500 text-white border-blue-500'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          ? 'bg-blue-500 text-white border-blue-500'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                           }`}
                         title="Negrito"
                       >
@@ -466,8 +468,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                       <button
                         onClick={() => toggleFormat('fontStyle', 'italic')}
                         className={`p-2 border rounded transition-colors ${getCommonStringStyle('fontStyle') === 'italic'
-                            ? 'bg-blue-500 text-white border-blue-500'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          ? 'bg-blue-500 text-white border-blue-500'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                           }`}
                         title="Itálico"
                       >
@@ -477,8 +479,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                       <button
                         onClick={() => toggleFormat('textDecoration', 'underline', 'none')}
                         className={`p-2 border rounded transition-colors ${getCommonStringStyle('textDecoration') === 'underline'
-                            ? 'bg-blue-500 text-white border-blue-500'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          ? 'bg-blue-500 text-white border-blue-500'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                           }`}
                         title="Sublinhado"
                       >
@@ -501,8 +503,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                           key={value}
                           onClick={() => applyStyle({ textAlign: value as any })}
                           className={`p-2 border rounded transition-colors ${getCommonStringStyle('textAlign') === value
-                              ? 'bg-blue-500 text-white border-blue-500'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            ? 'bg-blue-500 text-white border-blue-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                             }`}
                           title={title}
                         >
@@ -525,8 +527,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
                           key={value}
                           onClick={() => applyStyle({ verticalAlign: value as any })}
                           className={`p-2 border rounded transition-colors ${getCommonStringStyle('verticalAlign') === value
-                              ? 'bg-blue-500 text-white border-blue-500'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            ? 'bg-blue-500 text-white border-blue-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                             }`}
                           title={title}
                         >
@@ -837,8 +839,30 @@ const PropertiesPanel: React.FC<PropertiesPanelProps & { onUpdateElements?: (ele
               </div>
             )}
 
+            {/* Controles específicos para gráficos */}
+            {singleSelection && selectedElements[0].type === 'chart' && (
+              <ChartElementConfig
+                element={selectedElements[0] as any}
+                onUpdate={(updates) => {
+                  if (onUpdateElements) {
+                    onUpdateElements([selectedElements[0].id], updates);
+                  }
+                }}
+              />
+            )}
+
             {/* Controles específicos para tabelas */}
             {singleSelection && selectedElements[0].type === 'table' && (
+              <TableBuilder
+                element={selectedElements[0] as any}
+                onUpdate={(updates) => {
+                  if (onUpdateElements) {
+                    onUpdateElements([selectedElements[0].id], updates);
+                  }
+                }}
+              />
+            )}
+            {false && singleSelection && selectedElements[0].type === 'table' && (
               <div className="p-4 bg-white border-b border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Configurações da Tabela</h4>
 

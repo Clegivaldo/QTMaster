@@ -58,7 +58,8 @@ export const useImageUpload = (): UseImageUploadReturn => {
       if (response.data.success) {
         // Obter dimensões da imagem
         const img = new Image();
-        const imageUrl = `${apiService.baseURL}/${response.data.data.path}`;
+        // Use absolute `url` returned by the backend when available; fallback to constructed path
+        const imageUrl = response.data.data.url || `${apiService.baseURL}/${response.data.data.path}`;
         
         return new Promise((resolve, reject) => {
           img.onload = () => {

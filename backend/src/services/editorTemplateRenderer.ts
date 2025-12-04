@@ -104,8 +104,7 @@ export class EditorTemplateRenderer {
         return this.renderImageElement(element, combinedStyles);
 
       case 'chart':
-        // For now, return placeholder. Chart rendering will be added in Phase 4
-        return this.renderChartPlaceholder(element, combinedStyles);
+        return this.renderChartElement(element, data, combinedStyles);
 
       case 'rectangle':
         return this.renderRectangle(element, combinedStyles);
@@ -143,20 +142,28 @@ export class EditorTemplateRenderer {
 
   /**
    * Process dynamic text - replace {{variables}} with actual data
+   * Supports formatters: {{variable | formatter}}
    */
   private processDynamicText(text: string, data: TemplateData): string {
-    // Match all {{variable}} patterns
-    const variablePattern = /\{\{([^}]+)\}\}/g;
+    // Match {{variable}} or {{variable | formatter}}
+    const variablePattern = /\{\{([^}|]+)(?:\|([^}]+))?\}\}/g;
 
-    return text.replace(variablePattern, (match, path) => {
+    return text.replace(variablePattern, (match, path, formatter) => {
       const trimmedPath = path.trim();
+      const trimmedFormatter = formatter ? formatter.trim() : undefined;
+
       const value = this.resolveDataPath(trimmedPath, data);
 
-      logger.debug('Processing dynamic text', { match, path: trimmedPath, value, valueType: typeof value });
+      logger.debug('Processing dynamic text', { match, path: trimmedPath, formatter: trimmedFormatter, value, valueType: typeof value });
 
       if (value === undefined || value === null) {
-        logger.warn('Undefined value in dynamic text', { path: trimmedPath, availableData: Object.keys(data) });
+        // Don't warn for optional variables or if we want to show empty string
+        // logger.warn('Undefined value in dynamic text', { path: trimmedPath });
         return '';
+      }
+
+      if (trimmedFormatter) {
+        return this.applyFormatter(value, trimmedFormatter);
       }
 
       return this.formatDataValue(value);
@@ -218,7 +225,276 @@ export class EditorTemplateRenderer {
   }
 
   /**
-   * Render chart placeholder (charts will be generated separately)
+   * Render chart element using server-side rendering
+   */
+  private async renderChartElement(element: EditorElement, data: TemplateData, styles: string): Promise<string> {
+    try {
+      // Import dynamically to avoid circular dependencies if any
+      const { chartRenderService } = await import('./chartRenderService.js');
+
+      // Cast to ChartElement (assuming structure)
+      const chartElement = element as any; // We'll define proper interface later or cast here
+      const chartConfig = chartElement.content || {};
+
+      // Prepare chart data
+      const chartData = this.prepareChartDataFromSource(chartConfig, data);
+
+      // Render chart to base64 image
+      const chartImage = await chartRenderService.renderChartToBase64({
+        type: chartConfig.chartType || 'line',
+        data: chartData,
+        options: chartConfig.options || {},
+        width: Math.round((element.size.width || 100) * 3.78), // mm to px (approx 96 DPI)
+        height: Math.round((element.size.height || 50) * 3.78)
+      });
+
+      return `<img class="editor-element editor-chart" src="${chartImage}" style="${styles}" alt="Chart" />`;
+    } catch (error) {
+      logger.error('Error rendering chart element', { error, elementId: element.id });
+      // Fallback to placeholder on error
+      return this.renderChartPlaceholder(element, styles);
+    }
+  }
+
+  /**
+   * Prepare chart data based on configuration source
+   */
+  private prepareChartDataFromSource(chartConfig: any, data: TemplateData): any {
+    const dataSource = chartConfig.dataSource || { type: 'custom' };
+
+    if (dataSource.type === 'validation' || dataSource.type === 'sensorData') {
+      return this.prepareSensorDataChartData(dataSource, data);
+    }
+
+    // Default/Custom data
+    return chartConfig.data || {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+      datasets: [{
+        label: 'Sample Data',
+        data: [12, 19, 3, 5, 2],
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.4
+      }]
+    };
+  }
+
+  /**
+   * Prepare chart data from sensor data
+   */
+  private prepareSensorDataChartData(dataSource: any, data: TemplateData): any {
+    const field = dataSource.field || 'temperature';
+    const sensorIds = dataSource.sensorIds || [];
+
+    // Filter data
+    let filteredData = data.sensorData;
+    if (sensorIds.length > 0) {
+      filteredData = filteredData.filter(d => sensorIds.includes(d.sensorId));
+    }
+
+    // Group by sensor if multiple sensors
+    const sensorGroups = new Map<string, any[]>();
+    filteredData.forEach(item => {
+      if (!sensorGroups.has(item.sensorId)) {
+        sensorGroups.set(item.sensorId, []);
+      }
+      sensorGroups.get(item.sensorId)!.push(item);
+    });
+
+    // Generate labels from timestamps (using the first sensor's timestamps)
+    // In a real scenario, we might need to align timestamps
+    const firstGroup = Array.from(sensorGroups.values())[0] || [];
+    const labels = firstGroup.map(d => {
+      const date = new Date(d.timestamp);
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    });
+
+    // Generate datasets
+    const datasets = Array.from(sensorGroups.entries()).map(([sensorId, items], index) => {
+      const sensor = data.sensors.find(s => s.id === sensorId);
+      const colors = [
+        'rgb(239, 68, 68)',   // Red
+        'rgb(59, 130, 246)',  // Blue
+        'rgb(16, 185, 129)',  // Green
+        'rgb(245, 158, 11)',  // Amber
+        'rgb(139, 92, 246)'   // Violet
+      ];
+      const color = colors[index % colors.length];
+
+      const safeColor = color || 'rgb(0,0,0)';
+      return {
+        label: `${sensor?.serialNumber || sensorId} (${field === 'temperature' ? '°C' : '%'})`,
+        data: items.map(d => field === 'temperature' ? d.temperature : d.humidity),
+        borderColor: safeColor,
+        backgroundColor: safeColor.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+        tension: 0.4,
+        pointRadius: 0, // Optimize for many points
+        borderWidth: 2
+      };
+    });
+
+    return { labels, datasets };
+  }
+
+  /**
+   * Render table element with dynamic data
+   */
+  private renderTableElement(element: EditorElement, data: TemplateData, styles: string): string {
+    const tableElement = element as any; // Cast to TableElement
+    const tableConfig = tableElement.content || {};
+    const dataSource = tableConfig.dataSource || 'sensorData';
+
+    // Resolve data source
+    let tableData = this.resolveDataPath(dataSource, data);
+
+    // If data is not an array, try to wrap it or return empty
+    if (!Array.isArray(tableData)) {
+      if (tableData) {
+        tableData = [tableData];
+      } else {
+        // Fallback for preview/empty state
+        tableData = [
+          { col1: 'Sample 1', col2: 'Sample 2' },
+          { col1: 'Sample 3', col2: 'Sample 4' }
+        ];
+      }
+    }
+
+    // Pagination logic (simple version for now, just taking first N rows if pagination not fully implemented)
+    // In a full implementation, this would handle page breaks
+    const rowsPerPage = tableConfig.pagination?.rowsPerPage || 50;
+    const pageData = tableData.slice(0, rowsPerPage);
+
+    return this.renderTablePage(element, pageData, 1, Math.ceil(tableData.length / rowsPerPage));
+  }
+
+  /**
+   * Render a single page of a table
+   */
+  private renderTablePage(
+    element: EditorElement,
+    data: any[],
+    pageIndex: number,
+    totalPages: number
+  ): string {
+    const tableElement = element as any;
+    const tableConfig = tableElement.content || {};
+    const columns = tableConfig.columns || [
+      { header: 'Column 1', field: 'col1' },
+      { header: 'Column 2', field: 'col2' }
+    ];
+    const styles = tableConfig.styles || {};
+
+    const headerStyle = `
+      background-color: ${styles.headerBackground || '#f3f4f6'};
+      color: ${styles.headerColor || '#374151'};
+      font-weight: 600;
+      padding: 8px 12px;
+      border: 1px solid ${styles.borderColor || '#d1d5db'};
+      text-align: left;
+    `;
+
+    const cellStyle = `
+      font-size: ${styles.fontSize || 12}px;
+      border: 1px solid ${styles.borderColor || '#d1d5db'};
+      padding: 8px 12px;
+    `;
+
+    // Render headers
+    const headersHTML = columns.map((col: any) => `
+      <th style="${headerStyle} ${col.width ? `width: ${col.width};` : ''} text-align: ${col.align || 'left'};">
+        ${this.escapeHTML(col.header)}
+      </th>
+    `).join('');
+
+    // Render rows
+    const rowsHTML = data.map((row, index) => {
+      const rowStyle = styles.alternateRows && index % 2 === 1
+        ? 'background-color: #f9fafb;'
+        : '';
+
+      const cells = columns.map((col: any) => {
+        // Resolve field value (support nested paths)
+        const value = this.resolveDataPath(col.field, row);
+
+        // Apply formatter
+        const formattedValue = col.formatter
+          ? this.applyFormatter(value, col.formatter)
+          : this.formatDataValue(value);
+
+        return `
+          <td style="${cellStyle} ${rowStyle} text-align: ${col.align || 'left'};">
+            ${this.escapeHTML(formattedValue)}
+          </td>
+        `;
+      }).join('');
+
+      return `<tr>${cells}</tr>`;
+    }).join('');
+
+    const pageInfo = tableConfig.pagination?.showPageNumbers
+      ? `<div style="text-align: center; margin-top: 8px; font-size: 10px; color: #6b7280;">
+           Página ${pageIndex} de ${totalPages}
+         </div>`
+      : '';
+
+    // We wrap the table in a div that applies the element's position and size
+    // Note: The element styles are already passed in 'styles' arg to renderTableElement, 
+    // but here we are constructing the inner HTML. 
+    // The caller (convertElementToHTML) wraps this return value in a div if needed, 
+    // OR we return the full HTML.
+    // Looking at other render methods, they return the inner content or the full element.
+    // convertElementToHTML uses the return value as the content of the element div?
+    // No, convertElementToHTML returns the FULL HTML string for the element.
+    // So we need to wrap it.
+
+    return `
+      <div class="editor-element editor-table" style="${styles} overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; background-color: white;">
+          <thead>
+            <tr>${headersHTML}</tr>
+          </thead>
+          <tbody>
+            ${rowsHTML}
+          </tbody>
+        </table>
+        ${pageInfo}
+      </div>
+    `;
+  }
+
+  /**
+   * Apply specific formatter to value
+   */
+  private applyFormatter(value: any, formatter: string): string {
+    if (value === null || value === undefined) return '';
+
+    switch (formatter) {
+      case 'formatDate':
+        try {
+          return new Date(value).toLocaleDateString('pt-BR');
+        } catch { return String(value); }
+      case 'formatDateTime':
+        try {
+          return new Date(value).toLocaleString('pt-BR');
+        } catch { return String(value); }
+      case 'formatTemperature':
+        return `${Number(value).toFixed(1)} °C`;
+      case 'formatHumidity':
+        return `${Number(value).toFixed(1)} %`;
+      case 'formatCurrency':
+        try {
+          return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value));
+        } catch { return String(value); }
+      case 'uppercase':
+        return String(value).toUpperCase();
+      default:
+        return String(value);
+    }
+  }
+
+  /**
+   * Render chart placeholder (fallback)
    */
   private renderChartPlaceholder(element: EditorElement, styles: string): string {
     const chartType = element.content?.chartType || 'line';
@@ -347,6 +623,28 @@ export class EditorTemplateRenderer {
     const pageWidth = pageSettings?.width || 210; // A4 width in mm
     const pageHeight = pageSettings?.height || 297; // A4 height in mm
 
+    // Watermark CSS
+    const watermarkCSS = pageSettings?.watermark ? `
+      .watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: ${pageSettings.watermark.size || 100}px;
+        color: ${pageSettings.watermark.color || '#000000'};
+        opacity: ${pageSettings.watermark.opacity || 0.1};
+        pointer-events: none;
+        z-index: 1000;
+        white-space: nowrap;
+        font-weight: bold;
+        font-family: sans-serif;
+      }
+    ` : '';
+
+    const watermarkHTML = pageSettings?.watermark?.text ? `
+      <div class="watermark">${this.escapeHTML(pageSettings.watermark.text)}</div>
+    ` : '';
+
     return `
       <!DOCTYPE html>
       <html lang="pt-BR">
@@ -423,10 +721,13 @@ export class EditorTemplateRenderer {
                 page-break-after: always;
               }
             }
+
+            ${watermarkCSS}
           </style>
         </head>
         <body>
           <div class="page-container">
+            ${watermarkHTML}
             ${elementsHTML}
           </div>
         </body>

@@ -66,6 +66,8 @@ COPY --from=builder /app/dist ./dist
 # Copy node_modules already prepared in builder (pruned to production)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Copy templates created/edited in source into the production image
+COPY --from=builder /app/templates ./templates
 
 # Copy Python fallback parser (from source, not builder)
 COPY python ./python

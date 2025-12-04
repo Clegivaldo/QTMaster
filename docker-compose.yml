@@ -1,5 +1,6 @@
+version: '3.8'
+
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: laudo-postgres
@@ -20,7 +21,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: laudo-redis
@@ -37,65 +37,45 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API with FastReport System
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: laudo-backend
     restart: unless-stopped
-    env_file:
-      - ./backend/.env.docker
     environment:
       NODE_ENV: development
-      MAX_FILE_SIZE: 52428800
-      DATABASE_URL: postgresql://laudo_user:laudo_password@postgres:5432/laudo_db
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
-      JWT_EXPIRES_IN: 8h
-      FRONTEND_URL: http://localhost:3000
-      # FastReport System Environment Variables
-      TEMPLATE_EDITOR_ENABLED: true
-      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
-      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
-      REPORT_GENERATION_TIMEOUT: 120000
-      MAX_CONCURRENT_REPORTS: 5
+      PORT: 3001
+      DATABASE_URL: "postgresql://laudo_user:laudo_password@laudo-postgres:5432/laudo_db"
+      REDIS_URL: "redis://laudo-redis:6379"
+      FRONTEND_URL: "http://localhost:3000"
     ports:
       - "3001:3001"
-    volumes:
-      - ./backend/uploads:/app/uploads
-      - ./backend/templates:/app/templates
-      - ./backend/public:/app/public
-      - ./backend/signatures:/app/signatures
-      - ./backend/certificates:/app/certificates
-      - reports_data:/app/uploads/reports
-      - gallery_data:/app/public/images/gallery
-      - signatures_data:/app/signatures
-      - certificates_data:/app/certificates
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - postgres
+      - redis
     networks:
       - laudo-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3001/api/monitoring/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Frontend Web App with Template Editor Integration
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: node:20-bullseye
     container_name: laudo-frontend
     restart: unless-stopped
-    env_file:
-      - ./frontend/.env.docker
+    working_dir: /app
+    environment:
+      VITE_API_URL: "http://localhost:3001/api"
+      PORT: 3000
     ports:
-      - "3000:80"
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: sh -c "npm install --legacy-peer-deps && npm run dev -- --host 0.0.0.0 --port 3000"
     depends_on:
       - backend
     networks:
@@ -103,17 +83,7 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
   redis_data:
-    driver: local
-  reports_data:
-    driver: local
-  gallery_data:
-    driver: local
-  signatures_data:
-    driver: local
-  certificates_data:
-    driver: local
 
 networks:
   laudo-network:

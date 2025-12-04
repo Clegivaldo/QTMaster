@@ -213,28 +213,54 @@ export class ReportGenerationService {
     let browser = null;
     
     try {
-      // Configuração otimizada para Docker com novo headless
-      browser = await puppeteer.launch({
-        headless: true, // Usar modo headless
+      // Escolher executablePath confiável para Chromium (prioriza env var)
+      const candidatePaths = [
+        process.env.PUPPETEER_EXECUTABLE_PATH,
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/usr/bin/google-chrome',
+        '/usr/bin/chrome'
+      ].filter(Boolean) as string[];
+
+      let executablePath: string | undefined;
+      for (const p of candidatePaths) {
+        try {
+          // usar import dinâmico para fs.existsSync sem problemas ESM
+          const fsCheck = await import('fs');
+          if (fsCheck.existsSync(p)) {
+            executablePath = p;
+            break;
+          }
+        } catch (_) {
+          // ignore
+        }
+      }
+
+      if (!executablePath) {
+        console.warn('⚠️ Chromium executable not found in known paths, attempting default puppeteer binary');
+      } else {
+        console.info(`🧭 Using Chromium executable at: ${executablePath}`);
+      }
+
+      // Configuração otimizada e mais conservadora para Docker
+      // removemos flags problemáticas que podem causar falhas intermitentes (Target closed).
+      const launchOptions: any = {
+        headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-ipc-flooding-protection'
+          '--disable-gpu'
         ],
-        executablePath: '/usr/bin/chromium-browser',
-        timeout: 30000,
-        protocolTimeout: 30000
-      });
+        timeout: 60000,
+        protocolTimeout: 60000
+      };
+
+      if (executablePath) {
+        launchOptions.executablePath = executablePath;
+      }
+
+      browser = await puppeteer.launch(launchOptions);
 
       const page = await browser.newPage();
       
