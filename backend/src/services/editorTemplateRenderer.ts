@@ -66,15 +66,62 @@ export class EditorTemplateRenderer {
         throw new Error(`Template not found: ${templateId}`);
       }
 
-      // Check for pages structure (new) or elements structure (legacy)
+      // IMPORTANT: The root-level 'elements' array is the source of truth for element content.
+      // The 'pages[].elements' may contain stale copies without updated variables/content.
+      // We use root 'elements' for content but respect page structure for multi-page layouts.
       const pages = (template.pages as unknown as any[]) || [];
+      const rootElements = (template.elements as unknown as EditorElement[]) || [];
       let bodyHTML = '';
 
-      if (pages.length > 0) {
-        // Multi-page template
+      logger.info('Rendering template', {
+        templateId,
+        pagesCount: pages.length,
+        rootElementsCount: rootElements.length,
+        pageSettings: template.pageSettings
+      });
+
+      // Build a map of element IDs to their updated content from root elements
+      const elementMap = new Map<string, EditorElement>();
+      for (const el of rootElements) {
+        if (el && el.id) {
+          elementMap.set(el.id, el);
+        }
+      }
+
+      if (rootElements.length > 0) {
+        // Use root elements as the source of truth (they have the most up-to-date content)
+        // If pages exist, we still render one page per page in pages array for multi-page support
+        const numPages = Math.max(pages.length, 1);
+
+        for (let i = 0; i < numPages; i++) {
+          const page = pages[i] || { elements: [] };
+
+          // For single-page or legacy templates, render all root elements in the first page
+          // For multi-page templates, we would need a way to know which elements go on which page
+          // For now, put all root elements on page 1 (most common case)
+          const elementsToRender = i === 0 ? rootElements : (page.elements as EditorElement[]) || [];
+
+          logger.debug(`Rendering page ${i + 1}`, {
+            elementsCount: elementsToRender.length,
+            usingRootElements: i === 0
+          });
+
+          const elementsHTMLArray = await Promise.all(
+            elementsToRender.map(el => this.convertElementToHTML(el, data))
+          );
+
+          const pageContent = elementsHTMLArray.join('');
+          const isLastPage = i === numPages - 1;
+
+          bodyHTML += this.renderPageContainer(pageContent, template.pageSettings, template.globalStyles, !isLastPage);
+        }
+      } else if (pages.length > 0) {
+        // Multi-page template without root elements - use page elements directly
         for (let i = 0; i < pages.length; i++) {
           const page = pages[i];
           const elements = (page.elements as EditorElement[]) || [];
+
+          logger.debug(`Rendering page ${i + 1}`, { elementsCount: elements.length });
 
           const elementsHTMLArray = await Promise.all(
             elements.map(el => this.convertElementToHTML(el, data))
@@ -83,24 +130,22 @@ export class EditorTemplateRenderer {
           const pageContent = elementsHTMLArray.join('');
           const isLastPage = i === pages.length - 1;
 
-          // Render page container for each page
           bodyHTML += this.renderPageContainer(pageContent, template.pageSettings, template.globalStyles, !isLastPage);
         }
       } else {
-        // Legacy single-page template (flat elements)
-        const elements = (template.elements as unknown as EditorElement[]) || [];
-        const elementsHTMLArray = await Promise.all(
-          elements.map(el => this.convertElementToHTML(el, data))
-        );
-        const pageContent = elementsHTMLArray.join('');
-
-        bodyHTML = this.renderPageContainer(pageContent, template.pageSettings, template.globalStyles, false);
+        // Empty template
+        logger.warn('Template has no elements', { templateId });
+        bodyHTML = this.renderPageContainer('', template.pageSettings, template.globalStyles, false);
       }
 
       // Build complete HTML document
       const html = this.buildHTMLDocument(bodyHTML, template.pageSettings, template.globalStyles);
 
-      logger.info('Template rendered successfully', { templateId, pages: pages.length || 1 });
+      logger.info('Template rendered successfully', {
+        templateId,
+        pages: pages.length || 1,
+        htmlLength: html.length
+      });
       return html;
     } catch (error) {
       logger.error('Error rendering template to HTML', { error, templateId });
@@ -165,15 +210,15 @@ export class EditorTemplateRenderer {
   }
 
   /**
-   * Process dynamic text - replace {{variables}} with actual data
+   * Process dynamic text - replace {{variables}} or [[variables]] with actual data
    * Supports two formatter syntaxes:
    * 1. {{variable | formatter}} - pipe syntax
    * 2. {{formatter variable}} - function syntax
    */
   private async processDynamicText(text: string, data: TemplateData): Promise<string> {
-    // Match {{variable}} or {{variable | formatter}} or {{formatter variable}}
-    const variablePattern = /\{\{([^}|]+)(?:\|([^}]+))?\}\}/g;
-    const functionPattern = /\{\{(formatDate|formatDateTime|formatCurrency|formatTemperature|formatHumidity|uppercase)\s+([^}]+)\}\}/g;
+    // Match {{variable}} or [[variable]] or {{variable | formatter}} or [[variable | formatter]]
+    const variablePattern = /\{\{([^}|]+)(?:\|([^}]+))?\}\}|\[\[([^}|]+)(?:\|([^\]]+))?\]\]/g;
+    const functionPattern = /\{\{(formatDate|formatDateTime|formatCurrency|formatTemperature|formatHumidity|uppercase)\s+([^}]+)\}\}|\[\[(formatDate|formatDateTime|formatCurrency|formatTemperature|formatHumidity|uppercase)\s+([^\]]+)\]\]/g;
 
     // We need to use replaceAll or split/join because replace with async callback is not supported directly
     // So we find all matches first
@@ -185,26 +230,36 @@ export class EditorTemplateRenderer {
 
     // Process snippets first (if any)
     // We do this by checking if any variable starts with 'snippet.'
-    const snippetMatches = matches.filter(m => m[1].trim().startsWith('snippet.'));
+    const snippetMatches = matches.filter(m => {
+      const content = m[1] || m[3]; // Group 1 for {{}}, Group 3 for [[]]
+      return content && content.trim().startsWith('snippet.');
+    });
 
     if (snippetMatches.length > 0) {
-      const { textSnippetService } = await import('./textSnippetService.js');
-      const snippets = await textSnippetService.getAllActive();
-      const snippetMap = new Map(snippets.map(s => [s.code, s.content]));
+      try {
+        const { textSnippetService } = await import('./textSnippetService.js');
+        const snippets = await textSnippetService.getAllActive();
+        const snippetMap = new Map(snippets.map(s => [s.code, s.content]));
 
-      for (const match of snippetMatches) {
-        const fullMatch = match[0];
-        const path = match[1].trim();
-        const snippetCode = path.replace('snippet.', '');
+        for (const match of snippetMatches) {
+          const fullMatch = match[0];
+          const content = match[1] || match[3];
+          const path = content.trim();
+          const snippetCode = path.replace('snippet.', '');
 
-        if (snippetMap.has(snippetCode)) {
-          result = result.replace(fullMatch, snippetMap.get(snippetCode)!);
+          if (snippetMap.has(snippetCode)) {
+            result = result.replace(fullMatch, snippetMap.get(snippetCode)!);
+          }
         }
+      } catch (error) {
+        logger.warn('Error processing snippets', { error });
       }
     }
 
     // Process function-style formatters first: {{formatDate variable}}
-    result = result.replace(functionPattern, (match, formatter, variablePath) => {
+    result = result.replace(functionPattern, (match, f1, v1, f2, v2) => {
+      const formatter = f1 || f2;
+      const variablePath = v1 || v2;
       const trimmedPath = variablePath.trim();
       const value = this.resolveDataPath(trimmedPath, data);
 
@@ -218,14 +273,12 @@ export class EditorTemplateRenderer {
     });
 
     // Re-match for remaining variables (data variables with pipe syntax)
-    // Note: If a snippet contained variables, we might want to process them recursively, 
-    // but for now let's assume snippets are static text or we process them in a second pass if needed.
-    // For simplicity, we'll just process the remaining variables in the result.
-
-    return result.replace(variablePattern, (match, path, formatter) => {
+    return result.replace(variablePattern, (match, p1, f1, p2, f2) => {
+      const path = p1 || p2;
+      const formatter = f1 || f2;
       const trimmedPath = path.trim();
 
-      // Skip already processed snippets (though they should be gone if replaced)
+      // Skip already processed snippets
       if (trimmedPath.startsWith('snippet.')) return match;
 
       // Skip if it's a function-style formatter (already processed)
@@ -234,12 +287,14 @@ export class EditorTemplateRenderer {
       }
 
       const trimmedFormatter = formatter ? formatter.trim() : undefined;
-
       const value = this.resolveDataPath(trimmedPath, data);
 
-      logger.debug('Processing pipe-style variable', { match, path: trimmedPath, formatter: trimmedFormatter, value, valueType: typeof value });
+      logger.debug('Processing variable', { match, path: trimmedPath, formatter: trimmedFormatter, value, valueType: typeof value });
 
       if (value === undefined || value === null) {
+        // If value is missing, return empty string (or maybe a placeholder for debugging?)
+        // For now, empty string is standard behavior, but let's log it
+        logger.warn(`Variable not found: ${trimmedPath}`);
         return '';
       }
 
@@ -297,10 +352,21 @@ export class EditorTemplateRenderer {
 
   /**
    * Render image element
+   * Convert relative URLs to file:// paths for Puppeteer rendering
    */
   private renderImageElement(element: EditorElement, styles: string): string {
-    const src = element.content?.src || element.content || '';
+    let src = element.content?.src || element.content || '';
     const alt = element.content?.alt || 'Image';
+
+    // Convert relative paths to absolute file:// paths or base64
+    if (src && !src.startsWith('data:') && !src.startsWith('http')) {
+      // Handle relative paths like /uploads/images/...
+      if (src.startsWith('/')) {
+        // Convert to absolute path in container
+        const absolutePath = `/app${src}`;
+        src = `file://${absolutePath}`;
+      }
+    }
 
     return `<img class="editor-element editor-image" src="${this.escapeHTML(src)}" alt="${this.escapeHTML(alt)}" style="${styles}" />`;
   }
@@ -643,20 +709,33 @@ export class EditorTemplateRenderer {
 
   /**
    * Get position styles (absolute positioning)
+   * Convert from pixels (editor units) to mm (PDF units)
+   * Standard screen resolution: 96 DPI, 1 inch = 25.4mm
+   * So: 1px = 25.4 / 96 ≈ 0.2646mm
    */
   private getPositionStyles(position: { x: number; y: number }, size: { width: number; height: number }): string {
-    // Provide default values if position or size are undefined - FIXED FOR UNDEFINED VALUES
-    const x = position?.x ?? 0;
-    const y = position?.y ?? 0;
-    const width = size?.width ?? 100;
-    const height = size?.height ?? 50;
+    // Conversion factor: pixels to mm
+    // 96 DPI means 1 inch = 96 pixels, and 1 inch = 25.4mm
+    const pxToMm = 25.4 / 96;
+
+    // Provide default values if position or size are undefined
+    const xPx = position?.x ?? 0;
+    const yPx = position?.y ?? 0;
+    const widthPx = size?.width ?? 100;
+    const heightPx = size?.height ?? 50;
+
+    // Convert to mm
+    const xMm = xPx * pxToMm;
+    const yMm = yPx * pxToMm;
+    const widthMm = widthPx * pxToMm;
+    const heightMm = heightPx * pxToMm;
 
     return `
       position: absolute;
-      left: ${x}mm;
-      top: ${y}mm;
-      width: ${width}mm;
-      height: ${height}mm;
+      left: ${xMm.toFixed(2)}mm;
+      top: ${yMm.toFixed(2)}mm;
+      width: ${widthMm.toFixed(2)}mm;
+      height: ${heightMm.toFixed(2)}mm;
     `;
   }
 

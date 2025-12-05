@@ -75,10 +75,11 @@ export class ReportGenerationService {
     // Buscar dados da validação
     const reportData = await this.getReportData(validationId);
 
-    // Verificar se é um UUID (template do banco)
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateNameOrId);
+    // Verificar se é um UUID ou CUID (template do banco)
+    // CUIDs começam com 'c' e têm 25 caracteres, UUIDs têm 36 caracteres com hífens
+    const isDatabaseId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateNameOrId) || /^c[a-z0-9]{20,}$/i.test(templateNameOrId);
 
-    if (isUUID) {
+    if (isDatabaseId) {
       // Usar EditorTemplateRenderer
       const { EditorTemplateRenderer } = await import('./editorTemplateRenderer.js');
       const renderer = new EditorTemplateRenderer();
@@ -104,7 +105,7 @@ export class ReportGenerationService {
           timestamp: d.timestamp,
           temperature: d.temperature,
           humidity: d.humidity || undefined,
-          sensorId: d.sensor.id // Usar ID do sensor para agrupar corretamente
+          sensorId: d.sensor.serialNumber
         })),
         report: {
           generatedAt: new Date(),
@@ -276,7 +277,6 @@ export class ReportGenerationService {
       let executablePath: string | undefined;
       for (const p of candidatePaths) {
         try {
-          // usar import dinâmico para fs.existsSync sem problemas ESM
           const fsCheck = await import('fs');
           if (fsCheck.existsSync(p)) {
             executablePath = p;
@@ -293,8 +293,6 @@ export class ReportGenerationService {
         console.info(`🧭 Using Chromium executable at: ${executablePath}`);
       }
 
-      // Configuração otimizada e mais conservadora para Docker
-      // removemos flags problemáticas que podem causar falhas intermitentes (Target closed).
       const launchOptions: any = {
         headless: true,
         args: [
@@ -315,43 +313,34 @@ export class ReportGenerationService {
 
       const page = await browser.newPage();
 
-      // Configurar timeouts da página
       page.setDefaultTimeout(30000);
       page.setDefaultNavigationTimeout(30000);
 
-      // Configurar página
       await page.setContent(html, {
         waitUntil: 'domcontentloaded',
         timeout: 30000
       });
 
-      // Aguardar renderização
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
         margin: {
-          top: '20mm',
-          right: '15mm',
-          bottom: '20mm',
-          left: '15mm'
-        },
-        timeout: 30000
+          top: '0px',
+          right: '0px',
+          bottom: '0px',
+          left: '0px'
+        }
       });
 
-      return Buffer.from(pdfBuffer);
+      return pdfBuffer;
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('❌ Erro na geração de PDF:', message);
-      throw new Error(`Erro na geração de PDF: ${message}`);
+      console.error('Erro ao gerar PDF com Puppeteer:', error);
+      throw error;
     } finally {
       if (browser) {
-        try {
-          await browser.close();
-        } catch (closeError) {
-          console.warn('⚠️ Erro ao fechar browser:', closeError);
-        }
+        await browser.close();
       }
     }
   }

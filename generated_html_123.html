@@ -1,0 +1,115 @@
+
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Relatório</title>
+          <style>
+            * {
+              box-sizing: border-box;
+              margin: 0;
+              padding: 0;
+            }
+            
+            body {
+              font-family: Arial, sans-serif;
+              font-size: 14px;
+              line-height: 1.4;
+              color: #374151;
+              background: #f3f4f6; /* Light gray background for preview */
+            }
+            
+            .page-container {
+              position: relative;
+              width: 210mm;
+              min-height: 297mm;
+              margin: 0 auto;
+              background: white;
+              overflow: hidden; /* Ensure elements don't bleed out */
+              /* Apply padding to simulate margins in preview */
+              padding: 20mm 20mm 20mm 20mm;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+              margin-bottom: 20px;
+            }
+
+            .content-area {
+              position: relative;
+              width: 100%;
+              min-height: 257mm;
+            }
+            
+            .editor-element {
+              box-sizing: border-box;
+            }
+            
+            .editor-text, .editor-heading {
+              overflow-wrap: break-word;
+              word-wrap: break-word;
+            }
+            
+            .chart-placeholder {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100%;
+              border: 2px dashed #cbd5e0;
+              border-radius: 8px;
+              background: #f7fafc;
+              padding: 20px;
+              text-align: center;
+            }
+            
+            .text-sm {
+              font-size: 12px;
+            }
+            
+            .text-gray-500 {
+              color: #6b7280;
+            }
+            
+            @page {
+              size: 210mm 297mm;
+              margin: 0; /* We handle margins in the container padding */
+            }
+
+            @media print {
+              body {
+                background: white;
+              }
+              .page-container {
+                box-shadow: none;
+                margin: 0;
+                page-break-after: always;
+              }
+              .page-container:last-child {
+                page-break-after: auto;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          
+      <div class="page-container" style="">
+        
+        <div class="content-area">
+          <div class="editor-element editor-text" style="
+      position: absolute;
+      left: 131.3249969482422mm;
+      top: 154.1999969482422mm;
+      width: 100mm;
+      height: 30mm;
+     font-family: Arial, sans-serif; font-size: 14px; color: #333333">Texto</div><h1 class="editor-element editor-text" style="
+      position: absolute;
+      left: 299.3249969482422mm;
+      top: 237.1999969482422mm;
+      width: 200mm;
+      height: 40mm;
+     font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; color: #2563eb">Título</h1>
+        </div>
+      </div>
+    
+        </body>
+      </html>
+    
