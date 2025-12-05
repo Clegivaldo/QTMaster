@@ -399,19 +399,40 @@ export class EditorTemplateRenderer {
       const { chartRenderService } = await import('./chartRenderService.js');
 
       // Cast to ChartElement (assuming structure)
-      const chartElement = element as any; // We'll define proper interface later or cast here
+      const chartElement = element as any;
       const chartConfig = chartElement.content || {};
 
       // Prepare chart data
       const chartData = this.prepareChartDataFromSource(chartConfig, data);
+
+      logger.debug('Rendering chart element', {
+        elementId: element.id,
+        chartType: chartConfig.chartType,
+        dataSource: chartConfig.dataSource,
+        hasLabels: chartData?.labels?.length > 0,
+        hasDatasets: chartData?.datasets?.length > 0,
+        elementSize: element.size
+      });
+
+      // Element sizes are already in pixels from the editor
+      // Use them directly, with a minimum size fallback
+      const width = Math.max(element.size?.width || 400, 100);
+      const height = Math.max(element.size?.height || 200, 100);
 
       // Render chart to base64 image
       const chartImage = await chartRenderService.renderChartToBase64({
         type: chartConfig.chartType || 'line',
         data: chartData,
         options: chartConfig.options || {},
-        width: Math.round((element.size.width || 100) * 3.78), // mm to px (approx 96 DPI)
-        height: Math.round((element.size.height || 50) * 3.78)
+        width: Math.round(width),
+        height: Math.round(height)
+      });
+
+      logger.debug('Chart rendered successfully', {
+        elementId: element.id,
+        imageLength: chartImage.length,
+        width,
+        height
       });
 
       return `<img class="editor-element editor-chart" src="${chartImage}" style="${styles}" alt="Chart" />`;
@@ -428,12 +449,36 @@ export class EditorTemplateRenderer {
   private prepareChartDataFromSource(chartConfig: any, data: TemplateData): any {
     const dataSource = chartConfig.dataSource || { type: 'custom' };
 
-    if (dataSource.type === 'validation' || dataSource.type === 'sensorData') {
+    logger.debug('prepareChartDataFromSource called', {
+      dataSourceType: dataSource?.type || 'undefined',
+      hasSensorData: !!data.sensorData,
+      sensorDataLength: data.sensorData?.length || 0,
+      hasSensors: !!data.sensors,
+      sensorsLength: data.sensors?.length || 0,
+      chartConfigKeys: Object.keys(chartConfig)
+    });
+
+    // Check if we should use sensor data (validation data)
+    // Also try to use sensor data if it exists and no explicit dataSource is set
+    const shouldUseSensorData =
+      dataSource.type === 'validation' ||
+      dataSource.type === 'sensorData' ||
+      (data.sensorData && data.sensorData.length > 0 && !dataSource.type);
+
+    if (shouldUseSensorData && data.sensorData && data.sensorData.length > 0) {
+      logger.debug('Using sensor data for chart', { count: data.sensorData.length });
       return this.prepareSensorDataChartData(dataSource, data);
     }
 
-    // Default/Custom data
-    return chartConfig.data || {
+    // Check if chartConfig.data exists and has content
+    if (chartConfig.data && chartConfig.data.labels && chartConfig.data.datasets) {
+      logger.debug('Using provided chart data');
+      return chartConfig.data;
+    }
+
+    // Default/Custom data - return sample data for visualization
+    logger.debug('Using default sample data for chart (no sensor data found)');
+    return {
       labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
       datasets: [{
         label: 'Sample Data',
@@ -452,32 +497,58 @@ export class EditorTemplateRenderer {
     const field = dataSource.field || 'temperature';
     const sensorIds = dataSource.sensorIds || [];
 
+    logger.debug('prepareSensorDataChartData called', {
+      field,
+      sensorIds,
+      hasSensorData: !!data.sensorData,
+      sensorDataCount: data.sensorData?.length || 0
+    });
+
+    // Safety check for sensorData
+    if (!data.sensorData || !Array.isArray(data.sensorData) || data.sensorData.length === 0) {
+      logger.warn('No sensor data available for chart');
+      return { labels: [], datasets: [] };
+    }
+
     // Filter data
     let filteredData = data.sensorData;
     if (sensorIds.length > 0) {
       filteredData = filteredData.filter(d => sensorIds.includes(d.sensorId));
     }
 
+    logger.debug('Filtered sensor data', { filteredCount: filteredData.length });
+
+    if (filteredData.length === 0) {
+      logger.warn('No sensor data after filtering');
+      return { labels: [], datasets: [] };
+    }
+
     // Group by sensor if multiple sensors
     const sensorGroups = new Map<string, any[]>();
     filteredData.forEach(item => {
-      if (!sensorGroups.has(item.sensorId)) {
-        sensorGroups.set(item.sensorId, []);
+      const sId = item.sensorId || 'unknown';
+      if (!sensorGroups.has(sId)) {
+        sensorGroups.set(sId, []);
       }
-      sensorGroups.get(item.sensorId)!.push(item);
+      sensorGroups.get(sId)!.push(item);
     });
 
+    logger.debug('Sensor groups formed', { groupCount: sensorGroups.size });
+
     // Generate labels from timestamps (using the first sensor's timestamps)
-    // In a real scenario, we might need to align timestamps
     const firstGroup = Array.from(sensorGroups.values())[0] || [];
     const labels = firstGroup.map(d => {
-      const date = new Date(d.timestamp);
-      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+      try {
+        const date = new Date(d.timestamp);
+        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+      } catch {
+        return '';
+      }
     });
 
     // Generate datasets
     const datasets = Array.from(sensorGroups.entries()).map(([sensorId, items], index) => {
-      const sensor = data.sensors.find(s => s.id === sensorId);
+      const sensor = data.sensors?.find(s => s.id === sensorId);
       const colors = [
         'rgb(239, 68, 68)',   // Red
         'rgb(59, 130, 246)',  // Blue
@@ -498,6 +569,8 @@ export class EditorTemplateRenderer {
         borderWidth: 2
       };
     });
+
+    logger.debug('Chart data prepared', { labelsCount: labels.length, datasetsCount: datasets.length });
 
     return { labels, datasets };
   }

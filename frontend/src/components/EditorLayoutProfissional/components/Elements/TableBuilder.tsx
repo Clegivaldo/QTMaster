@@ -11,13 +11,33 @@ export const TableBuilder: React.FC<TableBuilderProps> = ({
     element,
     onUpdate
 }) => {
-    // Ensure properties object exists (using content as per existing pattern)
-    const config = (element as any).content || {
-        dataSource: '',
-        columns: [],
-        showHeader: true,
-        alternatingRowColors: true,
-        styles: {}
+    // Get raw content
+    const rawContent = (element as any).content || {};
+
+    // Handle the case where 'columns' is a number (simple table format from ELEMENT_DEFAULTS)
+    // vs an array (advanced TableBuilder format)
+    let columnsArray: TableColumn[] = [];
+    if (Array.isArray(rawContent.columns)) {
+        columnsArray = rawContent.columns;
+    } else if (typeof rawContent.columns === 'number' && rawContent.columns > 0) {
+        // Convert numeric columns to TableColumn array using headers or generating defaults
+        const headers = rawContent.headers || rawContent.data?.[0] || [];
+        columnsArray = Array.from({ length: rawContent.columns }, (_, i) => ({
+            field: `col${i}`,
+            header: headers[i] || `Coluna ${i + 1}`,
+            width: 100,
+            align: 'left' as const,
+            format: 'text' as const
+        }));
+    }
+
+    const config = {
+        dataSource: rawContent.dataSource || '',
+        columns: columnsArray,
+        showHeader: rawContent.showHeader !== false,
+        alternatingRowColors: rawContent.alternatingRowColors !== false,
+        styles: rawContent.styles || {},
+        pagination: rawContent.pagination
     };
 
     const [activeTab, setActiveTab] = useState<'columns' | 'data' | 'style'>('columns');
