@@ -175,22 +175,43 @@ const validateDynamicVariables = (content: string): string[] => {
     errors.push(`Desbalanço de chaves em variáveis dinâmicas: ${openBrackets} abertas vs ${closeBrackets} fechadas`);
   }
 
-  // Check variable format
+  // Check variable format - support BOTH syntaxes
   const regex = /\{\{([^}]+)\}\}/g;
+  const validFormatters = ['formatDate', 'formatDateTime', 'formatCurrency', 'formatTemperature', 'formatHumidity', 'uppercase'];
   let match;
 
   while ((match = regex.exec(content)) !== null) {
-    const variable = match[1].trim();
-    if (!variable) {
+    const fullContent = match[1].trim();
+    if (!fullContent) {
       errors.push(`Variável vazia encontrada: {{}}`);
-    } else if (!/^[a-zA-Z0-9_.]+$/.test(variable)) {
-      errors.push(`Variável com formato inválido: {{${variable}}}`);
+      continue;
+    }
+
+    // Check if function-style: {{formatDate variable}}
+    const functionMatch = fullContent.match(/^(formatDate|formatDateTime|formatCurrency|formatTemperature|formatHumidity|uppercase)\s+(.+)$/);
+    if (functionMatch) {
+      // Validate variable path in function syntax
+      const variablePath = functionMatch[2].trim();
+      if (!/^[a-zA-Z0-9_.]+$/.test(variablePath)) {
+        errors.push(`Variável com formato inválido: {{${fullContent}}}`);
+      }
+      continue;
+    }
+
+    // Check if pipe-style: {{variable}} or {{variable|formatter}}
+    const pipeMatch = fullContent.match(/^([^|]+)(?:\|(.+))?$/);
+    if (pipeMatch) {
+      const variablePath = pipeMatch[1].trim();
+
+      // Validate variable path - allow dots for nested paths
+      if (!/^[a-zA-Z0-9_.]+$/.test(variablePath)) {
+        errors.push(`Variável com formato inválido: {{${fullContent}}}`);
+      }
     }
   }
 
   return errors;
 };
-
 /**
  * Valida um elemento individual
  */

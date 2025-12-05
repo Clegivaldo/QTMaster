@@ -66,17 +66,41 @@ export class EditorTemplateRenderer {
         throw new Error(`Template not found: ${templateId}`);
       }
 
-      // Convert elements to HTML asynchronously
-      const elements = (template.elements as unknown as EditorElement[]) || [];
-      const elementsHTMLArray = await Promise.all(
-        elements.map(el => this.convertElementToHTML(el, data))
-      );
-      const elementsHTML = elementsHTMLArray.join('');
+      // Check for pages structure (new) or elements structure (legacy)
+      const pages = (template.pages as unknown as any[]) || [];
+      let bodyHTML = '';
+
+      if (pages.length > 0) {
+        // Multi-page template
+        for (let i = 0; i < pages.length; i++) {
+          const page = pages[i];
+          const elements = (page.elements as EditorElement[]) || [];
+
+          const elementsHTMLArray = await Promise.all(
+            elements.map(el => this.convertElementToHTML(el, data))
+          );
+
+          const pageContent = elementsHTMLArray.join('');
+          const isLastPage = i === pages.length - 1;
+
+          // Render page container for each page
+          bodyHTML += this.renderPageContainer(pageContent, template.pageSettings, template.globalStyles, !isLastPage);
+        }
+      } else {
+        // Legacy single-page template (flat elements)
+        const elements = (template.elements as unknown as EditorElement[]) || [];
+        const elementsHTMLArray = await Promise.all(
+          elements.map(el => this.convertElementToHTML(el, data))
+        );
+        const pageContent = elementsHTMLArray.join('');
+
+        bodyHTML = this.renderPageContainer(pageContent, template.pageSettings, template.globalStyles, false);
+      }
 
       // Build complete HTML document
-      const html = this.buildHTMLDocument(elementsHTML, template.pageSettings, template.globalStyles);
+      const html = this.buildHTMLDocument(bodyHTML, template.pageSettings, template.globalStyles);
 
-      logger.info('Template rendered successfully', { templateId });
+      logger.info('Template rendered successfully', { templateId, pages: pages.length || 1 });
       return html;
     } catch (error) {
       logger.error('Error rendering template to HTML', { error, templateId });
@@ -98,7 +122,7 @@ export class EditorTemplateRenderer {
     switch (type) {
       case 'text':
       case 'heading':
-        return this.renderTextElement(element, data, combinedStyles);
+        return await this.renderTextElement(element, data, combinedStyles);
 
       case 'image':
         return this.renderImageElement(element, combinedStyles);
@@ -124,13 +148,13 @@ export class EditorTemplateRenderer {
   /**
    * Render text element with dynamic content support
    */
-  private renderTextElement(element: EditorElement, data: TemplateData, styles: string): string {
+  private async renderTextElement(element: EditorElement, data: TemplateData, styles: string): Promise<string> {
     let content = element.content || '';
 
     // Process dynamic text if enabled
     if (element.properties?.isDynamic) {
       try {
-        content = this.processDynamicText(content, data);
+        content = await this.processDynamicText(content, data);
       } catch (error) {
         logger.warn('Error processing dynamic text', { error, content });
       }
@@ -142,23 +166,80 @@ export class EditorTemplateRenderer {
 
   /**
    * Process dynamic text - replace {{variables}} with actual data
-   * Supports formatters: {{variable | formatter}}
+   * Supports two formatter syntaxes:
+   * 1. {{variable | formatter}} - pipe syntax
+   * 2. {{formatter variable}} - function syntax
    */
-  private processDynamicText(text: string, data: TemplateData): string {
-    // Match {{variable}} or {{variable | formatter}}
+  private async processDynamicText(text: string, data: TemplateData): Promise<string> {
+    // Match {{variable}} or {{variable | formatter}} or {{formatter variable}}
     const variablePattern = /\{\{([^}|]+)(?:\|([^}]+))?\}\}/g;
+    const functionPattern = /\{\{(formatDate|formatDateTime|formatCurrency|formatTemperature|formatHumidity|uppercase)\s+([^}]+)\}\}/g;
 
-    return text.replace(variablePattern, (match, path, formatter) => {
+    // We need to use replaceAll or split/join because replace with async callback is not supported directly
+    // So we find all matches first
+    const matches = Array.from(text.matchAll(variablePattern));
+
+    if (matches.length === 0 && !functionPattern.test(text)) return text;
+
+    let result = text;
+
+    // Process snippets first (if any)
+    // We do this by checking if any variable starts with 'snippet.'
+    const snippetMatches = matches.filter(m => m[1].trim().startsWith('snippet.'));
+
+    if (snippetMatches.length > 0) {
+      const { textSnippetService } = await import('./textSnippetService.js');
+      const snippets = await textSnippetService.getAllActive();
+      const snippetMap = new Map(snippets.map(s => [s.code, s.content]));
+
+      for (const match of snippetMatches) {
+        const fullMatch = match[0];
+        const path = match[1].trim();
+        const snippetCode = path.replace('snippet.', '');
+
+        if (snippetMap.has(snippetCode)) {
+          result = result.replace(fullMatch, snippetMap.get(snippetCode)!);
+        }
+      }
+    }
+
+    // Process function-style formatters first: {{formatDate variable}}
+    result = result.replace(functionPattern, (match, formatter, variablePath) => {
+      const trimmedPath = variablePath.trim();
+      const value = this.resolveDataPath(trimmedPath, data);
+
+      logger.debug('Processing function-style formatter', { match, formatter, path: trimmedPath, value });
+
+      if (value === undefined || value === null) {
+        return '';
+      }
+
+      return this.applyFormatter(value, formatter);
+    });
+
+    // Re-match for remaining variables (data variables with pipe syntax)
+    // Note: If a snippet contained variables, we might want to process them recursively, 
+    // but for now let's assume snippets are static text or we process them in a second pass if needed.
+    // For simplicity, we'll just process the remaining variables in the result.
+
+    return result.replace(variablePattern, (match, path, formatter) => {
       const trimmedPath = path.trim();
+
+      // Skip already processed snippets (though they should be gone if replaced)
+      if (trimmedPath.startsWith('snippet.')) return match;
+
+      // Skip if it's a function-style formatter (already processed)
+      if (['formatDate', 'formatDateTime', 'formatCurrency', 'formatTemperature', 'formatHumidity', 'uppercase'].includes(trimmedPath)) {
+        return match;
+      }
+
       const trimmedFormatter = formatter ? formatter.trim() : undefined;
 
       const value = this.resolveDataPath(trimmedPath, data);
 
-      logger.debug('Processing dynamic text', { match, path: trimmedPath, formatter: trimmedFormatter, value, valueType: typeof value });
+      logger.debug('Processing pipe-style variable', { match, path: trimmedPath, formatter: trimmedFormatter, value, valueType: typeof value });
 
       if (value === undefined || value === null) {
-        // Don't warn for optional variables or if we want to show empty string
-        // logger.warn('Undefined value in dynamic text', { path: trimmedPath });
         return '';
       }
 
@@ -623,6 +704,18 @@ export class EditorTemplateRenderer {
     const pageWidth = pageSettings?.width || 210; // A4 width in mm
     const pageHeight = pageSettings?.height || 297; // A4 height in mm
 
+    // Extract margins from globalStyles (in mm)
+    const marginTop = globalStyles?.marginTop ?? 20;
+    const marginRight = globalStyles?.marginRight ?? 20;
+    const marginBottom = globalStyles?.marginBottom ?? 20;
+    const marginLeft = globalStyles?.marginLeft ?? 20;
+
+    // Extract typography from globalStyles
+    const fontFamily = globalStyles?.fontFamily || "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    const bodySize = globalStyles?.bodySize || 14;
+    const lineHeight = globalStyles?.lineHeight || 1.6;
+    const textColor = globalStyles?.textColor || '#374151';
+
     // Watermark CSS
     const watermarkCSS = pageSettings?.watermark ? `
       .watermark {
@@ -645,6 +738,10 @@ export class EditorTemplateRenderer {
       <div class="watermark">${this.escapeHTML(pageSettings.watermark.text)}</div>
     ` : '';
 
+    // Calculate content area dimensions
+    const contentWidth = pageWidth - marginLeft - marginRight;
+    const contentHeight = pageHeight - marginTop - marginBottom;
+
     return `
       <!DOCTYPE html>
       <html lang="pt-BR">
@@ -660,11 +757,11 @@ export class EditorTemplateRenderer {
             }
             
             body {
-              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              font-size: 14px;
-              line-height: 1.6;
-              color: #374151;
-              background: white;
+              font-family: ${fontFamily};
+              font-size: ${bodySize}px;
+              line-height: ${lineHeight};
+              color: ${textColor};
+              background: #f3f4f6; /* Light gray background for preview */
             }
             
             .page-container {
@@ -673,7 +770,17 @@ export class EditorTemplateRenderer {
               min-height: ${pageHeight}mm;
               margin: 0 auto;
               background: white;
-              overflow: visible;
+              overflow: hidden; /* Ensure elements don't bleed out */
+              /* Apply padding to simulate margins in preview */
+              padding: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+              margin-bottom: 20px;
+            }
+
+            .content-area {
+              position: relative;
+              width: 100%;
+              min-height: ${contentHeight}mm;
             }
             
             .editor-element {
@@ -708,32 +815,74 @@ export class EditorTemplateRenderer {
             
             @page {
               size: ${pageWidth}mm ${pageHeight}mm;
-              margin: 0;
-            }
-            
-            @media print {
-              body {
-                print-color-adjust: exact;
-                -webkit-print-color-adjust: exact;
-              }
-              
-              .page-container {
-                page-break-after: always;
-              }
+              margin: 0; /* We handle margins in the container padding */
             }
 
-            ${watermarkCSS}
+            @media print {
+              body {
+                background: white;
+              }
+              .page-container {
+                box-shadow: none;
+                margin: 0;
+                page-break-after: always;
+              }
+              .page-container:last-child {
+                page-break-after: auto;
+              }
+            }
           </style>
         </head>
         <body>
-          <div class="page-container">
-            ${watermarkHTML}
-            ${elementsHTML}
-          </div>
+          ${elementsHTML}
         </body>
       </html>
     `;
   }
+
+  /**
+   * Render a page container with content
+   */
+  private renderPageContainer(content: string, pageSettings: any, globalStyles: any, addPageBreak: boolean): string {
+    const pageWidth = pageSettings?.width || 210;
+    const pageHeight = pageSettings?.height || 297;
+
+    // Extract margins from globalStyles (in mm)
+    const marginTop = globalStyles?.marginTop ?? 20;
+    const marginRight = globalStyles?.marginRight ?? 20;
+    const marginBottom = globalStyles?.marginBottom ?? 20;
+    const marginLeft = globalStyles?.marginLeft ?? 20;
+
+    // Watermark CSS
+    const watermarkHTML = pageSettings?.watermark?.text ? `
+      <div class="watermark" style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: ${pageSettings.watermark.size || 100}px;
+        color: ${pageSettings.watermark.color || '#000000'};
+        opacity: ${pageSettings.watermark.opacity || 0.1};
+        pointer-events: none;
+        z-index: 1000;
+        white-space: nowrap;
+        font-weight: bold;
+        font-family: sans-serif;
+      ">${this.escapeHTML(pageSettings.watermark.text)}</div>
+    ` : '';
+
+    const style = addPageBreak ? 'page-break-after: always;' : '';
+
+    return `
+      <div class="page-container" style="${style}">
+        ${watermarkHTML}
+        <div class="content-area">
+          ${content}
+        </div>
+      </div>
+    `;
+  }
+
 
   /**
    * Escape HTML to prevent XSS

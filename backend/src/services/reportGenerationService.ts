@@ -25,6 +25,11 @@ export interface ReportData {
     phone?: string | null;
     address?: string | null;
     cnpj?: string | null;
+    street?: string | null;
+    neighborhood?: string | null;
+    city?: string | null;
+    state?: string | null;
+    complement?: string | null;
   };
   suitcase: {
     id: string;
@@ -60,16 +65,57 @@ export class ReportGenerationService {
   public templateService: TemplateService;
 
   constructor() {
-     this.templateService = getTemplateService();
+    this.templateService = getTemplateService();
   }
 
   /**
    * Gera um relatório PDF completo
    */
-  async generateReport(validationId: string, templateName: string = 'default-report'): Promise<Buffer> {
+  async generateReport(validationId: string, templateNameOrId: string = 'default-report'): Promise<Buffer> {
     // Buscar dados da validação
     const reportData = await this.getReportData(validationId);
-    
+
+    // Verificar se é um UUID (template do banco)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateNameOrId);
+
+    if (isUUID) {
+      // Usar EditorTemplateRenderer
+      const { EditorTemplateRenderer } = await import('./editorTemplateRenderer.js');
+      const renderer = new EditorTemplateRenderer();
+
+      // Preparar dados no formato esperado pelo EditorTemplateRenderer
+      const templateData = {
+        client: {
+          name: reportData.client.name,
+          document: reportData.client.cnpj || undefined,
+          email: reportData.client.email || undefined,
+          phone: reportData.client.phone || undefined,
+          address: reportData.client.address || undefined
+        },
+        validation: {
+          id: reportData.validation.id,
+          startDate: reportData.validation.createdAt,
+          endDate: reportData.validation.updatedAt,
+          temperatureStats: reportData.validation.statistics?.temperature || { min: 0, max: 0, avg: 0 },
+          humidityStats: reportData.validation.statistics?.humidity
+        },
+        sensors: reportData.sensors,
+        sensorData: reportData.sensorData.map(d => ({
+          timestamp: d.timestamp,
+          temperature: d.temperature,
+          humidity: d.humidity || undefined,
+          sensorId: d.sensor.id // Usar ID do sensor para agrupar corretamente
+        })),
+        report: {
+          generatedAt: new Date(),
+          generatedBy: reportData.user.name
+        }
+      };
+
+      const html = await renderer.renderToHTML(templateNameOrId, templateData as any);
+      return this.generatePDFFromHTML(html);
+    }
+
     // Gerar gráficos usando Chart.js no HTML
     const chartData = this.prepareChartData(reportData.sensorData);
 
@@ -77,7 +123,7 @@ export class ReportGenerationService {
     const templateData = this.templateService.prepareTemplateData(reportData, chartData);
 
     // Renderizar HTML
-    const html = this.templateService.renderTemplate(templateName, templateData);
+    const html = this.templateService.renderTemplate(templateNameOrId, templateData);
 
     // Gerar PDF com Puppeteer
     return this.generatePDFFromHTML(html);
@@ -141,6 +187,11 @@ export class ReportGenerationService {
         phone: validation.client.phone,
         address: validation.client.address,
         cnpj: validation.client.cnpj,
+        street: validation.client.street,
+        neighborhood: validation.client.neighborhood,
+        city: validation.client.city,
+        state: validation.client.state,
+        complement: validation.client.complement,
       },
       suitcase: {
         id: validation.suitcase?.id ?? '',
@@ -211,7 +262,7 @@ export class ReportGenerationService {
    */
   async generatePDFFromHTML(html: string): Promise<Buffer> {
     let browser = null;
-    
+
     try {
       // Escolher executablePath confiável para Chromium (prioriza env var)
       const candidatePaths = [
@@ -263,20 +314,20 @@ export class ReportGenerationService {
       browser = await puppeteer.launch(launchOptions);
 
       const page = await browser.newPage();
-      
+
       // Configurar timeouts da página
       page.setDefaultTimeout(30000);
       page.setDefaultNavigationTimeout(30000);
-      
+
       // Configurar página
-      await page.setContent(html, { 
+      await page.setContent(html, {
         waitUntil: 'domcontentloaded',
         timeout: 30000
       });
-      
+
       // Aguardar renderização
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,

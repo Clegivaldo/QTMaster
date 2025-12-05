@@ -290,7 +290,8 @@ model ReportTemplate {
 model Report {
   id                String               @id @default(cuid())
   validationId      String
-  templateId        String
+  templateId        String?
+  editorTemplateId  String?
   userId            String
   clientId          String
   name              String
@@ -303,7 +304,8 @@ model Report {
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   client            Client               @relation(fields: [clientId], references: [id])
-  template          ReportTemplate       @relation(fields: [templateId], references: [id])
+  template          ReportTemplate?      @relation(fields: [templateId], references: [id])
+  editorTemplate    EditorTemplate?      @relation(fields: [editorTemplateId], references: [id])
   user              User                 @relation(fields: [userId], references: [id])
   validation        Validation           @relation(fields: [validationId], references: [id])
   sharedLinks       ReportSharedLink[]
@@ -376,6 +378,7 @@ model EditorTemplate {
   updatedAt    DateTime                @updatedAt
   revision     Int                     @default(0)
   versions     EditorTemplateVersion[]
+  reports      Report[]
 
   @@index([createdBy])
   @@index([category])
@@ -450,4 +453,22 @@ enum ValidationCycleType {
   OPEN_DOOR
   POWER_OUTAGE
   NORMAL
+}
+
+model TextSnippet {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  content     String
+  description String?
+  category    String   @default("general")
+  tags        String[]
+  isActive    Boolean  @default(true)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([code])
+  @@index([category])
+  @@index([isActive])
+  @@map("text_snippets")
 }

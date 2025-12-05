@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Code, Search, Plus } from 'lucide-react';
 import ResponsiveModal from '../../../ResponsiveModal';
 import { getAvailableVariables } from '../../../../utils/templateUtils';
@@ -18,10 +18,47 @@ const TemplateVariableModal: React.FC<TemplateVariableModalProps> = ({
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [selectedVariable, setSelectedVariable] = useState<any | null>(null);
     const [selectedFormatter, setSelectedFormatter] = useState<string>('');
+    const [snippets, setSnippets] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchSnippets();
+        }
+    }, [isOpen]);
+
+    const fetchSnippets = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/text-snippets?isActive=true', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setSnippets(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch snippets', error);
+        }
+    };
 
     const availableVariables = getAvailableVariables();
 
-    const filteredVariables = availableVariables.map((category) => ({
+    // Add snippets as a category
+    const allCategories = [
+        ...availableVariables,
+        {
+            category: 'snippets',
+            label: 'Snippets (Textos)',
+            variables: snippets.map(s => ({
+                path: `snippet.${s.code}`,
+                description: s.code,
+                example: s.content.substring(0, 50) + (s.content.length > 50 ? '...' : ''),
+                type: 'text'
+            }))
+        }
+    ];
+
+    const filteredVariables = allCategories.map((category) => ({
         ...category,
         variables: category.variables.filter(
             (v) =>
@@ -111,7 +148,7 @@ const TemplateVariableModal: React.FC<TemplateVariableModalProps> = ({
                         >
                             Todas
                         </button>
-                        {availableVariables.map((category) => (
+                        {allCategories.map((category) => (
                             <button
                                 key={category.category}
                                 onClick={() => setSelectedCategory(category.category)}
@@ -195,7 +232,7 @@ const TemplateVariableModal: React.FC<TemplateVariableModalProps> = ({
                                     onChange={(e) => setSelectedFormatter(e.target.value)}
                                     className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 >
-                                    {getFormattersForType(selectedVariable.type).map(fmt => (
+                                    {getFormattersForType(selectedVariable.type || 'text').map(fmt => (
                                         <option key={fmt.value} value={fmt.value}>
                                             {fmt.label}
                                         </option>

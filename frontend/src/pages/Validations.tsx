@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  Plus, 
-  Search, 
-  BarChart3, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Plus,
+  Search,
+  BarChart3,
+  AlertTriangle,
+  CheckCircle,
   Clock,
   Calendar,
   Thermometer,
@@ -40,7 +40,7 @@ const Validations: React.FC = () => {
   const updateApprovalMutation = useUpdateValidationApproval();
   const deleteMutation = useDeleteValidation();
   const toast = useToast();
-  
+
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -68,7 +68,7 @@ const Validations: React.FC = () => {
         },
         sensorDataIds: [], // Será preenchido quando importar dados dos sensores
       };
-      
+
       const response = await createMutation.mutateAsync(validationData);
       // If API returns created validation, navigate to Import page for user to import sensor data
       const createdId = response?.data?.data?.validation?.id;
@@ -103,7 +103,7 @@ const Validations: React.FC = () => {
 
   const handleDeleteValidation = async () => {
     if (!deletingValidation) return;
-    
+
     try {
       await deleteMutation.mutateAsync(deletingValidation.id);
       setDeletingValidation(null);
@@ -123,7 +123,7 @@ const Validations: React.FC = () => {
     if (validation.isApproved === null) {
       return <Clock className="h-5 w-5 text-yellow-500" />;
     }
-    return validation.isApproved 
+    return validation.isApproved
       ? <CheckCircle className="h-5 w-5 text-green-500" />
       : <AlertTriangle className="h-5 w-5 text-red-500" />;
   };
@@ -135,8 +135,8 @@ const Validations: React.FC = () => {
 
   const getStatusColor = (validation: Validation) => {
     if (validation.isApproved === null) return 'bg-yellow-100 text-yellow-800';
-    return validation.isApproved 
-      ? 'bg-green-100 text-green-800' 
+    return validation.isApproved
+      ? 'bg-green-100 text-green-800'
       : 'bg-red-100 text-red-800';
   };
 
@@ -171,7 +171,9 @@ const Validations: React.FC = () => {
       if (data && data.downloadUrl) {
         // Auto-download generated PDF once created, but keep record on server
         try {
-          const dlResp = await apiService.api.get(data.downloadUrl, { responseType: 'blob', timeout: 60000 });
+          // Strip /api prefix if present, as apiService.api already adds it
+          const downloadUrl = data.downloadUrl.startsWith('/api') ? data.downloadUrl.substring(4) : data.downloadUrl;
+          const dlResp = await apiService.api.get(downloadUrl, { responseType: 'blob', timeout: 60000 });
           const blob = dlResp.data as Blob;
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -207,7 +209,7 @@ const Validations: React.FC = () => {
         title="Validações Térmicas"
         description="Gerencie as validações de temperatura e umidade"
         actions={
-          <button 
+          <button
             onClick={() => setShowCreationModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
@@ -236,10 +238,10 @@ const Validations: React.FC = () => {
             value={filters.isApproved?.toString() || ''}
             onChange={(e) => {
               const value = e.target.value;
-              setFilters({ 
-                ...filters, 
+              setFilters({
+                ...filters,
                 isApproved: value === '' ? undefined : value === 'true',
-                page: 1 
+                page: 1
               });
             }}
             className="input w-full sm:w-auto"
@@ -367,7 +369,7 @@ const Validations: React.FC = () => {
                           <div className="text-xs text-gray-500">Conformidade</div>
                         </div>
                       </div>
-                      
+
                       {/* Temperature stats */}
                       <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                         <div className="text-center">
@@ -396,7 +398,7 @@ const Validations: React.FC = () => {
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="flex flex-wrap gap-2">
                       {/* Primary Action - Generate Report */}
-                      <button 
+                      <button
                         onClick={() => handleGenerateReport(validation)}
                         className="btn-primary text-sm"
                         disabled={(validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}
@@ -407,7 +409,7 @@ const Validations: React.FC = () => {
 
                       {/* Secondary Actions */}
                       {/* Download existing report if present */}
-                      { (validation._count?.reports || 0) > 0 && (
+                      {(validation._count?.reports || 0) > 0 && (
                         <button
                           onClick={async () => {
                             try {
@@ -442,7 +444,7 @@ const Validations: React.FC = () => {
                           📄 Baixar Laudo
                         </button>
                       )}
-                      <button 
+                      <button
                         onClick={() => navigate(`/validations/${validation.id}/charts`)}
                         className="btn-secondary text-sm"
                         disabled={(validation._count?.sensorData || 0) === 0}
@@ -450,8 +452,8 @@ const Validations: React.FC = () => {
                       >
                         📈 Ver Gráficos
                       </button>
-                      
-                      <button 
+
+                      <button
                         onClick={() => navigate(`/validations/${validation.id}/details`)}
                         className="btn-secondary text-sm"
                         title="Ver todos os dados importados"
@@ -470,14 +472,14 @@ const Validations: React.FC = () => {
                       {/* Approval Actions */}
                       {validation.isApproved === null && (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleApproveValidation(validation.id, true)}
                             className="px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-900 border border-green-600 hover:border-green-900 rounded-md transition-colors"
                             title="Aprovar validação"
                           >
                             ✓ Aprovar
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleApproveValidation(validation.id, false)}
                             className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-900 border border-red-600 hover:border-red-900 rounded-md transition-colors"
                             title="Reprovar validação"
@@ -488,7 +490,7 @@ const Validations: React.FC = () => {
                       )}
 
                       {/* Delete Action */}
-                      <button 
+                      <button
                         onClick={() => setDeletingValidation(validation)}
                         className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-900 border border-red-200 hover:border-red-300 rounded-md transition-colors ml-auto"
                         title="Excluir validação"
@@ -586,7 +588,7 @@ const Validations: React.FC = () => {
                 </h3>
                 <div className="mt-2">
                   <p className="text-sm text-gray-500">
-                    Tem certeza que deseja excluir a validação "{deletingValidation.name}"? 
+                    Tem certeza que deseja excluir a validação "{deletingValidation.name}"?
                     Esta ação não pode ser desfeita e todos os dados associados serão perdidos.
                   </p>
                 </div>

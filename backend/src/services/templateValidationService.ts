@@ -132,9 +132,6 @@ export class TemplateValidationService {
         }
     }
 
-    /**
-     * Validate text element with dynamic variables
-     */
     private validateTextElement(
         element: EditorElement,
         availableData?: TemplateData
@@ -146,13 +143,22 @@ export class TemplateValidationService {
         }
 
         const content = element.content || '';
+        // Support both {{variable|formatter}} and {{formatter variable}}
         const variablePattern = /\{\{([^}|]+)(?:\|([^}]+))?\}\}/g;
+        const functionPattern = /\{\{(formatDate|formatDateTime|formatCurrency|formatTemperature|formatHumidity|uppercase)\s+([^}]+)\}\}/g;
         let match;
 
+        // Validate pipe-style formatters
         while ((match = variablePattern.exec(content)) !== null) {
             const [fullMatch, variablePath, formatter] = match as [string, string | undefined, string | undefined];
             const trimmedPath = (variablePath || '').trim();
             const trimmedFormatter = formatter?.trim();
+
+            // Skip function-style formatters (they'll be validated separately)
+            const validFormatters = ['formatDate', 'formatDateTime', 'formatCurrency', 'formatTemperature', 'formatHumidity', 'uppercase'];
+            if (validFormatters.includes(trimmedPath)) {
+                continue;
+            }
 
             // Check if variable path is valid
             if (availableData && !this.isValidPath(trimmedPath, availableData)) {
@@ -169,15 +175,6 @@ export class TemplateValidationService {
 
             // Validate formatter if present
             if (trimmedFormatter) {
-                const validFormatters = [
-                    'formatDate',
-                    'formatDateTime',
-                    'formatCurrency',
-                    'formatTemperature',
-                    'formatHumidity',
-                    'uppercase'
-                ];
-
                 if (!validFormatters.includes(trimmedFormatter)) {
                     issues.push({
                         type: 'warning',
@@ -189,6 +186,25 @@ export class TemplateValidationService {
                         severity: 'medium'
                     });
                 }
+            }
+        }
+
+        // Validate function-style formatters: {{formatDate variable}}
+        while ((match = functionPattern.exec(content)) !== null) {
+            const [fullMatch, formatter, variablePath] = match as [string, string, string];
+            const trimmedPath = variablePath.trim();
+
+            // Check if variable path is valid
+            if (availableData && !this.isValidPath(trimmedPath, availableData)) {
+                issues.push({
+                    type: 'error',
+                    elementId: element.id,
+                    elementType: element.type,
+                    field: 'content',
+                    message: `Variable "${trimmedPath}" in ${formatter} not found in available data`,
+                    suggestion: `Check if the variable path is correct for ${formatter}()`,
+                    severity: 'high'
+                });
             }
         }
 

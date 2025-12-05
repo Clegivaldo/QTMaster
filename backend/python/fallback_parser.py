@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys, json, os
+from typing import Optional
 import pandas as pd
 
 # Usage: fallback_parser.py <filePath> [sheetName]
@@ -143,7 +144,7 @@ def unify_same_named_columns(dfx: pd.DataFrame, name: str):
     unified = sub.bfill(axis=1).iloc[:, 0]
     return unified
 
-def try_header_autodetect(xls_path: str, sheet_name: str, engine_hint: str | None) -> pd.DataFrame | None:
+def try_header_autodetect(xls_path: str, sheet_name: str, engine_hint: Optional[str]) -> Optional[pd.DataFrame]:
     try:
         dfh = pd.read_excel(xls_path, sheet_name=sheet_name, header=None, engine=engine_hint)
     except Exception:
@@ -279,10 +280,32 @@ for numcol in ['temperature', 'humidity']:
 # Emit rows
 for idx, row in chosen_df.iterrows():
     ts_parsed = chosen_ts.iloc[idx] if idx < len(chosen_ts) else pd.NaT
+    
+    # Handle temperature - may be Series if multiple columns with same name
+    temp_val = row.get('temperature')
+    if isinstance(temp_val, pd.Series):
+        # Take first non-null value from multiple temperature columns
+        temp_val = temp_val.dropna().iloc[0] if not temp_val.dropna().empty else None
+    # Convert numpy types to Python types for JSON serialization
+    if pd.notna(temp_val):
+        temp_val = float(temp_val)
+    else:
+        temp_val = None
+    
+    # Handle humidity - may be Series if multiple columns with same name
+    humidity_val = row.get('humidity') if 'humidity' in row.index else None
+    if isinstance(humidity_val, pd.Series):
+        humidity_val = humidity_val.dropna().iloc[0] if not humidity_val.dropna().empty else None
+    # Convert numpy types to Python types for JSON serialization
+    if pd.notna(humidity_val):
+        humidity_val = float(humidity_val)
+    else:
+        humidity_val = None
+    
     out = {
         'timestamp': ts_parsed.isoformat() if pd.notnull(ts_parsed) else None,
-        'temperature': row.get('temperature'),
-        'humidity': row.get('humidity') if 'humidity' in row else None
+        'temperature': temp_val,
+        'humidity': humidity_val
     }
     print(json.dumps(out, ensure_ascii=False))
 

@@ -68,6 +68,7 @@ services:
     restart: unless-stopped
     working_dir: /app
     environment:
+      DOCKER_ENV: "true"
       VITE_API_URL: "http://localhost:3001/api"
       PORT: 3000
     ports:

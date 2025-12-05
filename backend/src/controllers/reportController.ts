@@ -13,8 +13,8 @@ export class ReportController {
    */
   static async generateReport(req: Request, res: Response) {
     try {
-  const validationId = requireParam(req, res, 'validationId');
-  if (!validationId) return;
+      const validationId = requireParam(req, res, 'validationId');
+      if (!validationId) return;
       const { templateId } = req.query;
 
       if (!validationId) {
@@ -41,8 +41,8 @@ export class ReportController {
       }
 
       // Gerar o PDF
-  const pdfBuffer = await getReportGenerationService().generateReport(
-        validationId, 
+      const pdfBuffer = await getReportGenerationService().generateReport(
+        validationId,
         templateId as string
       );
 
@@ -75,16 +75,25 @@ export class ReportController {
       fs.writeFileSync(filepath, pdfBuffer);
 
       // Criar registro do relatório no banco
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateId as string);
+
+      const reportData: any = {
+        validationId,
+        userId: req.user?.id || validation.userId,
+        clientId: validation.clientId,
+        name: `Laudo - ${validation.name}`,
+        status: 'FINALIZED',
+        pdfPath: `uploads/reports/${filename}`
+      };
+
+      if (isUUID) {
+        reportData.editorTemplateId = templateId as string;
+      } else {
+        reportData.templateId = templateId as string || 'default';
+      }
+
       const report = await prisma.report.create({
-        data: {
-          validationId,
-          templateId: templateId as string || 'default',
-          userId: req.user?.id || validation.userId,
-          clientId: validation.clientId,
-          name: `Laudo - ${validation.name}`,
-          status: 'FINALIZED',
-          pdfPath: `uploads/reports/${filename}`
-        }
+        data: reportData
       });
 
       // Retornar informação do relatório gerado (não enviar o PDF direto aqui)
@@ -161,8 +170,8 @@ export class ReportController {
    */
   static async getReport(req: Request, res: Response) {
     try {
-  const id = requireParam(req, res, 'id');
-  if (!id) return;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const report = await prisma.report.findUnique({
         where: { id: id! },
@@ -221,8 +230,8 @@ export class ReportController {
    */
   static async downloadReport(req: Request, res: Response) {
     try {
-  const id = requireParam(req, res, 'id');
-  if (!id) return;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const report = await prisma.report.findUnique({
         where: { id: id! }
@@ -252,12 +261,12 @@ export class ReportController {
       }
 
       const filename = path.basename(report.pdfPath);
-      
+
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       // Ensure proxies and browsers don't cache the PDF (always get the latest)
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      
+
       const fileStream = fs.createReadStream(filepath);
       fileStream.pipe(res);
       return;
@@ -280,12 +289,12 @@ export class ReportController {
       if (!validationId) return;
 
       // Gerar o PDF
-  const pdfBuffer = await getReportGenerationService().generateReport(validationId);
+      const pdfBuffer = await getReportGenerationService().generateReport(validationId);
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'inline');
       res.setHeader('Content-Length', pdfBuffer.length);
-      
+
       return res.send(pdfBuffer);
 
     } catch (error) {
@@ -465,8 +474,8 @@ export class ReportController {
    */
   static async deleteReport(req: Request, res: Response) {
     try {
-  const id = requireParam(req, res, 'id');
-  if (!id) return;
+      const id = requireParam(req, res, 'id');
+      if (!id) return;
 
       const report = await prisma.report.findUnique({
         where: { id: id! }

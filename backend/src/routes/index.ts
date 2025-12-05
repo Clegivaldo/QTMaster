@@ -17,6 +17,7 @@ import templateVersionsRoutes from './templateVersions.js';
 import uploadsRoutes from './uploads.js';
 import reportSecurityRoutes from './reportSecurity.js';
 import equipmentRoutes from './equipment.js';
+import { textSnippetRoutes } from './textSnippets.js';
 import { EditorTemplateController } from '../controllers/editorTemplateController.js';
 
 const router = Router();
@@ -43,6 +44,7 @@ router.use('/templates', templateVersionsRoutes);
 router.use('/reports', reportSecurityRoutes);
 router.use('/uploads', uploadsRoutes);
 router.use('/metadata', equipmentRoutes);
+router.use('/text-snippets', textSnippetRoutes);
 
 // Legacy health check route (kept for backward compatibility)
 router.get('/health', (req, res) => {
@@ -76,6 +78,7 @@ router.get('/', (req, res) => {
       editorTemplates: '/api/editor-templates',
       uploads: '/api/uploads',
       metadata: '/api/metadata',
+      textSnippets: '/api/text-snippets',
       health: '/api/health',
     },
   });
