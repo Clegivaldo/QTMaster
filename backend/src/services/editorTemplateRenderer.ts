@@ -869,8 +869,7 @@ export class EditorTemplateRenderer {
               margin: 0 auto;
               background: white;
               overflow: hidden; /* Ensure elements don't bleed out */
-              /* Apply padding to simulate margins in preview */
-              padding: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm;
+              /* No padding - elements are positioned in absolute page coordinates (matching editor) */
               box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
               margin-bottom: 20px;
             }
