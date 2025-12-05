@@ -447,7 +447,7 @@ export class EditorTemplateRenderer {
    * Prepare chart data based on configuration source
    */
   private prepareChartDataFromSource(chartConfig: any, data: TemplateData): any {
-    const dataSource = chartConfig.dataSource || { type: 'custom' };
+    const dataSource = chartConfig.dataSource || {};
 
     logger.debug('prepareChartDataFromSource called', {
       dataSourceType: dataSource?.type || 'undefined',
@@ -458,16 +458,17 @@ export class EditorTemplateRenderer {
       chartConfigKeys: Object.keys(chartConfig)
     });
 
-    // Check if we should use sensor data (validation data)
-    // Also try to use sensor data if it exists and no explicit dataSource is set
-    const shouldUseSensorData =
-      dataSource.type === 'validation' ||
-      dataSource.type === 'sensorData' ||
-      (data.sensorData && data.sensorData.length > 0 && !dataSource.type);
-
-    if (shouldUseSensorData && data.sensorData && data.sensorData.length > 0) {
-      logger.debug('Using sensor data for chart', { count: data.sensorData.length });
+    // ALWAYS use sensor data when available - this is the primary use case for validation reports
+    // The chart in a validation report should show the real sensor readings
+    if (data.sensorData && data.sensorData.length > 0) {
+      logger.debug('Using sensor data for chart (sensorData available)', { count: data.sensorData.length });
       return this.prepareSensorDataChartData(dataSource, data);
+    }
+
+    // Explicit dataSource configuration check
+    if (dataSource.type === 'validation' || dataSource.type === 'sensorData') {
+      logger.warn('dataSource type is validation/sensorData but no sensorData available');
+      return { labels: [], datasets: [] };
     }
 
     // Check if chartConfig.data exists and has content
@@ -476,8 +477,8 @@ export class EditorTemplateRenderer {
       return chartConfig.data;
     }
 
-    // Default/Custom data - return sample data for visualization
-    logger.debug('Using default sample data for chart (no sensor data found)');
+    // Default/Custom data - only when truly no data available
+    logger.warn('Using default sample data for chart (no sensor data found)');
     return {
       labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
       datasets: [{
@@ -536,11 +537,17 @@ export class EditorTemplateRenderer {
     logger.debug('Sensor groups formed', { groupCount: sensorGroups.size });
 
     // Generate labels from timestamps (using the first sensor's timestamps)
+    // Format: dd/mm/yy hh:mm
     const firstGroup = Array.from(sensorGroups.values())[0] || [];
     const labels = firstGroup.map(d => {
       try {
         const date = new Date(d.timestamp);
-        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear().toString().slice(-2);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
       } catch {
         return '';
       }
