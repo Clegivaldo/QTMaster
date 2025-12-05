@@ -112,8 +112,9 @@ export class EditorTemplateRenderer {
 
           const pageContent = elementsHTMLArray.join('');
           const isLastPage = i === numPages - 1;
+          const backgroundImage = (page as any).backgroundImage;
 
-          bodyHTML += this.renderPageContainer(pageContent, template.pageSettings, template.globalStyles, !isLastPage);
+          bodyHTML += await this.renderPageContainer(pageContent, template.pageSettings, template.globalStyles, !isLastPage, backgroundImage);
         }
       } else if (pages.length > 0) {
         // Multi-page template without root elements - use page elements directly
@@ -129,13 +130,14 @@ export class EditorTemplateRenderer {
 
           const pageContent = elementsHTMLArray.join('');
           const isLastPage = i === pages.length - 1;
+          const backgroundImage = page.backgroundImage;
 
-          bodyHTML += this.renderPageContainer(pageContent, template.pageSettings, template.globalStyles, !isLastPage);
+          bodyHTML += await this.renderPageContainer(pageContent, template.pageSettings, template.globalStyles, !isLastPage, backgroundImage);
         }
       } else {
         // Empty template
         logger.warn('Template has no elements', { templateId });
-        bodyHTML = this.renderPageContainer('', template.pageSettings, template.globalStyles, false);
+        bodyHTML = await this.renderPageContainer('', template.pageSettings, template.globalStyles, false);
       }
 
       // Build complete HTML document
@@ -170,7 +172,7 @@ export class EditorTemplateRenderer {
         return await this.renderTextElement(element, data, combinedStyles);
 
       case 'image':
-        return this.renderImageElement(element, combinedStyles);
+        return await this.renderImageElement(element, combinedStyles);
 
       case 'chart':
         return this.renderChartElement(element, data, combinedStyles);
@@ -352,19 +354,36 @@ export class EditorTemplateRenderer {
 
   /**
    * Render image element
-   * Convert relative URLs to file:// paths for Puppeteer rendering
+   * Convert local images to base64 data URLs for Puppeteer rendering
    */
-  private renderImageElement(element: EditorElement, styles: string): string {
+  private async renderImageElement(element: EditorElement, styles: string): Promise<string> {
     let src = element.content?.src || element.content || '';
     const alt = element.content?.alt || 'Image';
 
-    // Convert relative paths to absolute file:// paths or base64
+    // Convert relative paths to base64 data URLs for Puppeteer
     if (src && !src.startsWith('data:') && !src.startsWith('http')) {
       // Handle relative paths like /uploads/images/...
       if (src.startsWith('/')) {
-        // Convert to absolute path in container
-        const absolutePath = `/app${src}`;
-        src = `file://${absolutePath}`;
+        try {
+          const fs = await import('fs');
+          const path = await import('path');
+
+          // Get absolute path in container
+          const absolutePath = path.default.join(process.cwd(), src);
+
+          if (fs.default.existsSync(absolutePath)) {
+            const imageBuffer = fs.default.readFileSync(absolutePath);
+            const ext = path.default.extname(absolutePath).toLowerCase().replace('.', '');
+            const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+            const base64 = imageBuffer.toString('base64');
+            src = `data:${mimeType};base64,${base64}`;
+            logger.debug('Converted image to base64', { originalSrc: element.content?.src, size: imageBuffer.length });
+          } else {
+            logger.warn('Image file not found', { path: absolutePath });
+          }
+        } catch (error) {
+          logger.error('Error converting image to base64', { error, src });
+        }
       }
     }
 
@@ -920,9 +939,40 @@ export class EditorTemplateRenderer {
   }
 
   /**
+   * Convert a local image URL to base64 data URL
+   */
+  private async convertImageToBase64(src: string): Promise<string> {
+    if (!src || src.startsWith('data:') || src.startsWith('http')) {
+      return src;
+    }
+
+    if (src.startsWith('/')) {
+      try {
+        const fs = await import('fs');
+        const path = await import('path');
+
+        const absolutePath = path.default.join(process.cwd(), src);
+
+        if (fs.default.existsSync(absolutePath)) {
+          const imageBuffer = fs.default.readFileSync(absolutePath);
+          const ext = path.default.extname(absolutePath).toLowerCase().replace('.', '');
+          const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+          const base64 = imageBuffer.toString('base64');
+          return `data:${mimeType};base64,${base64}`;
+        } else {
+          logger.warn('Background image file not found', { path: absolutePath });
+        }
+      } catch (error) {
+        logger.error('Error converting background image to base64', { error, src });
+      }
+    }
+    return src;
+  }
+
+  /**
    * Render a page container with content
    */
-  private renderPageContainer(content: string, pageSettings: any, globalStyles: any, addPageBreak: boolean): string {
+  private async renderPageContainer(content: string, pageSettings: any, globalStyles: any, addPageBreak: boolean, backgroundImage?: any): Promise<string> {
     const pageWidth = pageSettings?.width || 210;
     const pageHeight = pageSettings?.height || 297;
 
@@ -931,6 +981,24 @@ export class EditorTemplateRenderer {
     const marginRight = globalStyles?.marginRight ?? 20;
     const marginBottom = globalStyles?.marginBottom ?? 20;
     const marginLeft = globalStyles?.marginLeft ?? 20;
+
+    // Handle background image
+    let backgroundStyle = '';
+    if (backgroundImage && backgroundImage.url) {
+      const bgUrl = await this.convertImageToBase64(backgroundImage.url);
+      const repeat = backgroundImage.repeat || 'no-repeat';
+      const position = backgroundImage.position || 'center';
+      const size = backgroundImage.size || 'cover';
+      const opacity = backgroundImage.opacity ?? 1;
+
+      backgroundStyle = `
+        background-image: url('${bgUrl}');
+        background-repeat: ${repeat};
+        background-position: ${position};
+        background-size: ${size};
+        opacity: ${opacity};
+      `;
+    }
 
     // Watermark CSS
     const watermarkHTML = pageSettings?.watermark?.text ? `
@@ -953,7 +1021,7 @@ export class EditorTemplateRenderer {
     const style = addPageBreak ? 'page-break-after: always;' : '';
 
     return `
-      <div class="page-container" style="${style}">
+      <div class="page-container" style="${style} ${backgroundStyle}">
         ${watermarkHTML}
         <div class="content-area">
           ${content}
