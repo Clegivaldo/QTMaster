@@ -50,6 +50,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   lsb-release \
   wget \
   xdg-utils \
+  postgresql-client \
+  # Chromium browser for Puppeteer PDF generation
+  chromium \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy and install Python dependencies first
@@ -60,13 +63,23 @@ RUN pip3 install --no-cache-dir -r /app/python/requirements.txt
 COPY package*.json ./
 RUN npm install --legacy-peer-deps --production=false
 
+# Copy environment file for build
+COPY .env.docker .env
+
 # Copy application source
 COPY . .
 
 # Generate Prisma client
 RUN npx prisma generate
 
-EXPOSE 3001
+EXPOSE 3000
 
-# Use tsx at runtime to run the TypeScript server directly (avoids building full project)
-CMD ["npx", "tsx", "src/server.ts"]
+# Ensure Puppeteer can find the Chromium binary
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+# Copy startup script
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
+# Use startup script
+CMD ["/usr/local/bin/start.sh", "npx", "tsx", "src/server.ts"]
