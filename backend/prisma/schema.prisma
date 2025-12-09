@@ -146,6 +146,7 @@ model Validation {
   startAt        DateTime?
   endAt          DateTime?
   hiddenSensorIds String[]     @default([])
+  chartConfig    Json?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   reports        Report[]

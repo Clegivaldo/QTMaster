@@ -2,8 +2,10 @@ import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { createCanvas } from 'canvas';
 import { ChartConfig } from '../types/chart.js';
 
+import annotationPlugin from 'chartjs-plugin-annotation';
+
 // Register Chart.js components
-Chart.register(...registerables);
+Chart.register(...registerables, annotationPlugin);
 
 export class ChartRenderService {
     /**

@@ -27,9 +27,13 @@ const TableElement: React.FC<TableElementProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Garantir que os dados da tabela existam
+  // Normalizar columns para ser sempre um número
+  const rawColumns = element.content.columns;
+  const columnsCount = Array.isArray(rawColumns) ? rawColumns.length : (typeof rawColumns === 'number' ? rawColumns : 2);
+
   const tableData: TableData = {
     rows: element.content.rows ?? 2,
-    columns: element.content.columns ?? 2,
+    columns: columnsCount,
     data: element.content.data || [],
     headers: element.content.headers || [],
     columnWidths: element.content.columnWidths || [],
@@ -43,8 +47,8 @@ const TableElement: React.FC<TableElementProps> = ({
 
     // Garantir que a matriz de dados tenha o tamanho correto
     if (!newData.data || newData.data.length !== newData.rows) {
-      newData.data = Array.from({ length: newData.rows }, (_, rowIndex) => 
-        Array.from({ length: newData.columns }, (_, colIndex) => 
+      newData.data = Array.from({ length: newData.rows }, (_, rowIndex) =>
+        Array.from({ length: newData.columns }, (_, colIndex) =>
           newData.data?.[rowIndex]?.[colIndex] || `R${rowIndex + 1}C${colIndex + 1}`
         )
       );
@@ -54,7 +58,7 @@ const TableElement: React.FC<TableElementProps> = ({
     // Garantir que cada linha tenha o número correto de colunas
     newData.data.forEach((row, rowIndex) => {
       if (row.length !== newData.columns) {
-        newData.data[rowIndex] = Array.from({ length: newData.columns }, (_, colIndex) => 
+        newData.data[rowIndex] = Array.from({ length: newData.columns }, (_, colIndex) =>
           row[colIndex] || `R${rowIndex + 1}C${colIndex + 1}`
         );
         needsUpdate = true;
@@ -70,7 +74,7 @@ const TableElement: React.FC<TableElementProps> = ({
   const handleAddRow = useCallback(() => {
     const newData = { ...tableData };
     newData.rows += 1;
-    const newRow = Array.from({ length: newData.columns }, (_, colIndex) => 
+    const newRow = Array.from({ length: newData.columns }, (_, colIndex) =>
       `R${newData.rows}C${colIndex + 1}`
     );
     newData.data = [...newData.data, newRow];
@@ -80,7 +84,7 @@ const TableElement: React.FC<TableElementProps> = ({
   // Handler para remover linha
   const handleRemoveRow = useCallback(() => {
     if (tableData.rows <= 1) return;
-    
+
     const newData = { ...tableData };
     newData.rows -= 1;
     newData.data = newData.data.slice(0, -1);
@@ -101,7 +105,7 @@ const TableElement: React.FC<TableElementProps> = ({
   // Handler para remover coluna
   const handleRemoveColumn = useCallback(() => {
     if (tableData.columns <= 1) return;
-    
+
     const newData = { ...tableData };
     newData.columns -= 1;
     newData.data = newData.data.map(row => row.slice(0, -1));
@@ -124,7 +128,7 @@ const TableElement: React.FC<TableElementProps> = ({
     setSelectedCell({ row, col });
     setIsEditing(true);
     setEditingValue(tableData.data[row]?.[col] || '');
-    
+
     // Focar no input após um pequeno delay
     setTimeout(() => {
       inputRef.current?.focus();
@@ -140,7 +144,7 @@ const TableElement: React.FC<TableElementProps> = ({
       newData.data[selectedCell.row] = [];
     }
     newData.data[selectedCell.row][selectedCell.col] = editingValue;
-    
+
     onEdit?.(element.id, newData);
     setIsEditing(false);
     setSelectedCell(null);
@@ -218,7 +222,7 @@ const TableElement: React.FC<TableElementProps> = ({
       )}
 
       {/* Tabela */}
-      <table 
+      <table
         ref={tableRef}
         className="w-full h-full border-collapse border border-gray-400"
         style={getTableStyles()}
@@ -229,7 +233,7 @@ const TableElement: React.FC<TableElementProps> = ({
               {Array.from({ length: tableData.columns }).map((_, colIndex) => {
                 const cellValue = tableData.data[rowIndex]?.[colIndex] || '';
                 const isSelectedCell = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
-                
+
                 return (
                   <td
                     key={colIndex}
@@ -257,7 +261,7 @@ const TableElement: React.FC<TableElementProps> = ({
                         style={{ fontSize: `${Math.max(8, 10 * zoom)}px` }}
                       />
                     ) : (
-                      <div 
+                      <div
                         className="w-full h-full flex items-center justify-start text-xs overflow-hidden"
                         style={{ fontSize: `${Math.max(8, 10 * zoom)}px` }}
                       >

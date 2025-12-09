@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TableElement, TableColumn } from '../../../../types/editor';
 import { Plus, Trash2, GripVertical, Settings, Database, Layout } from 'lucide-react';
 
+// TableBuilder - Handles both simple table (numeric columns) and advanced table (TableColumn[]) formats
 interface TableBuilderProps {
     element: TableElement;
     onUpdate: (updates: any) => void;

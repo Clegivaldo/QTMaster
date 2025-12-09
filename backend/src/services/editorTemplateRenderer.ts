@@ -12,6 +12,8 @@ interface TemplateData {
     id: string;
     startDate: Date;
     endDate: Date;
+    minTemperature?: number;
+    maxTemperature?: number;
     temperatureStats: {
       min: number;
       max: number;
@@ -405,12 +407,27 @@ export class EditorTemplateRenderer {
       // Prepare chart data
       const chartData = this.prepareChartDataFromSource(chartConfig, data);
 
+      // Extract annotations if present (added by prepareSensorDataChartData)
+      const annotations = (chartData as any).annotations;
+
+      // Prepare options with annotations
+      const options = chartConfig.options || {};
+      if (annotations) {
+        if (!options.plugins) options.plugins = {};
+        if (!options.plugins.annotation) options.plugins.annotation = {};
+        options.plugins.annotation.annotations = {
+          ...options.plugins.annotation.annotations,
+          ...annotations
+        };
+      }
+
       logger.debug('Rendering chart element', {
         elementId: element.id,
         chartType: chartConfig.chartType,
         dataSource: chartConfig.dataSource,
         hasLabels: chartData?.labels?.length > 0,
         hasDatasets: chartData?.datasets?.length > 0,
+        hasAnnotations: !!annotations,
         elementSize: element.size
       });
 
@@ -419,11 +436,36 @@ export class EditorTemplateRenderer {
       const width = Math.max(element.size?.width || 400, 100);
       const height = Math.max(element.size?.height || 200, 100);
 
+      // Apply axis limits from validation config if available
+      const validationChartConfig = (data.validation as any).chartConfig;
+      if (validationChartConfig?.yAxisConfig) {
+        const dataSource = chartConfig.dataSource || {};
+        const field = dataSource.field || 'temperature';
+        const { yAxisConfig } = validationChartConfig;
+
+        if (!options.scales) options.scales = {};
+        if (!options.scales.y) options.scales.y = {};
+
+        if (field === 'temperature') {
+          if (yAxisConfig.tempMin !== undefined) options.scales.y.min = Number(yAxisConfig.tempMin);
+          if (yAxisConfig.tempMax !== undefined) options.scales.y.max = Number(yAxisConfig.tempMax);
+          if (yAxisConfig.tempTick) {
+            options.scales.y.ticks = { ...options.scales.y.ticks, stepSize: Number(yAxisConfig.tempTick) };
+          }
+        } else if (field === 'humidity') {
+          if (yAxisConfig.humMin !== undefined) options.scales.y.min = Number(yAxisConfig.humMin);
+          if (yAxisConfig.humMax !== undefined) options.scales.y.max = Number(yAxisConfig.humMax);
+          if (yAxisConfig.humTick) {
+            options.scales.y.ticks = { ...options.scales.y.ticks, stepSize: Number(yAxisConfig.humTick) };
+          }
+        }
+      }
+
       // Render chart to base64 image
       const chartImage = await chartRenderService.renderChartToBase64({
         type: chartConfig.chartType || 'line',
         data: chartData,
-        options: chartConfig.options || {},
+        options: options,
         width: Math.round(width),
         height: Math.round(height)
       });
@@ -556,21 +598,21 @@ export class EditorTemplateRenderer {
     // Generate datasets
     const datasets = Array.from(sensorGroups.entries()).map(([sensorId, items], index) => {
       const sensor = data.sensors?.find(s => s.id === sensorId);
-      const colors = [
-        'rgb(239, 68, 68)',   // Red
-        'rgb(59, 130, 246)',  // Blue
-        'rgb(16, 185, 129)',  // Green
-        'rgb(245, 158, 11)',  // Amber
-        'rgb(139, 92, 246)'   // Violet
-      ];
-      const color = colors[index % colors.length];
 
-      const safeColor = color || 'rgb(0,0,0)';
+      // Generate distinct colors using golden angle approximation
+      const hue = (index * 137.508) % 360;
+      const color = `hsl(${hue}, 70%, 50%)`;
+
+      // Convert HSL to RGB/RGBA for Chart.js (simple approximation or let browser handle it if supported)
+      // Chart.js supports HSL strings
+      const safeColor = color;
+      const backgroundColor = `hsla(${hue}, 70%, 50%, 0.1)`;
+
       return {
         label: `${sensor?.serialNumber || sensorId} (${field === 'temperature' ? '°C' : '%'})`,
         data: items.map(d => field === 'temperature' ? d.temperature : d.humidity),
         borderColor: safeColor,
-        backgroundColor: safeColor.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+        backgroundColor: backgroundColor,
         tension: 0.4,
         pointRadius: 0, // Optimize for many points
         borderWidth: 2
@@ -579,7 +621,54 @@ export class EditorTemplateRenderer {
 
     logger.debug('Chart data prepared', { labelsCount: labels.length, datasetsCount: datasets.length });
 
-    return { labels, datasets };
+    // Add annotations for limits if available
+    const annotations: any = {};
+
+    if (data.validation?.minTemperature !== undefined) {
+      annotations.minLine = {
+        type: 'line',
+        yMin: data.validation.minTemperature,
+        yMax: data.validation.minTemperature,
+        borderColor: '#000000', // Black
+        borderWidth: 2,
+        borderDash: [5, 5],
+        label: {
+          display: true,
+          content: `Min: ${data.validation.minTemperature}°C`,
+          position: 'start',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          color: 'white',
+          font: { size: 10 }
+        }
+      };
+    }
+
+    if (data.validation?.maxTemperature !== undefined) {
+      annotations.maxLine = {
+        type: 'line',
+        yMin: data.validation.maxTemperature,
+        yMax: data.validation.maxTemperature,
+        borderColor: '#000000', // Black
+        borderWidth: 2,
+        borderDash: [5, 5],
+        label: {
+          display: true,
+          content: `Max: ${data.validation.maxTemperature}°C`,
+          position: 'start',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          color: 'white',
+          font: { size: 10 }
+        }
+      };
+    }
+
+    return {
+      labels,
+      datasets,
+      // Pass annotations in a way that chartRenderService can use
+      // Note: chart.js annotation plugin configuration structure
+      annotations
+    };
   }
 
   /**

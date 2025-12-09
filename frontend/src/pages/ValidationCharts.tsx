@@ -48,6 +48,8 @@ interface ValidationData {
   };
   sensorData: SensorReading[];
   cycles?: Cycle[];
+  chartConfig?: any;
+  hiddenSensorIds?: string[];
 }
 
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
@@ -120,62 +122,61 @@ const ValidationCharts: React.FC = () => {
       const validationData = result.data.validation;
       setData(validationData);
 
-      // Inicializar sensores visíveis
+      // Inicializar configurações (Defaults vs Salvos)
       if (validationData.sensorData && validationData.sensorData.length > 0) {
-        const sensorIds = [...new Set(validationData.sensorData.map((d: SensorReading) => d.sensor.id))] as string[];
-        setVisibleSensors(new Set(sensorIds));
 
-        // Calcular range de datas
+        // 1. Sensores Visíveis
+        const allSensorIds = [...new Set(validationData.sensorData.map((d: SensorReading) => d.sensor.id))] as string[];
+        const hiddenSet = new Set(validationData.hiddenSensorIds || []);
+        // Se houver hiddenSensorIds salvo, usa-o. Se não, todos visíveis.
+        const initialVisible = new Set(allSensorIds.filter(id => !hiddenSet.has(id)));
+        setVisibleSensors(initialVisible);
+
+        // 2. Data Range Default
         const timestamps = validationData.sensorData.map((d: SensorReading) => parseToDate(d.timestamp).getTime());
         const minDate = new Date(Math.min(...timestamps));
         const maxDate = new Date(Math.max(...timestamps));
-        setDateRange({
+
+        let initialDateRange = {
           start: minDate.toISOString().slice(0, 16),
           end: maxDate.toISOString().slice(0, 16)
-        });
+        };
 
-        // Auto-ajustar eixo Y baseado nos dados
+        // 3. Eixo Y Default
         const temps = validationData.sensorData.map((d: SensorReading) => d.temperature);
-        const tempMin = Math.floor(Math.min(...temps) - 2);
-        const tempMax = Math.ceil(Math.max(...temps) + 2);
+        const tempMinInfo = temps.length > 0 ? Math.floor(Math.min(...temps) - 2) : 0;
+        const tempMaxInfo = temps.length > 0 ? Math.ceil(Math.max(...temps) + 2) : 30;
 
         const humidities = validationData.sensorData
           .map((d: SensorReading) => d.humidity)
           .filter((h: number | null) => h !== null) as number[];
 
-        console.log('Has humidity data:', humidities.length > 0, 'count:', humidities.length);
-
-        // DEBUG: Analisar sensores únicos
-        console.log('=== VALIDATION CHARTS DEBUG ===');
-        console.log('Total sensorData records:', validationData.sensorData.length);
-
-        const uniqueSensorMap = new Map();
-        validationData.sensorData.forEach((reading: SensorReading) => {
-          if (!uniqueSensorMap.has(reading.sensor.id)) {
-            uniqueSensorMap.set(reading.sensor.id, {
-              id: reading.sensor.id,
-              serial: reading.sensor.serialNumber
-            });
-          }
-        });
-
-        console.log('Unique sensors count:', uniqueSensorMap.size);
-        console.log('Sensor details:', Array.from(uniqueSensorMap.values()));
-        console.log('First 5 readings:', validationData.sensorData.slice(0, 5));
-        console.log('===============================');
-
-        // Habilitar checkbox de umidade se houver dados (FIXADO: remover dependência de min/maxHumidity)
         if (humidities.length > 0) {
           setShowHumidity(true);
         }
 
-        setYAxisConfig(prev => ({
-          ...prev,
-          tempMin,
-          tempMax,
+        let initialYAxis = {
+          tempMin: tempMinInfo,
+          tempMax: tempMaxInfo,
+          tempTick: 5,
           humMin: humidities.length > 0 ? Math.floor(Math.min(...humidities) - 5) : 0,
-          humMax: humidities.length > 0 ? Math.ceil(Math.max(...humidities) + 5) : 100
-        }));
+          humMax: humidities.length > 0 ? Math.ceil(Math.max(...humidities) + 5) : 100,
+          humTick: 10
+        };
+
+        // 4. Sobrescrever com configurações salvas (se existirem)
+        if (validationData.chartConfig) {
+          if (validationData.chartConfig.yAxisConfig) {
+            initialYAxis = { ...initialYAxis, ...validationData.chartConfig.yAxisConfig };
+          }
+          if (validationData.chartConfig.dateRange) {
+            initialDateRange = validationData.chartConfig.dateRange;
+          }
+        }
+
+        // 5. Aplicar Estado Final
+        setYAxisConfig(initialYAxis);
+        setDateRange(initialDateRange);
       }
     } catch (error) {
       console.error('Error fetching validation:', error);
@@ -525,6 +526,88 @@ const ValidationCharts: React.FC = () => {
                 <button
                   disabled={saving}
                   onClick={async () => {
+                    if (!data || !data.sensorData) return;
+                    if (!window.confirm('Restaurar padrões? Isso resetará zoom, eixos e sensores.')) return;
+
+                    // Recalcular defaults
+                    const timestamps = data.sensorData.map((d: SensorReading) => parseToDate(d.timestamp).getTime());
+                    const minDate = new Date(Math.min(...timestamps));
+                    const maxDate = new Date(Math.max(...timestamps));
+
+                    const temps = data.sensorData.map((d: SensorReading) => d.temperature);
+
+                    // Ajustar limites padrões
+                    const tempMinInfo = temps.length > 0 ? Math.floor(Math.min(...temps) - 2) : 0;
+                    const tempMaxInfo = temps.length > 0 ? Math.ceil(Math.max(...temps) + 2) : 30;
+
+                    const humidities = data.sensorData
+                      .map((d: SensorReading) => d.humidity)
+                      .filter((h: number | null) => h !== null) as number[];
+
+                    const defaultY = {
+                      tempMin: tempMinInfo,
+                      tempMax: tempMaxInfo,
+                      tempTick: 5,
+                      humMin: humidities.length > 0 ? Math.floor(Math.min(...humidities) - 5) : 0,
+                      humMax: humidities.length > 0 ? Math.ceil(Math.max(...humidities) + 5) : 100,
+                      humTick: 10
+                    };
+
+                    const defaultDates = {
+                      start: minDate.toISOString().slice(0, 16),
+                      end: maxDate.toISOString().slice(0, 16)
+                    };
+
+                    setYAxisConfig(defaultY);
+                    setDateRange(defaultDates);
+                    setSelectedCycleId(''); // Limpar ciclo
+
+                    // Resetar sensores para TODOS visíveis
+                    const allSensorIds = [...new Set(data.sensorData.map((d: SensorReading) => d.sensor.id))] as string[];
+                    setVisibleSensors(new Set(allSensorIds));
+
+                    // Salvar o reset
+                    try {
+                      setSaving(true);
+                      const token = localStorage.getItem('accessToken');
+
+                      // Salvar sensores (enviando TODOS selecionados = nenhum oculto)
+                      await fetch(`/api/validations/${id}/sensors/selection`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ selectedSensorIds: allSensorIds })
+                      });
+
+                      // Salvar config resetada
+                      await fetch(`/api/validations/${id}/criteria`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          minTemperature: data.minTemperature,
+                          maxTemperature: data.maxTemperature,
+                          minHumidity: data.minHumidity,
+                          maxHumidity: data.maxHumidity,
+                          chartConfig: {
+                            yAxisConfig: defaultY,
+                            dateRange: defaultDates
+                          }
+                        })
+                      });
+                      alert('Configurações restauradas.');
+                    } catch (err) {
+                      console.error(err);
+                      alert('Erro ao restaurar.');
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  className="btn-secondary mr-2"
+                >
+                  Restaurar Padrão
+                </button>
+                <button
+                  disabled={saving}
+                  onClick={async () => {
                     if (!id || !data) return;
                     try {
                       setSaving(true);
@@ -540,6 +623,10 @@ const ValidationCharts: React.FC = () => {
                           maxTemperature: data.maxTemperature,
                           minHumidity: data.minHumidity,
                           maxHumidity: data.maxHumidity,
+                          chartConfig: {
+                            yAxisConfig,
+                            dateRange
+                          }
                         })
                       });
                       // Persistir seleção de sensores visíveis
@@ -671,7 +758,18 @@ const ValidationCharts: React.FC = () => {
         {/* Temperature Chart */}
         {showTemperature && (
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-4">Gráfico de Temperatura</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Gráfico de Temperatura</h3>
+              <button
+                onClick={() => window.open(`/validations/${id}/charts/fullscreen?type=temperature`, '_blank')}
+                className="text-gray-500 hover:text-primary-600"
+                title="Abrir em Nova Janela"
+              >
+                <Download className="h-5 w-5 rotate-180" /> {/* Using Rotate icon implies expand, or maximize. Or just text "Expandir" */}
+                {/* Better to use proper Maximize icon, but not imported. Using simple text/style for now */}
+                <span className="text-sm border border-gray-300 rounded px-2 py-1">Tela Cheia</span>
+              </button>
+            </div>
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -737,7 +835,16 @@ const ValidationCharts: React.FC = () => {
         {/* Humidade Chart (renderiza se houver qualquer dado, independentemente de parâmetros definidos) */}
         {showHumidity && hasHumidity && (
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-4">Gráfico de Umidade</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Gráfico de Umidade</h3>
+              <button
+                onClick={() => window.open(`/validations/${id}/charts/fullscreen?type=humidity`, '_blank')}
+                className="text-gray-500 hover:text-primary-600 text-sm border border-gray-300 rounded px-2 py-1"
+                title="Abrir em Nova Janela"
+              >
+                Tela Cheia
+              </button>
+            </div>
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />

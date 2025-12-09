@@ -405,8 +405,27 @@ export class PDFGenerationService {
       });
 
       // Calculate statistics
-      const temperatures = validation.sensorData.map((d: any) => d.temperature).filter((t: any) => t !== null);
-      const humidities = validation.sensorData.map((d: any) => d.humidity).filter((h: any) => h !== null);
+      // Filter hidden sensors
+      const hiddenSensorIds = new Set((validation as any).hiddenSensorIds || []);
+      let activeSensorData = validation.sensorData.filter((sd: any) => !hiddenSensorIds.has(sd.sensorId));
+
+      // Filter by date range if configured
+      const chartConfig = (validation as any).chartConfig;
+      if (chartConfig?.dateRange?.start && chartConfig?.dateRange?.end) {
+        const startTime = new Date(chartConfig.dateRange.start).getTime();
+        const endTime = new Date(chartConfig.dateRange.end).getTime();
+
+        if (!isNaN(startTime) && !isNaN(endTime)) {
+          activeSensorData = activeSensorData.filter((sd: any) => {
+            const time = new Date(sd.timestamp).getTime();
+            return time >= startTime && time <= endTime;
+          });
+        }
+      }
+
+      // Calculate statistics using only active sensors
+      const temperatures = activeSensorData.map((d: any) => d.temperature).filter((t: any) => t !== null);
+      const humidities = activeSensorData.map((d: any) => d.humidity).filter((h: any) => h !== null);
 
       const temperatureStats = temperatures.length > 0 ? {
         min: Math.min(...temperatures),
@@ -432,8 +451,11 @@ export class PDFGenerationService {
           id: validation.id,
           startDate: new Date(validation.createdAt),
           endDate: new Date(validation.updatedAt),
+          minTemperature: (validation as any).minTemperature,
+          maxTemperature: (validation as any).maxTemperature,
           temperatureStats,
           humidityStats,
+          chartConfig: (validation as any).chartConfig,
         },
         sensors: validation.equipment ? [{
           id: validation.equipment.id,
@@ -441,7 +463,7 @@ export class PDFGenerationService {
           serialNumber: validation.equipment.serialNumber,
           model: validation.equipment.equipmentType.name || 'Unknown',
         }] : [],
-        sensorData: validation.sensorData.map((sd: any) => ({
+        sensorData: activeSensorData.map((sd: any) => ({
           timestamp: new Date(sd.timestamp),
           temperature: sd.temperature,
           humidity: sd.humidity || undefined,
@@ -1160,13 +1182,13 @@ export class PDFGenerationService {
     try {
       const cacheKey = this.generatePDFCacheKey(templateId, validationId, additionalData);
       const cached = await redisService.get(cacheKey);
-      
+
       if (cached) {
         logger.info('PDF cache hit', { templateId, validationId });
         // Redis stores as base64 string
         return Buffer.from(cached, 'base64');
       }
-      
+
       logger.debug('PDF cache miss', { templateId, validationId });
       return null;
     } catch (error) {
@@ -1190,16 +1212,16 @@ export class PDFGenerationService {
       // Store as base64 string in Redis
       const base64PDF = pdfBuffer.toString('base64');
       const success = await redisService.set(cacheKey, base64PDF, ttl);
-      
+
       if (success) {
-        logger.info('PDF cached successfully', { 
-          templateId, 
-          validationId, 
+        logger.info('PDF cached successfully', {
+          templateId,
+          validationId,
           size: pdfBuffer.length,
-          ttl 
+          ttl
         });
       }
-      
+
       return success;
     } catch (error) {
       logger.error('Error caching PDF', { error, templateId, validationId });
@@ -1213,7 +1235,7 @@ export class PDFGenerationService {
   async invalidatePDFCache(templateId?: string, validationId?: string): Promise<number> {
     try {
       let pattern = 'pdf:cache:*';
-      
+
       if (templateId && validationId) {
         // Invalidate specific cache
         const cacheKey = this.generatePDFCacheKey(templateId, validationId);
@@ -1227,7 +1249,7 @@ export class PDFGenerationService {
         logger.info('Invalidated PDF cache', { templateId, validationId, count });
         return count;
       }
-      
+
       return 0;
     } catch (error) {
       logger.error('Error invalidating PDF cache', { error, templateId, validationId });

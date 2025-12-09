@@ -58,7 +58,7 @@ RUN pip3 install --no-cache-dir -r /app/python/requirements.txt
 
 # Copy package files and install Node dependencies
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps --production=false
+RUN npm install --legacy-peer-deps --production=false
 
 # Copy application source
 COPY . .

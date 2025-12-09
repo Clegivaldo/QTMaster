@@ -17,7 +17,7 @@ const dateTimeString = (fieldName: string) => z
 const optionalDateTime = (fieldName: string) => z
   .string()
   .optional()
-  .refine((val) => (val ? !Number.isNaN(Date.parse(val)) : true), `${fieldName} precisa ser uma data válida`) 
+  .refine((val) => (val ? !Number.isNaN(Date.parse(val)) : true), `${fieldName} precisa ser uma data válida`)
   .transform((val) => (val ? new Date(val) : undefined));
 
 const cycleSchema = z.object({
@@ -78,6 +78,7 @@ const updateCriteriaSchema = z.object({
   maxTemperature: z.number(),
   minHumidity: z.number().nullable().optional(),
   maxHumidity: z.number().nullable().optional(),
+  // chartConfig: z.any().optional(), // Removido para bypass manual
 });
 
 const updateSensorSelectionSchema = z.object({
@@ -102,23 +103,23 @@ export class ValidationController {
   async getValidations(req: Request, res: Response) {
     try {
       const { page, limit, search, clientId, isApproved, sortBy, sortOrder } = querySchema.parse(req.query);
-      
+
       const skip = (page - 1) * limit;
-      
+
       // Build where clause
       const where: any = {};
-      
+
       if (search) {
         where.OR = [
           { name: { contains: search, mode: 'insensitive' as const } },
           { description: { contains: search, mode: 'insensitive' as const } },
         ];
       }
-      
+
       if (clientId) {
         where.clientId = clientId;
       }
-      
+
       if (isApproved !== undefined) {
         where.isApproved = isApproved;
       }
@@ -350,15 +351,15 @@ export class ValidationController {
         } : null,
       };
 
-      res.json({ 
-        success: true, 
-        data: { 
+      res.json({
+        success: true,
+        data: {
           validation: {
             ...validation,
             sensorData: allSensorData,
             statistics
           }
-        } 
+        }
       });
       return;
     } catch (error) {
@@ -389,9 +390,9 @@ export class ValidationController {
         data: { sensorData },
       });
     } catch (error) {
-      logger.error('Get sensor data for validation error:', { 
-        error: error instanceof Error ? error.message : error, 
-        suitcaseId: req.params.suitcaseId 
+      logger.error('Get sensor data for validation error:', {
+        error: error instanceof Error ? error.message : error,
+        suitcaseId: req.params.suitcaseId
       });
       res.status(500).json({
         error: 'Internal server error',
@@ -405,7 +406,7 @@ export class ValidationController {
       if (!id) return;
 
       // Obter sensores selecionados do query parameter
-      const selectedSensorIds = req.query.selectedSensorIds 
+      const selectedSensorIds = req.query.selectedSensorIds
         ? (req.query.selectedSensorIds as string).split(',')
         : undefined;
 
@@ -437,11 +438,11 @@ export class ValidationController {
         where: { validationId: id },
         select: { id: true },
       });
-      
+
       const sensorDataIds = sensorData.map(sd => sd.id);
       const chartData = await validationService.getChartData(
-        sensorDataIds, 
-        parameters as any, 
+        sensorDataIds,
+        parameters as any,
         selectedSensorIds,
         validation.hiddenSensorIds
       );
@@ -576,10 +577,10 @@ export class ValidationController {
         return;
       }
 
-      logger.error('Update validation approval error:', { 
-        error: error instanceof Error ? error.message : error, 
-        validationId: req.params.id, 
-        userId: req.user?.id 
+      logger.error('Update validation approval error:', {
+        error: error instanceof Error ? error.message : error,
+        validationId: req.params.id,
+        userId: req.user?.id
       });
       res.status(500).json({ error: 'Internal server error' });
       return;
@@ -620,7 +621,7 @@ export class ValidationController {
     try {
       const id = requireParam(req, res, 'id');
       if (!id) return;
-      
+
       const { hiddenSensorIds } = updateHiddenSensorsSchema.parse(req.body);
 
       const validation = await prisma.validation.update({
@@ -636,10 +637,10 @@ export class ValidationController {
         return;
       }
 
-      logger.error('Update hidden sensors error:', { 
-        error: error instanceof Error ? error.message : error, 
-        validationId: req.params.id, 
-        userId: req.user?.id 
+      logger.error('Update hidden sensors error:', {
+        error: error instanceof Error ? error.message : error,
+        validationId: req.params.id,
+        userId: req.user?.id
       });
       res.status(500).json({ error: 'Internal server error' });
       return;
@@ -652,6 +653,7 @@ export class ValidationController {
       if (!id) return;
 
       const { minTemperature, maxTemperature, minHumidity, maxHumidity } = updateCriteriaSchema.parse(req.body);
+      const chartConfig = req.body.chartConfig; // Manual extraction
 
       if (minTemperature >= maxTemperature) {
         res.status(400).json({ error: 'Temperatura mínima deve ser menor que a máxima' });
@@ -674,6 +676,7 @@ export class ValidationController {
           maxTemperature,
           minHumidity: minHumidity ?? null,
           maxHumidity: maxHumidity ?? null,
+          chartConfig: chartConfig ?? undefined,
         },
         select: {
           id: true,
@@ -681,6 +684,7 @@ export class ValidationController {
           maxTemperature: true,
           minHumidity: true,
           maxHumidity: true,
+          chartConfig: true,
           updatedAt: true,
         },
       });
@@ -768,7 +772,7 @@ export class ValidationController {
         minTemperature: validation.minTemperature,
         maxTemperature: validation.maxTemperature,
       };
-      
+
       // Add humidity parameters only if they exist
       if (validation.minHumidity !== null && validation.minHumidity !== undefined) {
         parameters.minHumidity = validation.minHumidity;
@@ -826,9 +830,9 @@ export class ValidationController {
         }
       });
     } catch (error) {
-      logger.error('Get acceptance windows error:', { 
-        error: error instanceof Error ? error.message : error, 
-        validationId: req.params.id 
+      logger.error('Get acceptance windows error:', {
+        error: error instanceof Error ? error.message : error,
+        validationId: req.params.id
       });
       res.status(500).json({
         error: 'Internal server error',
@@ -880,10 +884,10 @@ export class ValidationController {
       res.json({ success: true, message: 'Validation deleted successfully' });
       return;
     } catch (error) {
-      logger.error('Delete validation error:', { 
-        error: error instanceof Error ? error.message : error, 
-        validationId: req.params.id, 
-        userId: req.user?.id 
+      logger.error('Delete validation error:', {
+        error: error instanceof Error ? error.message : error,
+        validationId: req.params.id,
+        userId: req.user?.id
       });
       res.status(500).json({ error: 'Internal server error' });
       return;
@@ -915,17 +919,17 @@ export class ValidationController {
 
       logger.info('Sensor data deleted:', { validationId: id, count: result.count, userId: req.user?.id });
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: `${result.count} registros deletados com sucesso`,
         count: result.count
       });
       return;
     } catch (error) {
-      logger.error('Delete sensor data error:', { 
-        error: error instanceof Error ? error.message : error, 
-        validationId: req.params.id, 
-        userId: req.user?.id 
+      logger.error('Delete sensor data error:', {
+        error: error instanceof Error ? error.message : error,
+        validationId: req.params.id,
+        userId: req.user?.id
       });
       res.status(500).json({ error: 'Erro interno do servidor' });
       return;
@@ -1003,10 +1007,10 @@ export class ValidationController {
       });
       return;
     } catch (error) {
-      logger.error('Check duplicate error:', { 
-        error: error instanceof Error ? error.message : error, 
-        validationId: req.params.id, 
-        userId: req.user?.id 
+      logger.error('Check duplicate error:', {
+        error: error instanceof Error ? error.message : error,
+        validationId: req.params.id,
+        userId: req.user?.id
       });
       res.status(500).json({ error: 'Erro interno do servidor' });
       return;
@@ -1033,9 +1037,9 @@ export class ValidationController {
       res.json({ success: true, data: { cycles } });
       return;
     } catch (error) {
-      logger.error('Get cycles error:', { 
-        error: error instanceof Error ? error.message : error, 
-        validationId: req.params.id 
+      logger.error('Get cycles error:', {
+        error: error instanceof Error ? error.message : error,
+        validationId: req.params.id
       });
       res.status(500).json({ error: 'Erro interno do servidor' });
       return;
@@ -1075,7 +1079,7 @@ export class ValidationController {
       });
 
       if (overlapping) {
-        res.status(400).json({ 
+        res.status(400).json({
           error: 'Ciclo sobrepõe outro existente',
           details: {
             existingCycle: overlapping.name,
@@ -1106,10 +1110,10 @@ export class ValidationController {
         return;
       }
 
-      logger.error('Create cycle error:', { 
-        error: error instanceof Error ? error.message : error, 
+      logger.error('Create cycle error:', {
+        error: error instanceof Error ? error.message : error,
         validationId: req.params.id,
-        userId: req.user?.id 
+        userId: req.user?.id
       });
       res.status(500).json({ error: 'Erro interno do servidor' });
       return;
@@ -1158,7 +1162,7 @@ export class ValidationController {
       });
 
       if (overlapping) {
-        res.status(400).json({ 
+        res.status(400).json({
           error: 'Ciclo sobrepõe outro existente',
           details: {
             existingCycle: overlapping.name
@@ -1188,10 +1192,10 @@ export class ValidationController {
         return;
       }
 
-      logger.error('Update cycle error:', { 
-        error: error instanceof Error ? error.message : error, 
+      logger.error('Update cycle error:', {
+        error: error instanceof Error ? error.message : error,
         cycleId: req.params.cycleId,
-        userId: req.user?.id 
+        userId: req.user?.id
       });
       res.status(500).json({ error: 'Erro interno do servidor' });
       return;
@@ -1224,17 +1228,17 @@ export class ValidationController {
 
       logger.info('Cycle deleted:', { cycleId, validationId: id, userId: req.user?.id });
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: `Ciclo "${cycle.name}" deletado com sucesso`,
         itemsAffected: cycle._count.importedItems
       });
       return;
     } catch (error) {
-      logger.error('Delete cycle error:', { 
-        error: error instanceof Error ? error.message : error, 
+      logger.error('Delete cycle error:', {
+        error: error instanceof Error ? error.message : error,
         cycleId: req.params.cycleId,
-        userId: req.user?.id 
+        userId: req.user?.id
       });
       res.status(500).json({ error: 'Erro interno do servidor' });
       return;
@@ -1325,15 +1329,15 @@ export class ValidationController {
         };
       });
 
-      logger.info('Cycle statistics calculated:', { 
-        validationId: id, 
+      logger.info('Cycle statistics calculated:', {
+        validationId: id,
         cycleCount: validation.cycles.length,
         totalItems: validation.importedItems.length,
-        userId: req.user?.id 
+        userId: req.user?.id
       });
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         data: {
           overall,
           byCycle,
@@ -1347,10 +1351,10 @@ export class ValidationController {
       });
       return;
     } catch (error) {
-      logger.error('Get cycle statistics error:', { 
-        error: error instanceof Error ? error.message : error, 
+      logger.error('Get cycle statistics error:', {
+        error: error instanceof Error ? error.message : error,
         validationId: req.params.id,
-        userId: req.user?.id 
+        userId: req.user?.id
       });
       res.status(500).json({ error: 'Erro interno do servidor' });
       return;

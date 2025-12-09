@@ -24,6 +24,7 @@ const ImportData = React.lazy(() => import('@/pages/ImportData'));
 const Validations = React.lazy(() => import('@/pages/Validations'));
 const ValidationDetails = React.lazy(() => import('@/pages/ValidationDetails'));
 const ValidationCharts = React.lazy(() => import('@/pages/ValidationCharts'));
+const ValidationChartFullScreen = React.lazy(() => import('@/pages/ValidationChartFullScreen'));
 const Reports = React.lazy(() => import('@/pages/Reports'));
 const Templates = React.lazy(() => import('@/pages/Templates'));
 const EditorLayout = React.lazy(() => import('@/pages/EditorLayout'));
@@ -46,50 +47,50 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route 
-        path="/login" 
-        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />} 
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />}
       />
-      <Route 
-        path="/unauthorized" 
-        element={<Unauthorized />} 
+      <Route
+        path="/unauthorized"
+        element={<Unauthorized />}
       />
-      
+
       {/* Public Routes */}
-      <Route 
-        path="/shared/:token" 
+      <Route
+        path="/shared/:token"
         element={
           <Suspense fallback={<LoadingSpinner />}>
             <SharedReport />
           </Suspense>
-        } 
+        }
       />
-      
+
       {/* Editor Layout - Full screen, no sidebar/header */}
-      <Route 
-        path="/editor-layout" 
+      <Route
+        path="/editor-layout"
         element={
           <PrivateRoute>
             <Suspense fallback={<LoadingSpinner />}>
               <EditorLayout />
             </Suspense>
           </PrivateRoute>
-        } 
+        }
       />
-      <Route 
-        path="/editor-layout/:templateId" 
+      <Route
+        path="/editor-layout/:templateId"
         element={
           <PrivateRoute>
             <Suspense fallback={<LoadingSpinner />}>
               <EditorLayout />
             </Suspense>
           </PrivateRoute>
-        } 
+        }
       />
-      
+
       {/* Protected Routes - All wrapped with Layout */}
-      <Route 
-        path="/*" 
+      <Route
+        path="/*"
         element={
           <PrivateRoute>
             <Layout>
@@ -108,28 +109,29 @@ const AppRoutes: React.FC = () => {
                   <Route path="/validations" element={<Validations />} />
                   <Route path="/validations/:id/details" element={<ValidationDetails />} />
                   <Route path="/validations/:id/charts" element={<ValidationCharts />} />
+                  <Route path="/validations/:id/charts/fullscreen" element={<ValidationChartFullScreen />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/reports/:id" element={<ReportDetails />} />
                   <Route path="/templates" element={<Templates />} />
                   <Route path="/profile" element={<Profile />} />
-                  <Route 
-                    path="/settings" 
+                  <Route
+                    path="/settings"
                     element={
                       <PrivateRoute requireAdmin>
                         <Settings />
                       </PrivateRoute>
-                    } 
+                    }
                   />
                 </Routes>
               </Suspense>
             </Layout>
           </PrivateRoute>
-        } 
+        }
       />
-      
-      <Route 
-        path="*" 
-        element={<Navigate to="/" replace />} 
+
+      <Route
+        path="*"
+        element={<Navigate to="/" replace />}
       />
     </Routes>
   );
