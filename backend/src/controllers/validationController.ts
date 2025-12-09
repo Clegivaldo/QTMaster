@@ -357,7 +357,8 @@ export class ValidationController {
           validation: {
             ...validation,
             sensorData: allSensorData,
-            statistics
+            statistics,
+            chartConfig: validation.chartConfig
           }
         }
       });

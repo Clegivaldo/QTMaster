@@ -17,6 +17,7 @@ export interface ReportData {
     statistics?: any;
     createdAt: Date;
     updatedAt: Date;
+    chartConfig?: any;
   };
   client: {
     id: string;
@@ -98,7 +99,12 @@ export class ReportGenerationService {
           startDate: reportData.validation.createdAt,
           endDate: reportData.validation.updatedAt,
           temperatureStats: reportData.validation.statistics?.temperature || { min: 0, max: 0, avg: 0 },
-          humidityStats: reportData.validation.statistics?.humidity
+          humidityStats: reportData.validation.statistics?.humidity,
+          minTemperature: reportData.validation.minTemperature,
+          maxTemperature: reportData.validation.maxTemperature,
+          minHumidity: reportData.validation.minHumidity,
+          maxHumidity: reportData.validation.maxHumidity,
+          chartConfig: reportData.validation.chartConfig
         },
         sensors: reportData.sensors,
         sensorData: reportData.sensorData.map(d => ({
@@ -180,6 +186,7 @@ export class ReportGenerationService {
         statistics: validation.statistics,
         createdAt: validation.createdAt,
         updatedAt: validation.updatedAt,
+        chartConfig: validation.chartConfig
       },
       client: {
         id: validation.client.id,

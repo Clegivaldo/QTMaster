@@ -68,7 +68,24 @@ interface ValidationData {
       max: number;
       average: number;
     };
+    cycles?: Array<{
+      id: string;
+      name: string;
+      totalReadings: number;
+      conformityPercentage: number;
+      temperature: {
+        min: number;
+        max: number;
+        average: number;
+      };
+      humidity?: {
+        min: number;
+        max: number;
+        average: number;
+      };
+    }>;
   };
+  chartConfig?: any;
 }
 
 const ValidationDetails: React.FC = () => {
@@ -191,6 +208,58 @@ const ValidationDetails: React.FC = () => {
           }
           if (tempOk && humidOk) conformCount++;
         });
+
+        // Calculate per-cycle statistics
+        const cycleStats = validationData.cycles?.map(cycle => {
+          const cycleStart = parseToDate(cycle.startAt);
+          const cycleEnd = parseToDate(cycle.endAt);
+          
+          const cycleData = sensorData.filter((row: any) => {
+            const rowTime = parseToDate(row.timestamp);
+            return rowTime >= cycleStart && rowTime <= cycleEnd;
+          });
+
+          if (cycleData.length === 0) {
+            return {
+              id: cycle.id,
+              name: cycle.name,
+              totalReadings: 0,
+              conformityPercentage: 0,
+              temperature: { min: 0, max: 0, average: 0 },
+              humidity: { min: 0, max: 0, average: 0 }
+            };
+          }
+
+          const cycleTemps = cycleData.map((d: any) => d.temperature);
+          const cycleHumids = cycleData.map((d: any) => d.humidity).filter((h: any) => h !== null);
+          
+          let cycleConformCount = 0;
+          cycleData.forEach((row: any) => {
+            const tempOk = row.temperature >= validationData.minTemperature && row.temperature <= validationData.maxTemperature;
+            let humidOk = true;
+            if (validationData.minHumidity !== null && validationData.maxHumidity !== null && row.humidity !== null) {
+              humidOk = row.humidity >= validationData.minHumidity && row.humidity <= validationData.maxHumidity;
+            }
+            if (tempOk && humidOk) cycleConformCount++;
+          });
+
+          return {
+            id: cycle.id,
+            name: cycle.name,
+            totalReadings: cycleData.length,
+            conformityPercentage: (cycleConformCount / cycleData.length) * 100,
+            temperature: {
+              min: Math.min(...cycleTemps),
+              max: Math.max(...cycleTemps),
+              average: cycleTemps.reduce((a: number, b: number) => a + b, 0) / cycleTemps.length
+            },
+            humidity: cycleHumids.length > 0 ? {
+              min: Math.min(...cycleHumids),
+              max: Math.max(...cycleHumids),
+              average: cycleHumids.reduce((a: number, b: number) => a + b, 0) / cycleHumids.length
+            } : undefined
+          };
+        }) || [];
         
         validationData.statistics = {
           totalReadings,
@@ -204,7 +273,8 @@ const ValidationDetails: React.FC = () => {
             min: Math.min(...humidities),
             max: Math.max(...humidities),
             average: humidities.reduce((a: number, b: number) => a + b, 0) / humidities.length
-          } : null
+          } : null,
+          cycles: cycleStats
         };
       }
       
@@ -214,53 +284,6 @@ const ValidationDetails: React.FC = () => {
       alert('Erro ao carregar dados da validação');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleExportCSV = () => {
-    if (!data) return;
-
-    // Use first three sensors for CSV columns B..D
-    const firstThreeSensors = sensors.slice(0, 3);
-    const tempHeaders = ['Data/Hora', 'Sensor 1', 'Sensor 2', 'Sensor 3'];
-    const humHeaders = ['Data/Hora', 'Sensor 1', 'Sensor 2', 'Sensor 3'];
-
-    // Linhas usando pivotRows (já alinhado pela tolerância)
-    const tempRows: string[][] = [];
-    const humRows: string[][] = [];
-    pivotRows.forEach(pr => {
-      const dt = formatBRShort(pr.ts);
-      const tRow: string[] = [dt];
-      const hRow: string[] = [dt];
-      for (let i = 0; i < 3; i++) {
-        const s = firstThreeSensors[i];
-        if (!s) {
-          tRow.push('');
-          hRow.push('');
-          continue;
-        }
-        const r = pr.readings.get(s.serialNumber);
-        tRow.push(r ? r.temperature.toFixed(2) : '');
-        hRow.push(r && r.humidity !== null ? r.humidity.toFixed(2) : '');
-      }
-      tempRows.push(tRow);
-      humRows.push(hRow);
-    });
-
-    const tempsCsv = [tempHeaders.join(','), ...tempRows.map(r => r.join(','))].join('\n');
-    const humCsv = [humHeaders.join(','), ...humRows.map(r => r.join(','))].join('\n');
-
-    const downloadCsv = (content: string, name: string) => {
-      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = name;
-      link.click();
-    };
-
-    downloadCsv(tempsCsv, `validacao_${data.validationNumber}_temperaturas.csv`);
-    if (data.statistics?.humidity) {
-      downloadCsv(humCsv, `validacao_${data.validationNumber}_umidades.csv`);
     }
   };
 
@@ -307,6 +330,30 @@ const ValidationDetails: React.FC = () => {
     }
     
     return tempOk;
+  };
+
+  const isWithinCycleDates = (timestamp: number): boolean => {
+    if (!data.cycles || data.cycles.length === 0) return true; // If no cycles, consider all within
+    const ts = new Date(timestamp);
+    return data.cycles.some(cycle => {
+      const start = parseToDate(cycle.startAt);
+      const end = parseToDate(cycle.endAt);
+      return ts >= start && ts <= end;
+    });
+  };
+
+  const getRowStats = (readings: Map<string, SensorDataRow>) => {
+    const temps = Array.from(readings.values()).map(r => r.temperature).filter(t => !isNaN(t));
+    const humids = Array.from(readings.values()).map(r => r.humidity).filter(h => h !== null && !isNaN(h)) as number[];
+    
+    return {
+      tempMax: temps.length > 0 ? Math.max(...temps) : null,
+      tempAvg: temps.length > 0 ? temps.reduce((a, b) => a + b, 0) / temps.length : null,
+      tempMin: temps.length > 0 ? Math.min(...temps) : null,
+      humidMax: humids.length > 0 ? Math.max(...humids) : null,
+      humidAvg: humids.length > 0 ? humids.reduce((a, b) => a + b, 0) / humids.length : null,
+      humidMin: humids.length > 0 ? Math.min(...humids) : null,
+    };
   };
 
   if (isLoading) {
@@ -574,18 +621,11 @@ const ValidationDetails: React.FC = () => {
               </select>
             </div>
             <button
-              onClick={handleExportCSV}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Exportar CSV Pivot
-            </button>
-            <button
               onClick={handleExportXLSX}
               className="btn-secondary flex items-center gap-2"
             >
               <FileSpreadsheet className="h-4 w-4" />
-              Exportar XLSX (2 abas)
+              Exportar
             </button>
             {data.sensorData.length > 0 && (
               <button
@@ -626,35 +666,55 @@ const ValidationDetails: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
                     {sensors.map(s => (
-                      <th key={s.serialNumber + '-temp'} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th key={s.serialNumber + '-temp'} className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {s.serialNumber} Temp (°C)
                       </th>
                     ))}
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Máx</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Média</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mín</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedData.map(pivot => (
-                    <tr key={pivot.ts}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatBRShort(pivot.ts)}
-                      </td>
-                      {sensors.map(s => {
-                        const reading = pivot.readings.get(s.serialNumber);
-                        const tempOut = reading && (reading.temperature < data.minTemperature || reading.temperature > data.maxTemperature);
-                        return (
-                          <td key={pivot.ts + s.serialNumber + '-t'} className="px-6 py-4 whitespace-nowrap text-sm">
-                            {reading ? (
-                              <span className={tempOut ? 'text-red-600 font-medium' : 'text-gray-900'}>
-                                {reading.temperature.toFixed(2)}°C
-                              </span>
-                            ) : <span className="text-gray-400">-</span>}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
+                  {paginatedData.map(pivot => {
+                    const rowStats = getRowStats(pivot.readings);
+                    const withinCycle = isWithinCycleDates(pivot.ts);
+                    return (
+                      <tr key={pivot.ts}>
+                        <td className={`px-3 py-4 whitespace-nowrap text-sm ${withinCycle ? 'text-gray-900' : 'text-gray-400 line-through'}`}>
+                          {formatBRShort(pivot.ts)}
+                        </td>
+                        {sensors.map(s => {
+                          const reading = pivot.readings.get(s.serialNumber);
+                          const withinLimits = reading ? isWithinLimits(reading) : false;
+                          const textClass = reading 
+                            ? (withinLimits ? 'text-green-600' : 'text-red-600 font-medium')
+                            : 'text-gray-400';
+                          const finalClass = withinCycle ? textClass : `${textClass} line-through`;
+                          return (
+                            <td key={pivot.ts + s.serialNumber + '-t'} className="px-3 py-4 whitespace-nowrap text-sm">
+                              {reading ? (
+                                <span className={finalClass}>
+                                  {reading.temperature.toFixed(2)}°C
+                                </span>
+                              ) : <span className="text-gray-400">-</span>}
+                            </td>
+                          );
+                        })}
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {rowStats.tempMax !== null ? `${rowStats.tempMax.toFixed(2)}°C` : '-'}
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {rowStats.tempAvg !== null ? `${rowStats.tempAvg.toFixed(2)}°C` : '-'}
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {rowStats.tempMin !== null ? `${rowStats.tempMin.toFixed(2)}°C` : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -666,30 +726,56 @@ const ValidationDetails: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
                     {sensors.map(s => (
-                      <th key={s.serialNumber + '-hum'} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th key={s.serialNumber + '-hum'} className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         {s.serialNumber} Umid (%RH)
                       </th>
                     ))}
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Máx</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Média</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mín</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedData.map(pivot => (
-                    <tr key={pivot.ts}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatBRShort(pivot.ts)}
-                      </td>
-                      {sensors.map(s => {
-                        const reading = pivot.readings.get(s.serialNumber);
-                        return (
-                          <td key={pivot.ts + s.serialNumber + '-h'} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {reading ? (reading.humidity !== null ? `${reading.humidity.toFixed(2)}%` : 'N/A') : <span className="text-gray-400">-</span>}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
+                  {paginatedData.map(pivot => {
+                    const rowStats = getRowStats(pivot.readings);
+                    const withinCycle = isWithinCycleDates(pivot.ts);
+                    return (
+                      <tr key={pivot.ts}>
+                        <td className={`px-3 py-4 whitespace-nowrap text-sm ${withinCycle ? 'text-gray-900' : 'text-gray-400 line-through'}`}>
+                          {formatBRShort(pivot.ts)}
+                        </td>
+                        {sensors.map(s => {
+                          const reading = pivot.readings.get(s.serialNumber);
+                          const withinLimits = reading && reading.humidity !== null 
+                            ? (reading.humidity >= (data.minHumidity || 0) && reading.humidity <= (data.maxHumidity || 100))
+                            : false;
+                          const textClass = reading && reading.humidity !== null
+                            ? (withinLimits ? 'text-green-600' : 'text-red-600 font-medium')
+                            : 'text-gray-400';
+                          const finalClass = withinCycle ? textClass : `${textClass} line-through`;
+                          return (
+                            <td key={pivot.ts + s.serialNumber + '-h'} className="px-3 py-4 whitespace-nowrap text-sm">
+                              {reading ? (reading.humidity !== null ? 
+                                <span className={finalClass}>{reading.humidity.toFixed(2)}%</span> : 
+                                <span className="text-gray-400">N/A</span>) : 
+                                <span className="text-gray-400">-</span>}
+                            </td>
+                          );
+                        })}
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {rowStats.humidMax !== null ? `${rowStats.humidMax.toFixed(2)}%` : '-'}
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {rowStats.humidAvg !== null ? `${rowStats.humidAvg.toFixed(2)}%` : '-'}
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {rowStats.humidMin !== null ? `${rowStats.humidMin.toFixed(2)}%` : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
