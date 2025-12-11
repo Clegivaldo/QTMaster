@@ -6,17 +6,17 @@ services:
     container_name: laudo-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: laudo_db
-      POSTGRES_USER: laudo_user
-      POSTGRES_PASSWORD: laudo_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     networks:
       - laudo-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U laudo_user -d laudo_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,7 +26,7 @@ services:
     container_name: laudo-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -43,42 +43,47 @@ services:
       dockerfile: Dockerfile
     container_name: laudo-backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      NODE_ENV: development
-      PORT: 3001
-      DATABASE_URL: "postgresql://laudo_user:laudo_password@laudo-postgres:5432/laudo_db"
-      REDIS_URL: "redis://laudo-redis:6379"
-      FRONTEND_URL: "http://localhost:3000"
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${BACKEND_PORT}
+      # Use the compose postgres service and credentials used by this stack
+      DATABASE_URL: "postgresql://postgres:postgres123@postgres:5432/report_system"
+      # Point to the redis container provided by the backend compose file (report_system_redis)
+      REDIS_URL: "redis://report_system_redis:${REDIS_PORT:-6379}"
+      FRONTEND_URL: ${FRONTEND_URL}
     ports:
-      - "3001:3001"
+      - "${BACKEND_PORT}:3000"
     volumes:
       - ./backend/uploads:/app/uploads
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - laudo-network
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3001/api/monitoring/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/monitoring/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
 
   frontend:
-    image: node:20-bullseye
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: laudo-frontend
     restart: unless-stopped
-    working_dir: /app
+    env_file:
+      - .env
     environment:
-      DOCKER_ENV: "true"
-      VITE_API_URL: "http://localhost:3001/api"
-      PORT: 3000
+      VITE_API_URL: ${VITE_API_URL}
+      VITE_APP_NAME: ${VITE_APP_NAME}
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    command: sh -c "npm install --legacy-peer-deps && npm run dev -- --host 0.0.0.0 --port 3000"
+      - "${FRONTEND_PORT}:80"
     depends_on:
       - backend
     networks:

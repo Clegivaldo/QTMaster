@@ -59,13 +59,59 @@ def build_rename_map(columns):
 
 def parse_datetime_columns(dfx: pd.DataFrame) -> pd.Series:
     # Caso 1: coluna única 'datetime'
+    # Helper: auto-detect dayfirst for ambiguous date strings
+    def detect_dayfirst(series: pd.Series) -> bool:
+        try:
+            s = series.dropna().astype(str).str.strip()
+            if s.empty:
+                return True
+            sample = s.head(500)
+            t_true = pd.to_datetime(sample, dayfirst=True, infer_datetime_format=True, errors='coerce')
+            t_false = pd.to_datetime(sample, dayfirst=False, infer_datetime_format=True, errors='coerce')
+            def score(ts):
+                if ts.empty:
+                    return 0
+                valid = ts.notna()
+                # Prefer parses that yield plausible years (2000-2100)
+                yrs = ts.dt.year.where(valid)
+                plausible = ((yrs >= 2000) & (yrs <= 2100)).sum()
+                return int(plausible)
+            return True if score(t_true) >= score(t_false) else False
+        except Exception:
+            return True
+
     if 'datetime' in dfx.columns:
         s = dfx['datetime']
         # Se for numérico (serial do Excel)
         if pd.api.types.is_numeric_dtype(s):
             ts = pd.to_datetime(s, unit='d', origin='1899-12-30', errors='coerce')
         else:
-            ts = pd.to_datetime(s, dayfirst=True, infer_datetime_format=True, errors='coerce')
+            df_sample = s.astype(str).str.strip()
+            # Try common explicit formats first (ISO-like) to avoid ambiguous day/month inference
+            fmt_candidates = [
+                '%Y-%m-%d %H:%M:%S',
+                '%Y-%m-%d %H:%M',
+                '%d/%m/%Y %H:%M:%S',
+                '%d/%m/%Y %H:%M',
+                '%m/%d/%Y %H:%M:%S',
+                '%m/%d/%Y %H:%M'
+            ]
+            best_ts = pd.Series([pd.NaT] * len(df_sample))
+            best_count = 0
+            for fmt in fmt_candidates:
+                try:
+                    candidate = pd.to_datetime(df_sample, format=fmt, errors='coerce')
+                    cnt = int(candidate.notna().sum())
+                    if cnt > best_count:
+                        best_count = cnt
+                        best_ts = candidate
+                except Exception:
+                    continue
+            if best_count > 0:
+                ts = best_ts
+            else:
+                dayfirst = detect_dayfirst(df_sample)
+                ts = pd.to_datetime(df_sample, dayfirst=dayfirst, infer_datetime_format=True, errors='coerce')
         return ts
 
     # Novo Caso 1.5: somente 'time' contendo data+hora inteira
@@ -84,8 +130,25 @@ def parse_datetime_columns(dfx: pd.DataFrame) -> pd.Series:
             return pd.Series([pd.NaT] * len(dfx))
         else:
             st_str = st.astype(str).str.strip()
-            # Tentar parse direto como datetime (dia primeiro para PT-BR)
-            ts = pd.to_datetime(st_str, dayfirst=True, infer_datetime_format=True, errors='coerce')
+            # Try explicit ISO-like formats first
+            fmt_candidates = ['%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M:%S', '%d/%m/%Y %H:%M']
+            best_ts = pd.Series([pd.NaT] * len(st_str))
+            best_count = 0
+            for fmt in fmt_candidates:
+                try:
+                    cand = pd.to_datetime(st_str, format=fmt, errors='coerce')
+                    cnt = int(cand.notna().sum())
+                    if cnt > best_count:
+                        best_count = cnt
+                        best_ts = cand
+                except Exception:
+                    continue
+            if best_count > 0:
+                ts = best_ts
+            else:
+                # Fallback to heuristic dayfirst detection
+                dayfirst = detect_dayfirst(st_str)
+                ts = pd.to_datetime(st_str, dayfirst=dayfirst, infer_datetime_format=True, errors='coerce')
             # Se ainda assim der tudo NaT e parecer só horário HH:MM[:SS], manter NaT (sem data)
             looks_like_time_only = st_str.str.fullmatch(r"\d{1,2}:\d{2}(:\d{2})?").fillna(False)
             if ts.notna().any() and (~looks_like_time_only).any():
@@ -99,7 +162,9 @@ def parse_datetime_columns(dfx: pd.DataFrame) -> pd.Series:
         if pd.api.types.is_numeric_dtype(sd):
             date_ts = pd.to_datetime(sd, unit='d', origin='1899-12-30', errors='coerce')
         else:
-            date_ts = pd.to_datetime(sd.astype(str).str.strip(), dayfirst=True, infer_datetime_format=True, errors='coerce')
+            date_str = sd.astype(str).str.strip()
+            dayfirst = detect_dayfirst(date_str)
+            date_ts = pd.to_datetime(date_str, dayfirst=dayfirst, infer_datetime_format=True, errors='coerce')
 
     if date_ts is not None and 'time' in dfx.columns:
         st = dfx['time']
@@ -195,6 +260,15 @@ for name, df0 in sheets.items():
 
     # 2) Tentar parse
     ts = parse_datetime_columns(df1)
+    # DEBUG: mostrar amostra dos valores brutos e parseados para investigação
+    try:
+        if 'time' in df1.columns:
+            raw_sample = df1['time'].astype(str).head(10).tolist()
+            parsed_sample = ts.head(10).astype(str).tolist()
+            print(f"DEBUG: time raw sample: {raw_sample}", file=sys.stderr)
+            print(f"DEBUG: time parsed sample: {parsed_sample}", file=sys.stderr)
+    except Exception:
+        pass
     non_null = int(ts.notna().sum())
     print(f"DEBUG: Parsed datetime non-null count: {non_null} / {len(ts)}", file=sys.stderr)
 
@@ -278,6 +352,31 @@ for numcol in ['temperature', 'humidity']:
         chosen_df[numcol] = pd.to_numeric(col, errors='coerce')
 
 # Emit rows
+def ts_to_iso_z(ts_val):
+    # Return None for NaT/NaN
+    try:
+        if pd.isna(ts_val):
+            return None
+    except Exception:
+        pass
+    try:
+        ts = pd.Timestamp(ts_val)
+        # If naive, treat as UTC (do not guess local timezone)
+        if ts.tz is None:
+            ts = ts.tz_localize('UTC')
+        else:
+            ts = ts.tz_convert('UTC')
+        iso = ts.isoformat()
+        # Normalize +00:00 to Z
+        if iso.endswith('+00:00'):
+            iso = iso[:-6] + 'Z'
+        return iso
+    except Exception:
+        try:
+            return str(ts_val)
+        except Exception:
+            return None
+
 for idx, row in chosen_df.iterrows():
     ts_parsed = chosen_ts.iloc[idx] if idx < len(chosen_ts) else pd.NaT
     
@@ -303,7 +402,7 @@ for idx, row in chosen_df.iterrows():
         humidity_val = None
     
     out = {
-        'timestamp': ts_parsed.isoformat() if pd.notnull(ts_parsed) else None,
+        'timestamp': ts_to_iso_z(ts_parsed),
         'temperature': temp_val,
         'humidity': humidity_val
     }

@@ -3,7 +3,7 @@ export const API_CONFIG = {
   // Normalize baseURL: use env value or default to full URL for local dev.
   baseURL: (() => {
     const raw = import.meta.env.VITE_API_URL as string | undefined;
-    const fallback = 'http://localhost:3001/api';
+    const fallback = 'http://localhost:3000/api';
     if (!raw) return fallback;
     // Trim trailing slashes
     return raw.replace(/\/+$/g, '') || fallback;

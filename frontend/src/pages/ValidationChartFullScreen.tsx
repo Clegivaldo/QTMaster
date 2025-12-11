@@ -224,20 +224,25 @@ const ValidationChartFullScreen: React.FC = () => {
     const yTick = isTemp ? yAxisConfig.tempTick : yAxisConfig.humTick;
 
     return (
-        <div className="h-screen w-screen p-4 bg-white flex flex-col">
+        <div className="h-screen w-screen bg-white flex flex-col overflow-hidden">
             <h2 className="text-xl font-bold text-center mb-2">
                 {data.client.name} - Validação #{data.validationNumber} - {isTemp ? 'Temperatura' : 'Umidade'}
             </h2>
             <div className="flex-1 min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100vw" height="100%">
                     <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
-                            dataKey="displayTime"
+                            dataKey="timestampNum"
+                            type="number"
+                            domain={['dataMin', 'dataMax']}
                             angle={-45}
                             textAnchor="end"
                             height={80}
                             style={{ fontSize: '12px' }}
+                            tickFormatter={(value) => formatDisplayTime(value)}
+                            interval={0}
+                            tickCount={50}
                         />
                         <YAxis
                             domain={[yMin, yMax]}
@@ -261,13 +266,13 @@ const ValidationChartFullScreen: React.FC = () => {
                         {/* Linhas de Limite */}
                         {isTemp ? (
                             <>
-                                <ReferenceLine y={data.minTemperature} stroke="red" strokeDasharray="5 5" label="Min" />
-                                <ReferenceLine y={data.maxTemperature} stroke="red" strokeDasharray="5 5" label="Max" />
+                                <ReferenceLine y={data.minTemperature} stroke="red" strokeDasharray="5 5" />
+                                <ReferenceLine y={data.maxTemperature} stroke="red" strokeDasharray="5 5" />
                             </>
                         ) : (
                             <>
-                                {data.minHumidity !== null && <ReferenceLine y={data.minHumidity} stroke="blue" strokeDasharray="5 5" label="Min" />}
-                                {data.maxHumidity !== null && <ReferenceLine y={data.maxHumidity} stroke="blue" strokeDasharray="5 5" label="Max" />}
+                                {data.minHumidity !== null && <ReferenceLine y={data.minHumidity} stroke="blue" strokeDasharray="5 5" />}
+                                {data.maxHumidity !== null && <ReferenceLine y={data.maxHumidity} stroke="blue" strokeDasharray="5 5" />}
                             </>
                         )}
 

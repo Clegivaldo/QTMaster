@@ -20,11 +20,11 @@ export default defineConfig({
     proxy: {
       '/api': {
         // Use Docker service name when running in Docker, localhost otherwise
-        target: process.env.DOCKER_ENV ? 'http://backend:3001' : 'http://localhost:3001',
+        target: process.env.DOCKER_ENV ? 'http://backend:3000' : 'http://localhost:3000',
         changeOrigin: true,
       },
       '/uploads': {
-        target: process.env.DOCKER_ENV ? 'http://backend:3001' : 'http://localhost:3001',
+        target: process.env.DOCKER_ENV ? 'http://backend:3000' : 'http://localhost:3000',
         changeOrigin: true,
       },
     },

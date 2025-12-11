@@ -1,0 +1,2409 @@
+{
+  "file": "/tmp/EF7241102164.xls",
+  "time_col": "Tempo",
+  "temp_col": "Temperatura°C",
+  "hum_col": "Umidade%RH",
+  "sample_count": 200,
+  "samples": [
+    {
+      "index": 1886,
+      "raw": {
+        "Não.": "1887",
+        "Tempo": "2025-11-13 00:00:36",
+        "Temperatura°C": "27,7",
+        "Umidade%RH": "65,5"
+      },
+      "parsed_time": null,
+      "temperature": 27.7,
+      "humidity": 65.5
+    },
+    {
+      "index": 1887,
+      "raw": {
+        "Não.": "1888",
+        "Tempo": "2025-11-13 00:01:36",
+        "Temperatura°C": "27,7",
+        "Umidade%RH": "65,5"
+      },
+      "parsed_time": null,
+      "temperature": 27.7,
+      "humidity": 65.5
+    },
+    {
+      "index": 1888,
+      "raw": {
+        "Não.": "1889",
+        "Tempo": "2025-11-13 00:02:36",
+        "Temperatura°C": "27,7",
+        "Umidade%RH": "65,5"
+      },
+      "parsed_time": null,
+      "temperature": 27.7,
+      "humidity": 65.5
+    },
+    {
+      "index": 1889,
+      "raw": {
+        "Não.": "1890",
+        "Tempo": "2025-11-13 00:03:36",
+        "Temperatura°C": "27,7",
+        "Umidade%RH": "65,5"
+      },
+      "parsed_time": null,
+      "temperature": 27.7,
+      "humidity": 65.5
+    },
+    {
+      "index": 1890,
+      "raw": {
+        "Não.": "1891",
+        "Tempo": "2025-11-13 00:04:36",
+        "Temperatura°C": "27,7",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.7,
+      "humidity": 65.4
+    },
+    {
+      "index": 1891,
+      "raw": {
+        "Não.": "1892",
+        "Tempo": "2025-11-13 00:05:36",
+        "Temperatura°C": "27,7",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.7,
+      "humidity": 65.4
+    },
+    {
+      "index": 1892,
+      "raw": {
+        "Não.": "1893",
+        "Tempo": "2025-11-13 00:06:36",
+        "Temperatura°C": "27,7",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.7,
+      "humidity": 65.4
+    },
+    {
+      "index": 1893,
+      "raw": {
+        "Não.": "1894",
+        "Tempo": "2025-11-13 00:07:36",
+        "Temperatura°C": "27,7",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.7,
+      "humidity": 65.4
+    },
+    {
+      "index": 1894,
+      "raw": {
+        "Não.": "1895",
+        "Tempo": "2025-11-13 00:08:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,5"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.5
+    },
+    {
+      "index": 1895,
+      "raw": {
+        "Não.": "1896",
+        "Tempo": "2025-11-13 00:09:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,5"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.5
+    },
+    {
+      "index": 1896,
+      "raw": {
+        "Não.": "1897",
+        "Tempo": "2025-11-13 00:10:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,5"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.5
+    },
+    {
+      "index": 1897,
+      "raw": {
+        "Não.": "1898",
+        "Tempo": "2025-11-13 00:11:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,5"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.5
+    },
+    {
+      "index": 1898,
+      "raw": {
+        "Não.": "1899",
+        "Tempo": "2025-11-13 00:12:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.4
+    },
+    {
+      "index": 1899,
+      "raw": {
+        "Não.": "1900",
+        "Tempo": "2025-11-13 00:13:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.4
+    },
+    {
+      "index": 1900,
+      "raw": {
+        "Não.": "1901",
+        "Tempo": "2025-11-13 00:14:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.4
+    },
+    {
+      "index": 1901,
+      "raw": {
+        "Não.": "1902",
+        "Tempo": "2025-11-13 00:15:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,5"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.5
+    },
+    {
+      "index": 1902,
+      "raw": {
+        "Não.": "1903",
+        "Tempo": "2025-11-13 00:16:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.4
+    },
+    {
+      "index": 1903,
+      "raw": {
+        "Não.": "1904",
+        "Tempo": "2025-11-13 00:17:36",
+        "Temperatura°C": "27,5",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.5,
+      "humidity": 65.4
+    },
+    {
+      "index": 1904,
+      "raw": {
+        "Não.": "1905",
+        "Tempo": "2025-11-13 00:18:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.4
+    },
+    {
+      "index": 1905,
+      "raw": {
+        "Não.": "1906",
+        "Tempo": "2025-11-13 00:19:36",
+        "Temperatura°C": "27,6",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.6,
+      "humidity": 65.4
+    },
+    {
+      "index": 1906,
+      "raw": {
+        "Não.": "1907",
+        "Tempo": "2025-11-13 00:20:36",
+        "Temperatura°C": "27,5",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.5,
+      "humidity": 65.4
+    },
+    {
+      "index": 1907,
+      "raw": {
+        "Não.": "1908",
+        "Tempo": "2025-11-13 00:21:36",
+        "Temperatura°C": "27,5",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.5,
+      "humidity": 65.4
+    },
+    {
+      "index": 1908,
+      "raw": {
+        "Não.": "1909",
+        "Tempo": "2025-11-13 00:22:36",
+        "Temperatura°C": "27,5",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.5,
+      "humidity": 65.4
+    },
+    {
+      "index": 1909,
+      "raw": {
+        "Não.": "1910",
+        "Tempo": "2025-11-13 00:23:36",
+        "Temperatura°C": "27,5",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.5,
+      "humidity": 65.4
+    },
+    {
+      "index": 1910,
+      "raw": {
+        "Não.": "1911",
+        "Tempo": "2025-11-13 00:24:36",
+        "Temperatura°C": "27,5",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.5,
+      "humidity": 65.4
+    },
+    {
+      "index": 1911,
+      "raw": {
+        "Não.": "1912",
+        "Tempo": "2025-11-13 00:25:36",
+        "Temperatura°C": "27,5",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.5,
+      "humidity": 65.4
+    },
+    {
+      "index": 1912,
+      "raw": {
+        "Não.": "1913",
+        "Tempo": "2025-11-13 00:26:36",
+        "Temperatura°C": "27,5",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.5,
+      "humidity": 65.4
+    },
+    {
+      "index": 1913,
+      "raw": {
+        "Não.": "1914",
+        "Tempo": "2025-11-13 00:27:36",
+        "Temperatura°C": "27,5",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.5,
+      "humidity": 65.4
+    },
+    {
+      "index": 1914,
+      "raw": {
+        "Não.": "1915",
+        "Tempo": "2025-11-13 00:28:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1915,
+      "raw": {
+        "Não.": "1916",
+        "Tempo": "2025-11-13 00:29:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1916,
+      "raw": {
+        "Não.": "1917",
+        "Tempo": "2025-11-13 00:30:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1917,
+      "raw": {
+        "Não.": "1918",
+        "Tempo": "2025-11-13 00:31:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1918,
+      "raw": {
+        "Não.": "1919",
+        "Tempo": "2025-11-13 00:32:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1919,
+      "raw": {
+        "Não.": "1920",
+        "Tempo": "2025-11-13 00:33:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1920,
+      "raw": {
+        "Não.": "1921",
+        "Tempo": "2025-11-13 00:34:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1921,
+      "raw": {
+        "Não.": "1922",
+        "Tempo": "2025-11-13 00:35:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1922,
+      "raw": {
+        "Não.": "1923",
+        "Tempo": "2025-11-13 00:36:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1923,
+      "raw": {
+        "Não.": "1924",
+        "Tempo": "2025-11-13 00:37:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1924,
+      "raw": {
+        "Não.": "1925",
+        "Tempo": "2025-11-13 00:38:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1925,
+      "raw": {
+        "Não.": "1926",
+        "Tempo": "2025-11-13 00:39:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1926,
+      "raw": {
+        "Não.": "1927",
+        "Tempo": "2025-11-13 00:40:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1927,
+      "raw": {
+        "Não.": "1928",
+        "Tempo": "2025-11-13 00:41:36",
+        "Temperatura°C": "27,4",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.4,
+      "humidity": 65.4
+    },
+    {
+      "index": 1928,
+      "raw": {
+        "Não.": "1929",
+        "Tempo": "2025-11-13 00:42:36",
+        "Temperatura°C": "27,3",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.3,
+      "humidity": 65.4
+    },
+    {
+      "index": 1929,
+      "raw": {
+        "Não.": "1930",
+        "Tempo": "2025-11-13 00:43:36",
+        "Temperatura°C": "27,3",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.3,
+      "humidity": 65.4
+    },
+    {
+      "index": 1930,
+      "raw": {
+        "Não.": "1931",
+        "Tempo": "2025-11-13 00:44:36",
+        "Temperatura°C": "27,3",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 27.3,
+      "humidity": 65.3
+    },
+    {
+      "index": 1931,
+      "raw": {
+        "Não.": "1932",
+        "Tempo": "2025-11-13 00:45:36",
+        "Temperatura°C": "27,3",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.3,
+      "humidity": 65.4
+    },
+    {
+      "index": 1932,
+      "raw": {
+        "Não.": "1933",
+        "Tempo": "2025-11-13 00:46:36",
+        "Temperatura°C": "27,3",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.3,
+      "humidity": 65.4
+    },
+    {
+      "index": 1933,
+      "raw": {
+        "Não.": "1934",
+        "Tempo": "2025-11-13 00:47:36",
+        "Temperatura°C": "27,3",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.3,
+      "humidity": 65.4
+    },
+    {
+      "index": 1934,
+      "raw": {
+        "Não.": "1935",
+        "Tempo": "2025-11-13 00:48:36",
+        "Temperatura°C": "27,3",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.3,
+      "humidity": 65.4
+    },
+    {
+      "index": 1935,
+      "raw": {
+        "Não.": "1936",
+        "Tempo": "2025-11-13 00:49:36",
+        "Temperatura°C": "27,3",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.3,
+      "humidity": 65.4
+    },
+    {
+      "index": 1936,
+      "raw": {
+        "Não.": "1937",
+        "Tempo": "2025-11-13 00:50:36",
+        "Temperatura°C": "27,3",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.3,
+      "humidity": 65.4
+    },
+    {
+      "index": 1937,
+      "raw": {
+        "Não.": "1938",
+        "Tempo": "2025-11-13 00:51:36",
+        "Temperatura°C": "27,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 27.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 1938,
+      "raw": {
+        "Não.": "1939",
+        "Tempo": "2025-11-13 00:52:36",
+        "Temperatura°C": "27,2",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.2,
+      "humidity": 65.4
+    },
+    {
+      "index": 1939,
+      "raw": {
+        "Não.": "1940",
+        "Tempo": "2025-11-13 00:53:36",
+        "Temperatura°C": "27,2",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.2,
+      "humidity": 65.4
+    },
+    {
+      "index": 1940,
+      "raw": {
+        "Não.": "1941",
+        "Tempo": "2025-11-13 00:54:36",
+        "Temperatura°C": "27,2",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.2,
+      "humidity": 65.4
+    },
+    {
+      "index": 1941,
+      "raw": {
+        "Não.": "1942",
+        "Tempo": "2025-11-13 00:55:36",
+        "Temperatura°C": "27,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 27.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 1942,
+      "raw": {
+        "Não.": "1943",
+        "Tempo": "2025-11-13 00:56:36",
+        "Temperatura°C": "27,2",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.2,
+      "humidity": 65.4
+    },
+    {
+      "index": 1943,
+      "raw": {
+        "Não.": "1944",
+        "Tempo": "2025-11-13 00:57:36",
+        "Temperatura°C": "27,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 27.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 1944,
+      "raw": {
+        "Não.": "1945",
+        "Tempo": "2025-11-13 00:58:36",
+        "Temperatura°C": "27,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 27.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 1945,
+      "raw": {
+        "Não.": "1946",
+        "Tempo": "2025-11-13 00:59:36",
+        "Temperatura°C": "27,2",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.2,
+      "humidity": 65.4
+    },
+    {
+      "index": 1946,
+      "raw": {
+        "Não.": "1947",
+        "Tempo": "2025-11-13 01:00:36",
+        "Temperatura°C": "27,2",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.2,
+      "humidity": 65.4
+    },
+    {
+      "index": 1947,
+      "raw": {
+        "Não.": "1948",
+        "Tempo": "2025-11-13 01:01:36",
+        "Temperatura°C": "27,1",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.1,
+      "humidity": 65.4
+    },
+    {
+      "index": 1948,
+      "raw": {
+        "Não.": "1949",
+        "Tempo": "2025-11-13 01:02:36",
+        "Temperatura°C": "27,1",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.1,
+      "humidity": 65.4
+    },
+    {
+      "index": 1949,
+      "raw": {
+        "Não.": "1950",
+        "Tempo": "2025-11-13 01:03:36",
+        "Temperatura°C": "27,1",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.1,
+      "humidity": 65.4
+    },
+    {
+      "index": 1950,
+      "raw": {
+        "Não.": "1951",
+        "Tempo": "2025-11-13 01:04:36",
+        "Temperatura°C": "27,1",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.1,
+      "humidity": 65.4
+    },
+    {
+      "index": 1951,
+      "raw": {
+        "Não.": "1952",
+        "Tempo": "2025-11-13 01:05:36",
+        "Temperatura°C": "27,1",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 27.1,
+      "humidity": 65.3
+    },
+    {
+      "index": 1952,
+      "raw": {
+        "Não.": "1953",
+        "Tempo": "2025-11-13 01:06:36",
+        "Temperatura°C": "27,1",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.1,
+      "humidity": 65.4
+    },
+    {
+      "index": 1953,
+      "raw": {
+        "Não.": "1954",
+        "Tempo": "2025-11-13 01:07:36",
+        "Temperatura°C": "27,1",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.1,
+      "humidity": 65.4
+    },
+    {
+      "index": 1954,
+      "raw": {
+        "Não.": "1955",
+        "Tempo": "2025-11-13 01:08:36",
+        "Temperatura°C": "27,1",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 27.1,
+      "humidity": 65.3
+    },
+    {
+      "index": 1955,
+      "raw": {
+        "Não.": "1956",
+        "Tempo": "2025-11-13 01:09:36",
+        "Temperatura°C": "27,1",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.1,
+      "humidity": 65.4
+    },
+    {
+      "index": 1956,
+      "raw": {
+        "Não.": "1957",
+        "Tempo": "2025-11-13 01:10:36",
+        "Temperatura°C": "27,1",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.1,
+      "humidity": 65.4
+    },
+    {
+      "index": 1957,
+      "raw": {
+        "Não.": "1958",
+        "Tempo": "2025-11-13 01:11:36",
+        "Temperatura°C": "27,0",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.0,
+      "humidity": 65.4
+    },
+    {
+      "index": 1958,
+      "raw": {
+        "Não.": "1959",
+        "Tempo": "2025-11-13 01:12:36",
+        "Temperatura°C": "27,0",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.0,
+      "humidity": 65.4
+    },
+    {
+      "index": 1959,
+      "raw": {
+        "Não.": "1960",
+        "Tempo": "2025-11-13 01:13:36",
+        "Temperatura°C": "27,0",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.0,
+      "humidity": 65.4
+    },
+    {
+      "index": 1960,
+      "raw": {
+        "Não.": "1961",
+        "Tempo": "2025-11-13 01:14:36",
+        "Temperatura°C": "27,0",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.0,
+      "humidity": 65.4
+    },
+    {
+      "index": 1961,
+      "raw": {
+        "Não.": "1962",
+        "Tempo": "2025-11-13 01:15:36",
+        "Temperatura°C": "27,0",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.0,
+      "humidity": 65.4
+    },
+    {
+      "index": 1962,
+      "raw": {
+        "Não.": "1963",
+        "Tempo": "2025-11-13 01:16:36",
+        "Temperatura°C": "27,0",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.0,
+      "humidity": 65.4
+    },
+    {
+      "index": 1963,
+      "raw": {
+        "Não.": "1964",
+        "Tempo": "2025-11-13 01:17:36",
+        "Temperatura°C": "27,0",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.0,
+      "humidity": 65.4
+    },
+    {
+      "index": 1964,
+      "raw": {
+        "Não.": "1965",
+        "Tempo": "2025-11-13 01:18:36",
+        "Temperatura°C": "27,0",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.0,
+      "humidity": 65.4
+    },
+    {
+      "index": 1965,
+      "raw": {
+        "Não.": "1966",
+        "Tempo": "2025-11-13 01:19:36",
+        "Temperatura°C": "27,0",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.0,
+      "humidity": 65.4
+    },
+    {
+      "index": 1966,
+      "raw": {
+        "Não.": "1967",
+        "Tempo": "2025-11-13 01:20:36",
+        "Temperatura°C": "27,0",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 27.0,
+      "humidity": 65.4
+    },
+    {
+      "index": 1967,
+      "raw": {
+        "Não.": "1968",
+        "Tempo": "2025-11-13 01:21:36",
+        "Temperatura°C": "26,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 1968,
+      "raw": {
+        "Não.": "1969",
+        "Tempo": "2025-11-13 01:22:36",
+        "Temperatura°C": "26,9",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 26.9,
+      "humidity": 65.4
+    },
+    {
+      "index": 1969,
+      "raw": {
+        "Não.": "1970",
+        "Tempo": "2025-11-13 01:23:36",
+        "Temperatura°C": "26,9",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 26.9,
+      "humidity": 65.4
+    },
+    {
+      "index": 1970,
+      "raw": {
+        "Não.": "1971",
+        "Tempo": "2025-11-13 01:24:36",
+        "Temperatura°C": "26,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 1971,
+      "raw": {
+        "Não.": "1972",
+        "Tempo": "2025-11-13 01:25:36",
+        "Temperatura°C": "26,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 1972,
+      "raw": {
+        "Não.": "1973",
+        "Tempo": "2025-11-13 01:26:36",
+        "Temperatura°C": "26,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 1973,
+      "raw": {
+        "Não.": "1974",
+        "Tempo": "2025-11-13 01:27:36",
+        "Temperatura°C": "26,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 1974,
+      "raw": {
+        "Não.": "1975",
+        "Tempo": "2025-11-13 01:28:36",
+        "Temperatura°C": "26,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 1975,
+      "raw": {
+        "Não.": "1976",
+        "Tempo": "2025-11-13 01:29:36",
+        "Temperatura°C": "26,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 1976,
+      "raw": {
+        "Não.": "1977",
+        "Tempo": "2025-11-13 01:30:36",
+        "Temperatura°C": "26,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 1977,
+      "raw": {
+        "Não.": "1978",
+        "Tempo": "2025-11-13 01:31:36",
+        "Temperatura°C": "26,8",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 26.8,
+      "humidity": 65.4
+    },
+    {
+      "index": 1978,
+      "raw": {
+        "Não.": "1979",
+        "Tempo": "2025-11-13 01:32:36",
+        "Temperatura°C": "26,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 1979,
+      "raw": {
+        "Não.": "1980",
+        "Tempo": "2025-11-13 01:33:36",
+        "Temperatura°C": "26,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 1980,
+      "raw": {
+        "Não.": "1981",
+        "Tempo": "2025-11-13 01:34:36",
+        "Temperatura°C": "26,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 1981,
+      "raw": {
+        "Não.": "1982",
+        "Tempo": "2025-11-13 01:35:36",
+        "Temperatura°C": "26,8",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 26.8,
+      "humidity": 65.4
+    },
+    {
+      "index": 1982,
+      "raw": {
+        "Não.": "1983",
+        "Tempo": "2025-11-13 01:36:36",
+        "Temperatura°C": "26,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 1983,
+      "raw": {
+        "Não.": "1984",
+        "Tempo": "2025-11-13 01:37:36",
+        "Temperatura°C": "26,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 1984,
+      "raw": {
+        "Não.": "1985",
+        "Tempo": "2025-11-13 01:38:36",
+        "Temperatura°C": "26,7",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.7,
+      "humidity": 65.3
+    },
+    {
+      "index": 1985,
+      "raw": {
+        "Não.": "1986",
+        "Tempo": "2025-11-13 01:39:36",
+        "Temperatura°C": "26,7",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.7,
+      "humidity": 65.3
+    },
+    {
+      "index": 1986,
+      "raw": {
+        "Não.": "1987",
+        "Tempo": "2025-11-13 01:40:36",
+        "Temperatura°C": "26,7",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 26.7,
+      "humidity": 65.4
+    },
+    {
+      "index": 1987,
+      "raw": {
+        "Não.": "1988",
+        "Tempo": "2025-11-13 01:41:36",
+        "Temperatura°C": "26,7",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.7,
+      "humidity": 65.3
+    },
+    {
+      "index": 1988,
+      "raw": {
+        "Não.": "1989",
+        "Tempo": "2025-11-13 01:42:36",
+        "Temperatura°C": "26,7",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.7,
+      "humidity": 65.3
+    },
+    {
+      "index": 1989,
+      "raw": {
+        "Não.": "1990",
+        "Tempo": "2025-11-13 01:43:36",
+        "Temperatura°C": "26,7",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 26.7,
+      "humidity": 65.4
+    },
+    {
+      "index": 1990,
+      "raw": {
+        "Não.": "1991",
+        "Tempo": "2025-11-13 01:44:36",
+        "Temperatura°C": "26,7",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.7,
+      "humidity": 65.3
+    },
+    {
+      "index": 1991,
+      "raw": {
+        "Não.": "1992",
+        "Tempo": "2025-11-13 01:45:36",
+        "Temperatura°C": "26,7",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.7,
+      "humidity": 65.3
+    },
+    {
+      "index": 1992,
+      "raw": {
+        "Não.": "1993",
+        "Tempo": "2025-11-13 01:46:36",
+        "Temperatura°C": "26,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 1993,
+      "raw": {
+        "Não.": "1994",
+        "Tempo": "2025-11-13 01:47:36",
+        "Temperatura°C": "26,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 1994,
+      "raw": {
+        "Não.": "1995",
+        "Tempo": "2025-11-13 01:48:36",
+        "Temperatura°C": "26,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 1995,
+      "raw": {
+        "Não.": "1996",
+        "Tempo": "2025-11-13 01:49:36",
+        "Temperatura°C": "26,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 1996,
+      "raw": {
+        "Não.": "1997",
+        "Tempo": "2025-11-13 01:50:36",
+        "Temperatura°C": "26,6",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 26.6,
+      "humidity": 65.4
+    },
+    {
+      "index": 1997,
+      "raw": {
+        "Não.": "1998",
+        "Tempo": "2025-11-13 01:51:36",
+        "Temperatura°C": "26,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 1998,
+      "raw": {
+        "Não.": "1999",
+        "Tempo": "2025-11-13 01:52:36",
+        "Temperatura°C": "26,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 1999,
+      "raw": {
+        "Não.": "2000",
+        "Tempo": "2025-11-13 01:53:36",
+        "Temperatura°C": "26,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 2000,
+      "raw": {
+        "Não.": "2001",
+        "Tempo": "2025-11-13 01:54:36",
+        "Temperatura°C": "26,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 2001,
+      "raw": {
+        "Não.": "2002",
+        "Tempo": "2025-11-13 01:55:36",
+        "Temperatura°C": "26,5",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.5,
+      "humidity": 65.3
+    },
+    {
+      "index": 2002,
+      "raw": {
+        "Não.": "2003",
+        "Tempo": "2025-11-13 01:56:36",
+        "Temperatura°C": "26,5",
+        "Umidade%RH": "65,4"
+      },
+      "parsed_time": null,
+      "temperature": 26.5,
+      "humidity": 65.4
+    },
+    {
+      "index": 2003,
+      "raw": {
+        "Não.": "2004",
+        "Tempo": "2025-11-13 01:57:36",
+        "Temperatura°C": "26,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 2004,
+      "raw": {
+        "Não.": "2005",
+        "Tempo": "2025-11-13 01:58:36",
+        "Temperatura°C": "26,5",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.5,
+      "humidity": 65.3
+    },
+    {
+      "index": 2005,
+      "raw": {
+        "Não.": "2006",
+        "Tempo": "2025-11-13 01:59:36",
+        "Temperatura°C": "26,5",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.5,
+      "humidity": 65.3
+    },
+    {
+      "index": 2006,
+      "raw": {
+        "Não.": "2007",
+        "Tempo": "2025-11-13 02:00:36",
+        "Temperatura°C": "26,5",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.5,
+      "humidity": 65.3
+    },
+    {
+      "index": 2007,
+      "raw": {
+        "Não.": "2008",
+        "Tempo": "2025-11-13 02:01:36",
+        "Temperatura°C": "26,5",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.5,
+      "humidity": 65.3
+    },
+    {
+      "index": 2008,
+      "raw": {
+        "Não.": "2009",
+        "Tempo": "2025-11-13 02:02:36",
+        "Temperatura°C": "26,5",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.5,
+      "humidity": 65.3
+    },
+    {
+      "index": 2009,
+      "raw": {
+        "Não.": "2010",
+        "Tempo": "2025-11-13 02:03:36",
+        "Temperatura°C": "26,4",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.4,
+      "humidity": 65.3
+    },
+    {
+      "index": 2010,
+      "raw": {
+        "Não.": "2011",
+        "Tempo": "2025-11-13 02:04:36",
+        "Temperatura°C": "26,5",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.5,
+      "humidity": 65.3
+    },
+    {
+      "index": 2011,
+      "raw": {
+        "Não.": "2012",
+        "Tempo": "2025-11-13 02:05:36",
+        "Temperatura°C": "26,5",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.5,
+      "humidity": 65.3
+    },
+    {
+      "index": 2012,
+      "raw": {
+        "Não.": "2013",
+        "Tempo": "2025-11-13 02:06:36",
+        "Temperatura°C": "26,4",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.4,
+      "humidity": 65.3
+    },
+    {
+      "index": 2013,
+      "raw": {
+        "Não.": "2014",
+        "Tempo": "2025-11-13 02:07:36",
+        "Temperatura°C": "26,4",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.4,
+      "humidity": 65.3
+    },
+    {
+      "index": 2014,
+      "raw": {
+        "Não.": "2015",
+        "Tempo": "2025-11-13 02:08:36",
+        "Temperatura°C": "26,4",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.4,
+      "humidity": 65.3
+    },
+    {
+      "index": 2015,
+      "raw": {
+        "Não.": "2016",
+        "Tempo": "2025-11-13 02:09:36",
+        "Temperatura°C": "26,4",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.4,
+      "humidity": 65.3
+    },
+    {
+      "index": 2016,
+      "raw": {
+        "Não.": "2017",
+        "Tempo": "2025-11-13 02:10:36",
+        "Temperatura°C": "26,4",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.4,
+      "humidity": 65.3
+    },
+    {
+      "index": 2017,
+      "raw": {
+        "Não.": "2018",
+        "Tempo": "2025-11-13 02:11:36",
+        "Temperatura°C": "26,4",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.4,
+      "humidity": 65.3
+    },
+    {
+      "index": 2018,
+      "raw": {
+        "Não.": "2019",
+        "Tempo": "2025-11-13 02:12:36",
+        "Temperatura°C": "26,4",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.4,
+      "humidity": 65.3
+    },
+    {
+      "index": 2019,
+      "raw": {
+        "Não.": "2020",
+        "Tempo": "2025-11-13 02:13:36",
+        "Temperatura°C": "26,3",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.3,
+      "humidity": 65.3
+    },
+    {
+      "index": 2020,
+      "raw": {
+        "Não.": "2021",
+        "Tempo": "2025-11-13 02:14:36",
+        "Temperatura°C": "26,3",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.3,
+      "humidity": 65.3
+    },
+    {
+      "index": 2021,
+      "raw": {
+        "Não.": "2022",
+        "Tempo": "2025-11-13 02:15:36",
+        "Temperatura°C": "26,3",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.3,
+      "humidity": 65.3
+    },
+    {
+      "index": 2022,
+      "raw": {
+        "Não.": "2023",
+        "Tempo": "2025-11-13 02:16:36",
+        "Temperatura°C": "26,3",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.3,
+      "humidity": 65.3
+    },
+    {
+      "index": 2023,
+      "raw": {
+        "Não.": "2024",
+        "Tempo": "2025-11-13 02:17:36",
+        "Temperatura°C": "26,3",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.3,
+      "humidity": 65.3
+    },
+    {
+      "index": 2024,
+      "raw": {
+        "Não.": "2025",
+        "Tempo": "2025-11-13 02:18:36",
+        "Temperatura°C": "26,3",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.3,
+      "humidity": 65.3
+    },
+    {
+      "index": 2025,
+      "raw": {
+        "Não.": "2026",
+        "Tempo": "2025-11-13 02:19:36",
+        "Temperatura°C": "26,3",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.3,
+      "humidity": 65.3
+    },
+    {
+      "index": 2026,
+      "raw": {
+        "Não.": "2027",
+        "Tempo": "2025-11-13 02:20:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2027,
+      "raw": {
+        "Não.": "2028",
+        "Tempo": "2025-11-13 02:21:36",
+        "Temperatura°C": "26,3",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.3,
+      "humidity": 65.3
+    },
+    {
+      "index": 2028,
+      "raw": {
+        "Não.": "2029",
+        "Tempo": "2025-11-13 02:22:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2029,
+      "raw": {
+        "Não.": "2030",
+        "Tempo": "2025-11-13 02:23:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2030,
+      "raw": {
+        "Não.": "2031",
+        "Tempo": "2025-11-13 02:24:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2031,
+      "raw": {
+        "Não.": "2032",
+        "Tempo": "2025-11-13 02:25:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2032,
+      "raw": {
+        "Não.": "2033",
+        "Tempo": "2025-11-13 02:26:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2033,
+      "raw": {
+        "Não.": "2034",
+        "Tempo": "2025-11-13 02:27:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2034,
+      "raw": {
+        "Não.": "2035",
+        "Tempo": "2025-11-13 02:28:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2035,
+      "raw": {
+        "Não.": "2036",
+        "Tempo": "2025-11-13 02:29:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2036,
+      "raw": {
+        "Não.": "2037",
+        "Tempo": "2025-11-13 02:30:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2037,
+      "raw": {
+        "Não.": "2038",
+        "Tempo": "2025-11-13 02:31:36",
+        "Temperatura°C": "26,2",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.2,
+      "humidity": 65.3
+    },
+    {
+      "index": 2038,
+      "raw": {
+        "Não.": "2039",
+        "Tempo": "2025-11-13 02:32:36",
+        "Temperatura°C": "26,1",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.1,
+      "humidity": 65.3
+    },
+    {
+      "index": 2039,
+      "raw": {
+        "Não.": "2040",
+        "Tempo": "2025-11-13 02:33:36",
+        "Temperatura°C": "26,1",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.1,
+      "humidity": 65.3
+    },
+    {
+      "index": 2040,
+      "raw": {
+        "Não.": "2041",
+        "Tempo": "2025-11-13 02:34:36",
+        "Temperatura°C": "26,1",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.1,
+      "humidity": 65.3
+    },
+    {
+      "index": 2041,
+      "raw": {
+        "Não.": "2042",
+        "Tempo": "2025-11-13 02:35:36",
+        "Temperatura°C": "26,1",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.1,
+      "humidity": 65.3
+    },
+    {
+      "index": 2042,
+      "raw": {
+        "Não.": "2043",
+        "Tempo": "2025-11-13 02:36:36",
+        "Temperatura°C": "26,1",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.1,
+      "humidity": 65.3
+    },
+    {
+      "index": 2043,
+      "raw": {
+        "Não.": "2044",
+        "Tempo": "2025-11-13 02:37:36",
+        "Temperatura°C": "26,1",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.1,
+      "humidity": 65.3
+    },
+    {
+      "index": 2044,
+      "raw": {
+        "Não.": "2045",
+        "Tempo": "2025-11-13 02:38:36",
+        "Temperatura°C": "26,1",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.1,
+      "humidity": 65.3
+    },
+    {
+      "index": 2045,
+      "raw": {
+        "Não.": "2046",
+        "Tempo": "2025-11-13 02:39:36",
+        "Temperatura°C": "26,0",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.0,
+      "humidity": 65.3
+    },
+    {
+      "index": 2046,
+      "raw": {
+        "Não.": "2047",
+        "Tempo": "2025-11-13 02:40:36",
+        "Temperatura°C": "26,1",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.1,
+      "humidity": 65.3
+    },
+    {
+      "index": 2047,
+      "raw": {
+        "Não.": "2048",
+        "Tempo": "2025-11-13 02:41:36",
+        "Temperatura°C": "26,0",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.0,
+      "humidity": 65.3
+    },
+    {
+      "index": 2048,
+      "raw": {
+        "Não.": "2049",
+        "Tempo": "2025-11-13 02:42:36",
+        "Temperatura°C": "26,0",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.0,
+      "humidity": 65.3
+    },
+    {
+      "index": 2049,
+      "raw": {
+        "Não.": "2050",
+        "Tempo": "2025-11-13 02:43:36",
+        "Temperatura°C": "26,0",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.0,
+      "humidity": 65.3
+    },
+    {
+      "index": 2050,
+      "raw": {
+        "Não.": "2051",
+        "Tempo": "2025-11-13 02:44:36",
+        "Temperatura°C": "26,0",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.0,
+      "humidity": 65.3
+    },
+    {
+      "index": 2051,
+      "raw": {
+        "Não.": "2052",
+        "Tempo": "2025-11-13 02:45:36",
+        "Temperatura°C": "26,0",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 26.0,
+      "humidity": 65.3
+    },
+    {
+      "index": 2052,
+      "raw": {
+        "Não.": "2053",
+        "Tempo": "2025-11-13 02:46:36",
+        "Temperatura°C": "25,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 2053,
+      "raw": {
+        "Não.": "2054",
+        "Tempo": "2025-11-13 02:47:36",
+        "Temperatura°C": "25,9",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.9,
+      "humidity": 65.2
+    },
+    {
+      "index": 2054,
+      "raw": {
+        "Não.": "2055",
+        "Tempo": "2025-11-13 02:48:36",
+        "Temperatura°C": "25,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 2055,
+      "raw": {
+        "Não.": "2056",
+        "Tempo": "2025-11-13 02:49:36",
+        "Temperatura°C": "25,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 2056,
+      "raw": {
+        "Não.": "2057",
+        "Tempo": "2025-11-13 02:50:36",
+        "Temperatura°C": "25,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 2057,
+      "raw": {
+        "Não.": "2058",
+        "Tempo": "2025-11-13 02:51:36",
+        "Temperatura°C": "25,9",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.9,
+      "humidity": 65.2
+    },
+    {
+      "index": 2058,
+      "raw": {
+        "Não.": "2059",
+        "Tempo": "2025-11-13 02:52:36",
+        "Temperatura°C": "25,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 2059,
+      "raw": {
+        "Não.": "2060",
+        "Tempo": "2025-11-13 02:53:36",
+        "Temperatura°C": "25,9",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.9,
+      "humidity": 65.3
+    },
+    {
+      "index": 2060,
+      "raw": {
+        "Não.": "2061",
+        "Tempo": "2025-11-13 02:54:36",
+        "Temperatura°C": "25,8",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.8,
+      "humidity": 65.2
+    },
+    {
+      "index": 2061,
+      "raw": {
+        "Não.": "2062",
+        "Tempo": "2025-11-13 02:55:36",
+        "Temperatura°C": "25,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 2062,
+      "raw": {
+        "Não.": "2063",
+        "Tempo": "2025-11-13 02:56:36",
+        "Temperatura°C": "25,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 2063,
+      "raw": {
+        "Não.": "2064",
+        "Tempo": "2025-11-13 02:57:36",
+        "Temperatura°C": "25,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 2064,
+      "raw": {
+        "Não.": "2065",
+        "Tempo": "2025-11-13 02:58:36",
+        "Temperatura°C": "25,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 2065,
+      "raw": {
+        "Não.": "2066",
+        "Tempo": "2025-11-13 02:59:36",
+        "Temperatura°C": "25,8",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.8,
+      "humidity": 65.2
+    },
+    {
+      "index": 2066,
+      "raw": {
+        "Não.": "2067",
+        "Tempo": "2025-11-13 03:00:36",
+        "Temperatura°C": "25,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 2067,
+      "raw": {
+        "Não.": "2068",
+        "Tempo": "2025-11-13 03:01:36",
+        "Temperatura°C": "25,8",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.8,
+      "humidity": 65.2
+    },
+    {
+      "index": 2068,
+      "raw": {
+        "Não.": "2069",
+        "Tempo": "2025-11-13 03:02:36",
+        "Temperatura°C": "25,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 2069,
+      "raw": {
+        "Não.": "2070",
+        "Tempo": "2025-11-13 03:03:36",
+        "Temperatura°C": "25,7",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.7,
+      "humidity": 65.2
+    },
+    {
+      "index": 2070,
+      "raw": {
+        "Não.": "2071",
+        "Tempo": "2025-11-13 03:04:36",
+        "Temperatura°C": "25,8",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.8,
+      "humidity": 65.3
+    },
+    {
+      "index": 2071,
+      "raw": {
+        "Não.": "2072",
+        "Tempo": "2025-11-13 03:05:36",
+        "Temperatura°C": "25,7",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.7,
+      "humidity": 65.3
+    },
+    {
+      "index": 2072,
+      "raw": {
+        "Não.": "2073",
+        "Tempo": "2025-11-13 03:06:36",
+        "Temperatura°C": "25,7",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.7,
+      "humidity": 65.2
+    },
+    {
+      "index": 2073,
+      "raw": {
+        "Não.": "2074",
+        "Tempo": "2025-11-13 03:07:36",
+        "Temperatura°C": "25,7",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.7,
+      "humidity": 65.3
+    },
+    {
+      "index": 2074,
+      "raw": {
+        "Não.": "2075",
+        "Tempo": "2025-11-13 03:08:36",
+        "Temperatura°C": "25,7",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.7,
+      "humidity": 65.3
+    },
+    {
+      "index": 2075,
+      "raw": {
+        "Não.": "2076",
+        "Tempo": "2025-11-13 03:09:36",
+        "Temperatura°C": "25,7",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.7,
+      "humidity": 65.2
+    },
+    {
+      "index": 2076,
+      "raw": {
+        "Não.": "2077",
+        "Tempo": "2025-11-13 03:10:36",
+        "Temperatura°C": "25,7",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.7,
+      "humidity": 65.3
+    },
+    {
+      "index": 2077,
+      "raw": {
+        "Não.": "2078",
+        "Tempo": "2025-11-13 03:11:36",
+        "Temperatura°C": "25,6",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.6,
+      "humidity": 65.2
+    },
+    {
+      "index": 2078,
+      "raw": {
+        "Não.": "2079",
+        "Tempo": "2025-11-13 03:12:36",
+        "Temperatura°C": "25,6",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.6,
+      "humidity": 65.2
+    },
+    {
+      "index": 2079,
+      "raw": {
+        "Não.": "2080",
+        "Tempo": "2025-11-13 03:13:36",
+        "Temperatura°C": "25,6",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.6,
+      "humidity": 65.2
+    },
+    {
+      "index": 2080,
+      "raw": {
+        "Não.": "2081",
+        "Tempo": "2025-11-13 03:14:36",
+        "Temperatura°C": "25,6",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.6,
+      "humidity": 65.2
+    },
+    {
+      "index": 2081,
+      "raw": {
+        "Não.": "2082",
+        "Tempo": "2025-11-13 03:15:36",
+        "Temperatura°C": "25,6",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.6,
+      "humidity": 65.2
+    },
+    {
+      "index": 2082,
+      "raw": {
+        "Não.": "2083",
+        "Tempo": "2025-11-13 03:16:36",
+        "Temperatura°C": "25,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 2083,
+      "raw": {
+        "Não.": "2084",
+        "Tempo": "2025-11-13 03:17:36",
+        "Temperatura°C": "25,6",
+        "Umidade%RH": "65,3"
+      },
+      "parsed_time": null,
+      "temperature": 25.6,
+      "humidity": 65.3
+    },
+    {
+      "index": 2084,
+      "raw": {
+        "Não.": "2085",
+        "Tempo": "2025-11-13 03:18:36",
+        "Temperatura°C": "25,6",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.6,
+      "humidity": 65.2
+    },
+    {
+      "index": 2085,
+      "raw": {
+        "Não.": "2086",
+        "Tempo": "2025-11-13 03:19:36",
+        "Temperatura°C": "25,6",
+        "Umidade%RH": "65,2"
+      },
+      "parsed_time": null,
+      "temperature": 25.6,
+      "humidity": 65.2
+    }
+  ]
+}

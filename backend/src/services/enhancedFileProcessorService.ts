@@ -315,7 +315,9 @@ export class EnhancedFileProcessorService {
 
       // Attempt vendor guess again using filename simple heuristic (reuse minimal logic)
       const lowerName = file.originalname.toLowerCase();
-      if (/elitech/.test(lowerName)) options.vendorGuess = 'Elitech';
+      // Heuristic: many Elitech logger files use serials like EF7217100050.xls
+      // If filename contains 'elitech' or matches serial pattern EF##########, prefer Elitech
+      if (/elitech/.test(lowerName) || /\bef\d{10}\b/i.test(file.originalname)) options.vendorGuess = 'Elitech';
       if (/novus/.test(lowerName)) options.vendorGuess = 'Novus';
       if (/instrutemp/.test(lowerName)) options.vendorGuess = 'Instrutemp';
 
@@ -545,17 +547,32 @@ export class EnhancedFileProcessorService {
         });
       }
 
-      // Create new sensor
-      const newSensor = await prisma.sensor.create({
-        data: {
-          serialNumber: newSerial,
-          model: 'Auto-detected',
-          typeId: sensorType.id
+      // Create new sensor (handle potential unique-constraint race)
+      let newSensor: any;
+      try {
+          newSensor = await prisma.sensor.create({
+          data: {
+            serialNumber: newSerial,
+            model: 'Auto-detected',
+            typeId: sensorType.id
+          }
+        });
+      } catch (err: any) {
+        // If serialNumber already exists, reuse existing sensor
+        if (err && /Unique constraint failed/.test(String(err.message || err))) {
+          logger.warn('Sensor serial already exists, attempting to reuse existing sensor', { serial: newSerial });
+          newSensor = await prisma.sensor.findFirst({ where: { serialNumber: newSerial } });
+          if (!newSensor) throw err; // rethrow if we couldn't recover
+        } else {
+          throw err;
         }
-      });
+      }
 
-      // Associate sensor with suitcase
-      const suitcaseSensor = await prisma.suitcaseSensor.create({
+      // Associate sensor with suitcase (idempotent - may already exist)
+        // Associate sensor with suitcase (idempotent - may already exist)
+        let suitcaseSensor: any;
+        try {
+          suitcaseSensor = await prisma.suitcaseSensor.create({
         data: {
           suitcaseId: suitcase.id,
           sensorId: newSensor.id
@@ -568,6 +585,19 @@ export class EnhancedFileProcessorService {
           }
         }
       });
+        } catch (assocErr: any) {
+          // If the association already exists (unique constraint), reuse it
+          if (assocErr && /Unique constraint failed/.test(String(assocErr.message || assocErr))) {
+            logger.warn('Suitcase-sensor association already exists, reusing it', { suitcaseId: suitcase.id, sensorId: newSensor.id });
+            suitcaseSensor = await prisma.suitcaseSensor.findFirst({
+              where: { suitcaseId: suitcase.id, sensorId: newSensor.id },
+              include: { sensor: { include: { type: true } } }
+            });
+            if (!suitcaseSensor) throw assocErr; // unexpected: rethrow if we couldn't find it
+          } else {
+            throw assocErr;
+          }
+        }
 
       logger.info('Created new sensor and associated with suitcase', { 
         fileName: file.originalname, 

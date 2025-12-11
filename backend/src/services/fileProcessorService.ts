@@ -278,7 +278,41 @@ export class FileProcessorService {
       }
     }
 
-    return null;
+    // If no match found, create a new sensor and associate with suitcase (fallback)
+    try {
+      // Attempt to extract a reasonable serial from filename
+      const serialMatch = file.originalname.match(/[A-Z]{2}\d{6,}/i);
+      let newSerial = serialMatch ? serialMatch[0] : file.originalname.replace(/\.[^/.]+$/, '').substring(0, 30);
+      newSerial = String(newSerial).replace(/[^a-zA-Z0-9_-]/g, '_');
+
+      // Ensure a sensor type exists
+      let sensorType = await prisma.sensorType.findFirst({ where: { name: 'Generic Logger' } });
+      if (!sensorType) {
+        sensorType = await prisma.sensorType.create({ data: {
+          name: 'Generic Logger',
+          description: 'Auto-created sensor type for imported files',
+          dataConfig: {
+            temperatureRange: { min: -40, max: 85 },
+            humidityRange: { min: 0, max: 100 },
+            accuracy: { temperature: 0.5, humidity: 3 }
+          }
+        }});
+      }
+
+      const newSensor = await prisma.sensor.create({ data: {
+        serialNumber: newSerial,
+        model: 'Auto-detected',
+        typeId: sensorType.id
+      }});
+
+      const suitcaseSensor = await prisma.suitcaseSensor.create({ data: { suitcaseId: suitcase.id, sensorId: newSensor.id }, include: { sensor: { include: { type: true } } } });
+
+      logger.info('Created new sensor as fallback for file', { fileName: file.originalname, sensorId: newSensor.id, serial: newSerial });
+      return suitcaseSensor;
+    } catch (createErr) {
+      logger.error('Failed to create fallback sensor', { fileName: file.originalname, error: createErr instanceof Error ? createErr.message : String(createErr) });
+      return null;
+    }
   }
 
   private async processDataBySensorType(
@@ -377,41 +411,26 @@ export class FileProcessorService {
     // Handle string dates
     const dateStr = value.toString().trim();
     
-    // Try parsing as ISO date first
-    let date = new Date(dateStr);
-    if (!isNaN(date.getTime())) {
-      return date;
+    // Prefer explicit Brazilian format (dd/mm/yyyy) before relying on native parse
+    const brWithTime = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{1,2}))?)?$/.exec(dateStr);
+    if (brWithTime) {
+      const [, dd, mm, yy, hh = '0', mi = '0', ss = '0'] = brWithTime;
+      const year = yy.length === 2 ? ((Number(yy) >= 50 ? 1900 : 2000) + Number(yy)) : Number(yy);
+      const dt = new Date(year, Number(mm) - 1, Number(dd), Number(hh), Number(mi), Number(ss));
+      return isNaN(dt.getTime()) ? null : dt;
     }
 
-    // Try parsing with common formats
-    const formats = [
-      /(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/, // DD/MM/YYYY HH:mm:ss
-      /(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})/, // YYYY-MM-DD HH:mm:ss
-      /(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/, // DD/MM/YYYY HH:mm
-    ];
-
-    for (const formatRegex of formats) {
-      const match = dateStr.match(formatRegex);
-      if (match) {
-        if (format.includes('DD/MM/YYYY')) {
-          // DD/MM/YYYY format
-          const [, day, month, year, hour = '0', minute = '0', second = '0'] = match;
-          date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 
-                         parseInt(hour), parseInt(minute), parseInt(second));
-        } else {
-          // YYYY-MM-DD format
-          const [, year, month, day, hour = '0', minute = '0', second = '0'] = match;
-          date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 
-                         parseInt(hour), parseInt(minute), parseInt(second));
-        }
-        
-        if (!isNaN(date.getTime())) {
-          return date;
-        }
-      }
+    // ISO / YYYY-MM-DD with optional time
+    const isoMatch = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{1,2}))?)?$/.exec(dateStr);
+    if (isoMatch) {
+      const [, Y, M, D, hh = '0', mm = '0', ss = '0'] = isoMatch;
+      const dt = new Date(Number(Y), Number(M) - 1, Number(D), Number(hh), Number(mm), Number(ss));
+      return isNaN(dt.getTime()) ? null : dt;
     }
 
-    return null;
+    // Fallback to native Date (covers ISO variants), but avoid US-style ambiguity when possible
+    const native = new Date(dateStr);
+    return isNaN(native.getTime()) ? null : native;
   }
 
   private async saveDataToDatabase(data: any[], sensorId: string): Promise<void> {

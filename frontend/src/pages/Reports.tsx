@@ -36,10 +36,12 @@ const statusLabels: Record<ReportStatus, string> = {
 export default function Reports() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<ReportFilters>({});
-  const [showFilters, setShowFilters] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const { data: reportsData, isLoading, error } = useReports(page, 10, filters);
   const { data: clientsData } = useClients({});
@@ -75,9 +77,19 @@ export default function Reports() {
     setShowCreateForm(true);
   };
 
-  const handleDeleteReport = async (report: Report) => {
-    if (window.confirm(`Tem certeza que deseja excluir o relatório "${report.name}"?`)) {
-      await deleteReportMutation.mutateAsync(report.id);
+  const handleDeleteReport = (report: Report) => {
+    setReportToDelete(report);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteReport = async () => {
+    if (!reportToDelete) return;
+    try {
+      await deleteReportMutation.mutateAsync(reportToDelete.id);
+      setShowDeleteModal(false);
+      setReportToDelete(null);
+    } catch (error) {
+      console.error('Error deleting report:', error);
     }
   };
 
@@ -369,15 +381,13 @@ export default function Reports() {
                             <ArrowDownTrayIcon className="h-4 w-4" />
                           </button>
                         )}
-                        {report.status !== 'FINALIZED' && (
-                          <button
-                            onClick={() => handleDeleteReport(report)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Excluir"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleDeleteReport(report)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Excluir"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -466,6 +476,50 @@ export default function Reports() {
             setSelectedReport(null);
           }}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && reportToDelete && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="sm:flex sm:items-start">
+              <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                <TrashIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Confirmar Exclusão
+                </h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Tem certeza que deseja excluir o relatório "{reportToDelete.name}"?
+                    Esta ação não pode ser desfeita.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={confirmDeleteReport}
+                disabled={deleteReportMutation.isLoading}
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleteReportMutation.isLoading ? 'Excluindo...' : 'Excluir'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setReportToDelete(null);
+                }}
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

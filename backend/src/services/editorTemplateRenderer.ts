@@ -24,6 +24,7 @@ interface TemplateData {
       max: number;
       avg: number;
     };
+    chartConfig?: any;
   };
   sensors: Array<{
     id: string;
@@ -45,7 +46,7 @@ interface TemplateData {
 
 interface EditorElement {
   id: string;
-  type: 'text' | 'image' | 'chart' | 'rectangle' | 'circle' | 'line' | 'heading';
+  type: 'text' | 'image' | 'chart' | 'table' | 'rectangle' | 'circle' | 'line' | 'heading';
   position: { x: number; y: number };
   size: { width: number; height: number };
   content?: any;
@@ -179,6 +180,9 @@ export class EditorTemplateRenderer {
       case 'chart':
         return this.renderChartElement(element, data, combinedStyles);
 
+      case 'table':
+        return this.renderTableElement(element, data, combinedStyles);
+
       case 'rectangle':
         return this.renderRectangle(element, combinedStyles);
 
@@ -248,7 +252,7 @@ export class EditorTemplateRenderer {
         for (const match of snippetMatches) {
           const fullMatch = match[0];
           const content = match[1] || match[3];
-          const path = content.trim();
+          const path = content?.trim() || '';
           const snippetCode = path.replace('snippet.', '');
 
           if (snippetMap.has(snippetCode)) {
@@ -559,6 +563,20 @@ export class EditorTemplateRenderer {
       filteredData = filteredData.filter(d => sensorIds.includes(d.sensorId));
     }
 
+    // Filter by date range if configured in validation chartConfig
+    const chartConfig = data.validation?.chartConfig;
+    if (chartConfig?.dateRange?.start && chartConfig?.dateRange?.end) {
+      const startTime = new Date(chartConfig.dateRange.start).getTime();
+      const endTime = new Date(chartConfig.dateRange.end).getTime();
+
+      if (!isNaN(startTime) && !isNaN(endTime)) {
+        filteredData = filteredData.filter((d: any) => {
+          const time = new Date(d.timestamp).getTime();
+          return time >= startTime && time <= endTime;
+        });
+      }
+    }
+
     logger.debug('Filtered sensor data', { filteredCount: filteredData.length });
 
     if (filteredData.length === 0) {
@@ -631,15 +649,7 @@ export class EditorTemplateRenderer {
         yMax: data.validation.minTemperature,
         borderColor: '#000000', // Black
         borderWidth: 2,
-        borderDash: [5, 5],
-        label: {
-          display: true,
-          content: `Min: ${data.validation.minTemperature}°C`,
-          position: 'start',
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          color: 'white',
-          font: { size: 10 }
-        }
+        borderDash: [5, 5]
       };
     }
 
@@ -650,15 +660,7 @@ export class EditorTemplateRenderer {
         yMax: data.validation.maxTemperature,
         borderColor: '#000000', // Black
         borderWidth: 2,
-        borderDash: [5, 5],
-        label: {
-          display: true,
-          content: `Max: ${data.validation.maxTemperature}°C`,
-          position: 'start',
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          color: 'white',
-          font: { size: 10 }
-        }
+        borderDash: [5, 5]
       };
     }
 

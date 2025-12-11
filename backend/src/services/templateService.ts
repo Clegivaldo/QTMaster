@@ -85,6 +85,8 @@ export class TemplateService {
   prepareTemplateData(reportData: ReportData, charts: {
     temperatureChart: string;
     humidityChart?: string | null;
+    chartRangeStartIso?: string | null;
+    chartRangeEndIso?: string | null;
   }): any {
     // Preparar amostra dos dados (primeiros 50 registros)
     const sensorDataSample = reportData.sensorData.slice(0, 50);
@@ -97,6 +99,8 @@ export class TemplateService {
       generatedAt: new Date(),
       temperatureChartData: charts.temperatureChart,
       humidityChartData: charts.humidityChart,
+      chartRangeStartIso: charts.chartRangeStartIso || null,
+      chartRangeEndIso: charts.chartRangeEndIso || null,
     };
   }
 

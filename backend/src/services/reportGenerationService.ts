@@ -124,7 +124,7 @@ export class ReportGenerationService {
     }
 
     // Gerar gráficos usando Chart.js no HTML
-    const chartData = this.prepareChartData(reportData.sensorData);
+    const chartData = this.prepareChartData(reportData.sensorData, reportData.validation.chartConfig);
 
     // Preparar dados para o template
     const templateData = this.templateService.prepareTemplateData(reportData, chartData);
@@ -235,33 +235,63 @@ export class ReportGenerationService {
   /**
    * Prepara dados para gráficos Chart.js
    */
-  prepareChartData(sensorData: ReportData['sensorData']) {
+  prepareChartData(sensorData: ReportData['sensorData'], chartConfig?: any) {
+    // Filtrar dados baseado no dateRange se disponível
+    if (!sensorData || sensorData.length === 0) {
+      return {
+        temperatureChart: JSON.stringify({ labels: [], datasets: [] }),
+        humidityChart: null,
+        chartRangeStartIso: null,
+        chartRangeEndIso: null
+      };
+    }
+
+    let filteredData = sensorData;
+    if (chartConfig?.dateRange?.start && chartConfig?.dateRange?.end) {
+      const startTime = new Date(chartConfig.dateRange.start).getTime();
+      const endTime = new Date(chartConfig.dateRange.end).getTime();
+      filteredData = sensorData.filter(d => {
+        const dataTime = new Date(d.timestamp).getTime();
+        return dataTime >= startTime && dataTime <= endTime;
+      });
+    }
+
+    // Build datasets using {x: ISOtimestamp, y: value} so Chart.js time scale can
+    // apply explicit min/max domain (chartRangeStartIso/chartRangeEndIso).
     const temperatureData = {
-      labels: sensorData.map(d => formatDateShort(d.timestamp)),
       datasets: [{
         label: 'Temperatura (°C)',
-        data: sensorData.map(d => d.temperature),
+        data: filteredData.map(d => ({ x: new Date(d.timestamp).toISOString(), y: d.temperature })),
         borderColor: 'rgb(75, 192, 192)',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        tension: 0.1
+        tension: 0.1,
+        fill: false,
+        parsing: false
       }]
     };
 
-    const humidityData = sensorData.filter(d => d.humidity !== null && d.humidity !== undefined);
+    const humidityData = filteredData.filter(d => d.humidity !== null && d.humidity !== undefined);
     const humidityChartData = humidityData.length > 0 ? {
-      labels: humidityData.map(d => formatDateShort(d.timestamp)),
       datasets: [{
         label: 'Umidade (%)',
-        data: humidityData.map(d => d.humidity!),
+        data: humidityData.map(d => ({ x: new Date(d.timestamp).toISOString(), y: d.humidity! })),
         borderColor: 'rgb(54, 162, 235)',
         backgroundColor: 'rgba(54, 162, 235, 0.2)',
-        tension: 0.1
+        tension: 0.1,
+        fill: false,
+        parsing: false
       }]
     } : null;
+
+    // Determine explicit x-axis range (timestamps) if there is filtered data
+    const startTs = filteredData.length > 0 ? new Date(filteredData[0].timestamp).toISOString() : null;
+    const endTs = filteredData.length > 0 ? new Date(filteredData[filteredData.length - 1].timestamp).toISOString() : null;
 
     return {
       temperatureChart: JSON.stringify(temperatureData),
       humidityChart: humidityChartData ? JSON.stringify(humidityChartData) : null,
+      chartRangeStartIso: startTs,
+      chartRangeEndIso: endTs
     };
   }
 
@@ -341,7 +371,8 @@ export class ReportGenerationService {
         }
       });
 
-      return pdfBuffer;
+      // Ensure we return a Node Buffer
+      return Buffer.from(pdfBuffer as Uint8Array);
     } catch (error) {
       console.error('Erro ao gerar PDF com Puppeteer:', error);
       throw error;

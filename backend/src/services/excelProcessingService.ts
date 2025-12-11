@@ -466,9 +466,13 @@ export class ExcelProcessingService {
     } else if (typeof value === 'string') {
       const strValue = value.trim();
 
-      // Elitech format: YYYY-MM-DD HH:MM:SS
+      // Elitech format: YYYY-MM-DD HH:MM:SS -> normalize to UTC
       if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(strValue)) {
-        return new Date(strValue.replace(' ', 'T'));
+        const m = strValue.match(/^(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2}):(\d{2})$/);
+        if (m) {
+          const [, Y, M, D, hh, mm, ss] = m;
+          return new Date(Date.UTC(Number(Y), Number(M) - 1, Number(D), Number(hh), Number(mm), Number(ss)));
+        }
       }
 
       // DD/MM/YYYY HH:MM:SS or DD/MM/YYYY HH:MM
@@ -476,12 +480,7 @@ export class ExcelProcessingService {
       if (brMatch) {
         const [_, day, month, year, hour, minute, second] = brMatch;
         return new Date(
-          Number(year),
-          Number(month) - 1,
-          Number(day),
-          Number(hour || 0),
-          Number(minute || 0),
-          Number(second || 0)
+          Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour || 0), Number(minute || 0), Number(second || 0))
         );
       }
 

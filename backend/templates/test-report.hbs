@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teste - Laudo de Qualificação Térmica</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -102,7 +103,11 @@
         // Gráfico de Temperatura
         const tempCtx = document.getElementById('temperatureChart').getContext('2d');
         const temperatureData = {{{temperatureChartData}}};
-        
+
+        if (temperatureData && Array.isArray(temperatureData.datasets)) {
+            temperatureData.datasets = temperatureData.datasets.filter(ds => ds.label !== 'MAX' && ds.label !== 'MIN');
+        }
+
         new Chart(tempCtx, {
             type: 'line',
             data: temperatureData,
@@ -112,6 +117,38 @@
                     title: {
                         display: true,
                         text: 'Temperatura ao Longo do Tempo'
+                    },
+                    legend: {
+                        labels: {
+                            // Hide legend entries named MAX or MIN while keeping their lines
+                            filter: function(item, chart) {
+                                return item.text !== 'MAX' && item.text !== 'MIN';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    annotation: {
+                        annotations: {
+                            tempMinLine: {
+                                type: 'line',
+                                yMin: {{validation.minTemperature}},
+                                yMax: {{validation.minTemperature}},
+                                borderColor: 'red',
+                                borderDash: [5,5],
+                                borderWidth: 1,
+                                label: { enabled: false }
+                            },
+                            tempMaxLine: {
+                                type: 'line',
+                                yMin: {{validation.maxTemperature}},
+                                yMax: {{validation.maxTemperature}},
+                                borderColor: 'red',
+                                borderDash: [5,5],
+                                borderWidth: 1,
+                                label: { enabled: false }
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -120,6 +157,20 @@
                         title: {
                             display: true,
                             text: 'Temperatura (°C)'
+                        }
+                    },
+                    x: {
+                        type: 'time',
+                        time: {
+                            tooltipFormat: 'dd/MM/yyyy HH:mm',
+                            unit: 'minute'
+                        },
+                        min: {{#if chartRangeStartIso}}'{{chartRangeStartIso}}'{{else}}undefined{{/if}},
+                        max: {{#if chartRangeEndIso}}'{{chartRangeEndIso}}'{{else}}undefined{{/if}},
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 45,
+                            sampleSize: 10
                         }
                     }
                 }

@@ -1736,7 +1736,14 @@ export class TemplateEditorController {
    * Converte layout do editor para HTML
    */
   private static convertLayoutToHTML(layout: TemplateLayout): string {
-    const elementsHtml = layout.elements.map(element => {
+        const esc = (s: any) => String(s ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+
+        const elementsHtml = layout.elements.map(element => {
       const styles = Object.entries(element.styles)
         .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
         .join('; ');
@@ -1748,8 +1755,32 @@ export class TemplateEditorController {
           return `<h1 style="${styles}">${element.content}</h1>`;
         case 'image':
           return `<div style="${styles}; background: #f3f4f6; padding: 20px; text-align: center; border: 2px dashed #d1d5db;">🖼️ ${element.content}</div>`;
-        case 'table':
-          return `<div style="${styles}; border: 1px solid #ddd; padding: 20px; text-align: center;">📊 ${element.content}</div>`;
+                case 'table': {
+                    const tableCfg: any = element.content || {};
+                    const columns = Array.isArray(tableCfg.columns) ? tableCfg.columns : (tableCfg.properties?.columns || [ { header: 'Coluna 1', field: 'col1' } ]);
+                    const rows = Array.isArray(tableCfg.data) ? tableCfg.data : (tableCfg.properties?.data || []);
+
+                    const headerCells = columns.map((col: any) => `<th style=\"padding:6px 8px; border:1px solid #ddd; background:#f3f4f6; text-align:${col.align||'left'};\">${esc(col.header || col.field || '')}</th>`).join('');
+
+                    const bodyRows = rows.map((r: any) => {
+                                        const cells = columns.map((col: any) => {
+                                            const value = (typeof r === 'object' && r !== null) ? (r[col.field] ?? r[col.header] ?? '') : r;
+                                            return `<td style=\"padding:6px 8px; border:1px solid #ddd;\">${esc(String(value || ''))}</td>`;
+                                        }).join('');
+                        return `<tr>${cells}</tr>`;
+                    }).join('');
+
+                    const tableHtml = `
+                        <div class="editor-element editor-table" style="${styles}; overflow: hidden;">
+                            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                                <thead><tr>${headerCells}</tr></thead>
+                                <tbody>${bodyRows}</tbody>
+                            </table>
+                        </div>
+                    `;
+
+                    return tableHtml;
+                }
         case 'chart':
           return `<div style="${styles}; border: 1px solid #ddd; padding: 20px; text-align: center;">📈 ${element.content}</div>`;
         case 'signature':

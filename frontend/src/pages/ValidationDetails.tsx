@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { 
   ArrowLeft, 
   Download, 
@@ -106,29 +107,65 @@ const ValidationDetails: React.FC = () => {
     if (!data) return;
     const XLSX = await import('xlsx');
 
-    // Use first three sensors (Sensor 1..3) for columns B..D
-    const firstThreeSensors = sensors.slice(0, 3);
-    const tempHeaders = ['Data/Hora', 'Sensor 1', 'Sensor 2', 'Sensor 3'];
-    const humHeaders = ['Data/Hora', 'Sensor 1', 'Sensor 2', 'Sensor 3'];
+    // Use all sensors with their registered names
+    const tempHeaders = ['Data/Hora'];
+    const humHeaders = ['Data/Hora'];
+    
+    // Add sensor columns with names
+    sensors.forEach(s => {
+      tempHeaders.push(`${s.type.name} Temp (°C)`);
+      humHeaders.push(`${s.type.name} Umidade (%RH)`);
+    });
+    
+    // Add acceptance limits columns
+    tempHeaders.push('Temp Mín Aceitação (°C)', 'Temp Máx Aceitação (°C)');
+    humHeaders.push('Umidade Mín Aceitação (%RH)', 'Umidade Máx Aceitação (%RH)');
+    
+    // Add calculated statistics columns
+    tempHeaders.push('Temp Mín Calculada (°C)', 'Temp Média Calculada (°C)', 'Temp Máx Calculada (°C)');
+    humHeaders.push('Umidade Mín Calculada (%RH)', 'Umidade Média Calculada (%RH)', 'Umidade Máx Calculada (%RH)');
 
     const tempRows: any[][] = [tempHeaders];
     const humRows: any[][] = [humHeaders];
+    
     pivotRows.forEach(pr => {
       const dt = formatBRShort(pr.ts);
       const tRow: any[] = [dt];
       const hRow: any[] = [dt];
-      // Fill columns B..D with the first three sensors (or empty string if missing)
-      for (let i = 0; i < 3; i++) {
-        const s = firstThreeSensors[i];
-        if (!s) {
-          tRow.push('');
-          hRow.push('');
-          continue;
-        }
+      
+      // Add sensor readings
+      sensors.forEach(s => {
         const r = pr.readings.get(s.serialNumber);
         tRow.push(r ? Number(r.temperature.toFixed(2)) : '');
         hRow.push(r && r.humidity !== null ? Number(r.humidity.toFixed(2)) : '');
+      });
+      
+      // Add acceptance limits
+      tRow.push(data.minTemperature, data.maxTemperature);
+      hRow.push(data.minHumidity || '', data.maxHumidity || '');
+      
+      // Calculate statistics for this row
+      const tempValues = Array.from(pr.readings.values()).map(r => r.temperature).filter(v => v !== null);
+      const humValues = Array.from(pr.readings.values()).map(r => r.humidity).filter(v => v !== null && v !== undefined);
+      
+      if (tempValues.length > 0) {
+        const minTemp = Math.min(...tempValues);
+        const maxTemp = Math.max(...tempValues);
+        const avgTemp = tempValues.reduce((a, b) => a + b, 0) / tempValues.length;
+        tRow.push(Number(minTemp.toFixed(2)), Number(avgTemp.toFixed(2)), Number(maxTemp.toFixed(2)));
+      } else {
+        tRow.push('', '', '');
       }
+      
+      if (humValues.length > 0) {
+        const minHum = Math.min(...humValues);
+        const maxHum = Math.max(...humValues);
+        const avgHum = humValues.reduce((a, b) => a + b, 0) / humValues.length;
+        hRow.push(Number(minHum.toFixed(2)), Number(avgHum.toFixed(2)), Number(maxHum.toFixed(2)));
+      } else {
+        hRow.push('', '', '');
+      }
+      
       tempRows.push(tRow);
       humRows.push(hRow);
     });
@@ -281,7 +318,7 @@ const ValidationDetails: React.FC = () => {
       setData(validationData);
     } catch (error) {
       console.error('Error fetching validation:', error);
-      alert('Erro ao carregar dados da validação');
+      toast.error('Erro ao carregar dados da validação');
     } finally {
       setIsLoading(false);
     }
@@ -306,14 +343,14 @@ const ValidationDetails: React.FC = () => {
       }
 
       const result = await response.json();
-      alert(result.data.message || 'Dados deletados com sucesso!');
+      toast.success(result.message || 'Dados deletados com sucesso!');
       setShowDeleteModal(false);
       
       // Recarregar página para atualizar dados
       window.location.reload();
     } catch (error) {
       console.error('Error deleting sensor data:', error);
-      alert(error instanceof Error ? error.message : 'Erro ao deletar dados dos sensores');
+      toast.error(error instanceof Error ? error.message : 'Erro ao deletar dados dos sensores');
     } finally {
       setIsDeleting(false);
     }
@@ -697,20 +734,20 @@ const ValidationDetails: React.FC = () => {
                             <td key={pivot.ts + s.serialNumber + '-t'} className="px-3 py-4 whitespace-nowrap text-sm">
                               {reading ? (
                                 <span className={finalClass}>
-                                  {reading.temperature.toFixed(2)}°C
+                                  {reading.temperature.toFixed(2)}
                                 </span>
                               ) : <span className="text-gray-400">-</span>}
                             </td>
                           );
                         })}
                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {rowStats.tempMax !== null ? `${rowStats.tempMax.toFixed(2)}°C` : '-'}
+                          {rowStats.tempMax !== null ? `${rowStats.tempMax.toFixed(2)}` : '-'}
                         </td>
                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {rowStats.tempAvg !== null ? `${rowStats.tempAvg.toFixed(2)}°C` : '-'}
+                          {rowStats.tempAvg !== null ? `${rowStats.tempAvg.toFixed(2)}` : '-'}
                         </td>
                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {rowStats.tempMin !== null ? `${rowStats.tempMin.toFixed(2)}°C` : '-'}
+                          {rowStats.tempMin !== null ? `${rowStats.tempMin.toFixed(2)}` : '-'}
                         </td>
                       </tr>
                     );

@@ -400,6 +400,44 @@ export const sanitizeTemplate = (template: EditorTemplate): EditorTemplate => {
       sanitizedElement.styles = {};
     }
 
+    // Especificidades por tipo de elemento: garantir propriedades importantes
+    if (sanitizedElement.type === 'table') {
+      const props = (sanitizedElement as any).properties || {};
+      (sanitizedElement as any).properties = {
+        dataSource: props.dataSource || '{{sensorData}}',
+        columns: Array.isArray(props.columns) ? props.columns : [],
+        showHeader: typeof props.showHeader === 'boolean' ? props.showHeader : true,
+        headerStyle: props.headerStyle || {},
+        rowStyle: props.rowStyle || {},
+        alternatingRowColors: typeof props.alternatingRowColors === 'boolean' ? props.alternatingRowColors : false,
+        borderStyle: props.borderStyle || 'grid',
+        fontSize: typeof props.fontSize === 'number' ? props.fontSize : 12,
+        fontFamily: props.fontFamily || 'Arial',
+        maxRows: typeof props.maxRows === 'number' ? props.maxRows : 50,
+        pageBreak: typeof props.pageBreak === 'boolean' ? props.pageBreak : false
+      };
+    }
+
+    if (sanitizedElement.type === 'chart') {
+      const props = (sanitizedElement as any).properties || {};
+      (sanitizedElement as any).properties = {
+        chartType: props.chartType || 'line',
+        dataSource: props.dataSource || '{{sensorData}}',
+        xAxis: props.xAxis || 'timestamp',
+        yAxis: props.yAxis || 'temperature',
+        title: props.title || '',
+        width: props.width || '100%',
+        height: props.height || '200px',
+        colors: Array.isArray(props.colors) ? props.colors : ['#4bc0c0'],
+        showLegend: typeof props.showLegend === 'boolean' ? props.showLegend : true,
+        showGrid: typeof props.showGrid === 'boolean' ? props.showGrid : true,
+        showLabels: typeof props.showLabels === 'boolean' ? props.showLabels : true,
+        responsive: typeof props.responsive === 'boolean' ? props.responsive : false,
+        animation: typeof props.animation === 'boolean' ? props.animation : false,
+        legendPosition: props.legendPosition || 'top'
+      };
+    }
+
     // Garantir propriedades básicas
     if (typeof sanitizedElement.visible !== 'boolean') {
       sanitizedElement.visible = true;

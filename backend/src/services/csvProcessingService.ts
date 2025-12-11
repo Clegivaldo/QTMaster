@@ -516,7 +516,13 @@ export class CSVProcessingService {
     // Elitech format: YYYY-MM-DD HH:MM:SS (common in Elitech logs)
     // Convert to ISO format (YYYY-MM-DDTHH:MM:SS) for reliable parsing
     if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(strValue)) {
-      return new Date(strValue.replace(' ', 'T'));
+      // Treat naive 'YYYY-MM-DD HH:MM:SS' as local wall time and normalize to UTC
+      const m = strValue.match(/^(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2}):(\d{2})$/);
+      if (m) {
+        const [, Y, M, D, hh, mm, ss] = m;
+        // Create a UTC timestamp representing the same wall-clock time
+        return new Date(Date.UTC(Number(Y), Number(M) - 1, Number(D), Number(hh), Number(mm), Number(ss)));
+      }
     }
 
     // DD/MM/YYYY HH:MM:SS or DD/MM/YYYY HH:MM

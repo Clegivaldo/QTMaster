@@ -473,6 +473,8 @@ export class PDFGenerationService {
           generatedAt: new Date(),
           generatedBy: user?.name || 'Sistema',
         },
+        chartRangeStartIso: chartConfig?.dateRange?.start ? new Date(chartConfig.dateRange.start).toISOString() : null,
+        chartRangeEndIso: chartConfig?.dateRange?.end ? new Date(chartConfig.dateRange.end).toISOString() : null,
       };
 
       // Render template to HTML

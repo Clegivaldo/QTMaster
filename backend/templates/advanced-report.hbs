@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laudo Avançado de Qualificação Térmica</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -451,65 +452,53 @@
     <script>
         // Gráfico de Temperatura Avançado
         const tempCtx = document.getElementById('temperatureChart').getContext('2d');
-        const temperatureData = {{{temperatureChartData}}};
-        
-        new Chart(tempCtx, {
-            type: 'line',
-            data: temperatureData,
-            options: {
-                responsive: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Monitoramento de Temperatura',
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        }
-                    },
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: false,
+            const temperatureData = {{{temperatureChartData}}};
+
+            if (temperatureData && Array.isArray(temperatureData.datasets)) {
+                temperatureData.datasets = temperatureData.datasets.filter(ds => ds.label !== 'MAX' && ds.label !== 'MIN');
+            }
+
+            new Chart(tempCtx, {
+                type: 'line',
+                data: temperatureData,
+                options: {
+                    responsive: false,
+                    plugins: {
                         title: {
                             display: true,
-                            text: 'Temperatura (°C)',
-                            font: {
-                                weight: 'bold'
-                            }
+                            text: 'Temperatura ao Longo do Tempo'
                         },
-                        grid: {
-                            color: 'rgba(0,0,0,0.1)'
+                        legend: {
+                            labels: {
+                                filter: function(item, chart) { return item.text !== 'MAX' && item.text !== 'MIN'; }
+                            }
                         }
                     },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Tempo',
-                            font: {
-                                weight: 'bold'
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Temperatura (°C)'
                             }
                         },
-                        grid: {
-                            color: 'rgba(0,0,0,0.1)'
+                        x: {
+                            type: 'time',
+                            time: {
+                                tooltipFormat: 'dd/MM/yyyy HH:mm',
+                                unit: 'minute'
+                            },
+                            min: {{#if chartRangeStartIso}}'{{chartRangeStartIso}}'{{else}}undefined{{/if}},
+                            max: {{#if chartRangeEndIso}}'{{chartRangeEndIso}}'{{else}}undefined{{/if}},
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 45,
+                                sampleSize: 12
+                            }
                         }
-                    }
-                },
-                elements: {
-                    point: {
-                        radius: 3,
-                        hoverRadius: 6
-                    },
-                    line: {
-                        borderWidth: 2
                     }
                 }
-            }
-        });
+            });
 
         {{#if humidityChartData}}
         // Gráfico de Umidade Avançado
@@ -533,6 +522,30 @@
                     legend: {
                         display: true,
                         position: 'top'
+                    }
+                },
+                plugins: {
+                    annotation: {
+                        annotations: {
+                            tempMinLine: {
+                                type: 'line',
+                                yMin: {{validation.minTemperature}},
+                                yMax: {{validation.minTemperature}},
+                                borderColor: 'red',
+                                borderDash: [5,5],
+                                borderWidth: 1,
+                                label: { enabled: false }
+                            },
+                            tempMaxLine: {
+                                type: 'line',
+                                yMin: {{validation.maxTemperature}},
+                                yMax: {{validation.maxTemperature}},
+                                borderColor: 'red',
+                                borderDash: [5,5],
+                                borderWidth: 1,
+                                label: { enabled: false }
+                            }
+                        }
                     }
                 },
                 scales: {

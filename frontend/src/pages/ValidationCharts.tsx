@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Settings, Calendar } from 'lucide-react';
+import { ArrowLeft, Download, Settings, Calendar, Maximize } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -81,6 +81,17 @@ const ValidationCharts: React.FC = () => {
     return saved ? Math.max(1, Number(saved)) : 60;
   }); // agrupar leituras por janela (s)
 
+  // Helper: format a Date for `input[type=datetime-local]` (local time, no timezone)
+  const toLocalDatetimeInput = (d: Date) => {
+    if (!d || isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  };
+
   const getCycleLegend = () => {
     if (!data?.cycles || data.cycles.length === 0) return [] as Array<{ type: string; color: string; label: string }>;
     const unique = Array.from(new Set(data.cycles.map(c => c.cycleType)));
@@ -99,8 +110,8 @@ const ValidationCharts: React.FC = () => {
       const cycle = data.cycles.find(c => c.id === selectedCycleId);
       if (cycle) {
         setDateRange({
-          start: parseToDate(cycle.startAt).toISOString().slice(0, 16),
-          end: parseToDate(cycle.endAt).toISOString().slice(0, 16)
+          start: toLocalDatetimeInput(parseToDate(cycle.startAt)),
+          end: toLocalDatetimeInput(parseToDate(cycle.endAt))
         });
       }
     }
@@ -135,11 +146,18 @@ const ValidationCharts: React.FC = () => {
         // 2. Data Range Default
         const timestamps = validationData.sensorData.map((d: SensorReading) => parseToDate(d.timestamp).getTime());
         const minDate = new Date(Math.min(...timestamps));
-        const maxDate = new Date(Math.max(...timestamps));
+        let maxDate = new Date(Math.max(...timestamps));
+
+        // Limitar range a 30 dias para evitar gráficos muito largos
+        const rangeMs = maxDate.getTime() - minDate.getTime();
+        const maxRangeMs = 30 * 24 * 60 * 60 * 1000; // 30 dias
+        if (rangeMs > maxRangeMs) {
+          maxDate = new Date(minDate.getTime() + maxRangeMs);
+        }
 
         let initialDateRange = {
-          start: minDate.toISOString().slice(0, 16),
-          end: maxDate.toISOString().slice(0, 16)
+          start: toLocalDatetimeInput(minDate),
+          end: toLocalDatetimeInput(maxDate)
         };
 
         // 3. Eixo Y Default
@@ -554,8 +572,8 @@ const ValidationCharts: React.FC = () => {
                     };
 
                     const defaultDates = {
-                      start: minDate.toISOString().slice(0, 16),
-                      end: maxDate.toISOString().slice(0, 16)
+                      start: toLocalDatetimeInput(minDate),
+                      end: toLocalDatetimeInput(maxDate)
                     };
 
                     setYAxisConfig(defaultY);
@@ -762,23 +780,26 @@ const ValidationCharts: React.FC = () => {
               <h3 className="text-lg font-semibold">Gráfico de Temperatura</h3>
               <button
                 onClick={() => window.open(`/validations/${id}/charts/fullscreen?type=temperature`, '_blank')}
-                className="text-gray-500 hover:text-primary-600"
+                className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-full transition-colors"
                 title="Abrir em Nova Janela"
               >
-                <Download className="h-5 w-5 rotate-180" /> {/* Using Rotate icon implies expand, or maximize. Or just text "Expandir" */}
-                {/* Better to use proper Maximize icon, but not imported. Using simple text/style for now */}
-                <span className="text-sm border border-gray-300 rounded px-2 py-1">Tela Cheia</span>
+                <Maximize className="h-5 w-5" />
               </button>
             </div>
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
-                  dataKey="displayTime"
+                  dataKey="timestampNum"
+                  type="number"
+                  domain={dateRange ? [parseToDate(dateRange.start).getTime(), parseToDate(dateRange.end).getTime()] : ['dataMin', 'dataMax']}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                   style={{ fontSize: '12px' }}
+                  tickFormatter={(value) => formatDisplayTime(value)}
+                  interval={0}
+                  tickCount={50}
                 />
                 {showCycleBands && getCycleBands().map((c, idx) => (
                   <ReferenceArea key={`t-area-${idx}`} x1={c.x1} x2={c.x2} y1={yAxisConfig.tempMin} y2={yAxisConfig.tempMax} fill={cycleColor(c.type)} strokeOpacity={0} />
@@ -806,13 +827,11 @@ const ValidationCharts: React.FC = () => {
                   y={data.minTemperature}
                   stroke="red"
                   strokeDasharray="5 5"
-                  label={{ value: `Min: ${data.minTemperature}°C`, position: 'right' }}
                 />
                 <ReferenceLine
                   y={data.maxTemperature}
                   stroke="red"
                   strokeDasharray="5 5"
-                  label={{ value: `Max: ${data.maxTemperature}°C`, position: 'right' }}
                 />
 
                 {/* Lines for each sensor */}
@@ -839,21 +858,26 @@ const ValidationCharts: React.FC = () => {
               <h3 className="text-lg font-semibold">Gráfico de Umidade</h3>
               <button
                 onClick={() => window.open(`/validations/${id}/charts/fullscreen?type=humidity`, '_blank')}
-                className="text-gray-500 hover:text-primary-600 text-sm border border-gray-300 rounded px-2 py-1"
+                className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-full transition-colors"
                 title="Abrir em Nova Janela"
               >
-                Tela Cheia
+                <Maximize className="h-5 w-5" />
               </button>
             </div>
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
-                  dataKey="displayTime"
+                  dataKey="timestampNum"
+                  type="number"
+                  domain={dateRange ? [parseToDate(dateRange.start).getTime(), parseToDate(dateRange.end).getTime()] : ['dataMin', 'dataMax']}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                   style={{ fontSize: '12px' }}
+                  tickFormatter={(value) => formatDisplayTime(value)}
+                  interval={0}
+                  tickCount={50}
                 />
                 {showCycleBands && getCycleBands().map((c, idx) => (
                   <ReferenceArea key={`h-area-${idx}`} x1={c.x1} x2={c.x2} y1={yAxisConfig.humMin} y2={yAxisConfig.humMax} fill={cycleColor(c.type)} strokeOpacity={0} />
@@ -881,7 +905,6 @@ const ValidationCharts: React.FC = () => {
                     y={data.minHumidity}
                     stroke="red"
                     strokeDasharray="5 5"
-                    label={{ value: `Min: ${data.minHumidity}%`, position: 'right' }}
                   />
                 )}
                 {data.maxHumidity !== null && (
@@ -889,7 +912,6 @@ const ValidationCharts: React.FC = () => {
                     y={data.maxHumidity}
                     stroke="red"
                     strokeDasharray="5 5"
-                    label={{ value: `Max: ${data.maxHumidity}%`, position: 'right' }}
                   />
                 )}
 

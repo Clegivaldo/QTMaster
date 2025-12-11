@@ -433,7 +433,7 @@ export class ReportService {
 
     // Generate PDF using FastReport
     const pdfPath = await fastReportService.generateReport(
-      report.templateId,
+      report.templateId || 'default',
       reportData,
       reportId
     );
@@ -525,7 +525,7 @@ export class ReportService {
 
     // Generate preview PDF using FastReport
     const previewPath = await fastReportService.previewReport(
-      report.templateId,
+      report.templateId || 'default',
       reportData
     );
 

@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, XCircle, Loader2, Download, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export interface ProcessingError {
   row: number;

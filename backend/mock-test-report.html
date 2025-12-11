@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Laudo de Qualificação Térmica</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h3 {
+            color: #2563eb;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .chart-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .info-item {
+            margin-bottom: 8px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            display: inline-block;
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>LAUDO DE QUALIFICAÇÃO TÉRMICA - TESTE</h1>
+        <h2>Validação de Teste - Câmara Fria</h2>
+        <p>Gerado em: 09/12/25 14:50</p>
+    </div>
+
+    <div class="section">
+        <h3>INFORMAÇÕES DO CLIENTE</h3>
+        <div class="info-item">
+            <span class="info-label">Nome:</span>
+            <span>Empresa Teste Ltda</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Email:</span>
+            <span>contato@empresateste.com.br</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>PARÂMETROS DE VALIDAÇÃO</h3>
+        <div class="info-item">
+            <span class="info-label">Temp. Mínima:</span>
+            <span>2°C</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Temp. Máxima:</span>
+            <span>8°C</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Status:</span>
+            <span>APROVADO</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>GRÁFICO DE TEMPERATURA</h3>
+        <div class="chart-container">
+            <canvas id="temperatureChart" width="600" height="300"></canvas>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>DADOS COLETADOS (AMOSTRA)</h3>
+        <p>Total de registros: 20</p>
+        <p>Primeiros 20 registros:</p>
+        <div>09/12/25 09:50 - SN001234: 4.47°C</div>
+        <div>09/12/25 10:05 - SN001235: 5.76°C</div>
+        <div>09/12/25 10:20 - SN001234: 5.19°C</div>
+        <div>09/12/25 10:35 - SN001235: 4.26°C</div>
+        <div>09/12/25 10:50 - SN001234: 4.86°C</div>
+        <div>09/12/25 11:05 - SN001235: 4.15°C</div>
+        <div>09/12/25 11:20 - SN001234: 4.77°C</div>
+        <div>09/12/25 11:35 - SN001235: 4.49°C</div>
+        <div>09/12/25 11:50 - SN001234: 5.71°C</div>
+        <div>09/12/25 12:05 - SN001235: 4.54°C</div>
+        <div>09/12/25 12:20 - SN001234: 4.84°C</div>
+        <div>09/12/25 12:35 - SN001235: 4.97°C</div>
+        <div>09/12/25 12:50 - SN001234: 4.70°C</div>
+        <div>09/12/25 13:05 - SN001235: 5.91°C</div>
+        <div>09/12/25 13:20 - SN001234: 5.12°C</div>
+        <div>09/12/25 13:35 - SN001235: 5.84°C</div>
+        <div>09/12/25 13:50 - SN001234: 4.55°C</div>
+        <div>09/12/25 14:05 - SN001235: 4.21°C</div>
+        <div>09/12/25 14:20 - SN001234: 4.54°C</div>
+        <div>09/12/25 14:35 - SN001235: 5.92°C</div>
+    </div>
+
+    <script>
+        // Gráfico de Temperatura
+        const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+        const temperatureData = {"datasets":[{"label":"Temperatura (°C)","data":[{"x":"2025-12-09T15:50:49.749Z","y":4.697120789457417},{"x":"2025-12-09T16:05:49.749Z","y":5.9075023145451695},{"x":"2025-12-09T16:20:49.749Z","y":5.116156535449933},{"x":"2025-12-09T16:35:49.749Z","y":5.843539125964202},{"x":"2025-12-09T16:50:49.749Z","y":4.550977586692429},{"x":"2025-12-09T17:05:49.749Z","y":4.212568796966124},{"x":"2025-12-09T17:20:49.749Z","y":4.540456188011037},{"x":"2025-12-09T17:35:49.749Z","y":5.917472855191097}],"borderColor":"rgb(75, 192, 192)","backgroundColor":"rgba(75, 192, 192, 0.2)","tension":0.1,"fill":false,"parsing":false}]};
+
+        new Chart(tempCtx, {
+            type: 'line',
+            data: temperatureData,
+            options: {
+                responsive: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Temperatura ao Longo do Tempo'
+                    },
+                    legend: {
+                        labels: {
+                            // Hide legend entries named MAX or MIN while keeping their lines
+                            filter: function(item, chart) {
+                                return item.text !== 'MAX' && item.text !== 'MIN';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Temperatura (°C)'
+                        }
+                    },
+                    x: {
+                        type: 'time',
+                        time: {
+                            tooltipFormat: 'dd/MM/yyyy HH:mm',
+                            unit: 'minute'
+                        },
+                        min: '2025-12-09T15:50:49.749Z',
+                        max: '2025-12-09T17:35:49.749Z',
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 45,
+                            sampleSize: 10
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

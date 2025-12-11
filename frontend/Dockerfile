@@ -5,31 +5,58 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-# Use `npm install` here because `package-lock.json` in the repo
-# can be out of sync with `package.json` and `npm ci` would fail.
-# `npm install` is more tolerant and will install according to
-# `package.json` when building inside Docker.
 RUN npm install --no-audit --prefer-offline --no-progress
+
+# Copy environment file for build
+COPY .env.docker .env
 
 # Copy source code
 COPY . .
 
 # Build the application
-# Run Vite build directly inside the container to avoid running full
-# `tsc` type-check during the image build (the repo has many pre-existing
-# TypeScript type errors that block `tsc`). Vite will compile/transpile
-# the app without full type-checking which is acceptable for building
-# production assets inside Docker.
 RUN npx vite build --mode production
 
-# Production stage
+# Production stage - simple static file server
 FROM nginx:alpine
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Configure nginx with API proxy
+RUN echo 'server {\
+    listen 80;\
+    server_name localhost;\
+    root /usr/share/nginx/html;\
+    index index.html;\
+    \
+    # API proxy\
+    location /api/ {\
+        proxy_pass http://laudo-backend:3000;\
+        proxy_http_version 1.1;\
+        proxy_set_header Upgrade $http_upgrade;\
+        proxy_set_header Connection "upgrade";\
+        proxy_set_header Host $host;\
+        proxy_set_header X-Real-IP $remote_addr;\
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\
+        proxy_set_header X-Forwarded-Proto $scheme;\
+        proxy_cache_bypass $http_upgrade;\
+    }\
+    \
+    # Uploads proxy\
+    location /uploads/ {\
+        proxy_pass http://laudo-backend:3000;\
+        proxy_http_version 1.1;\
+        proxy_set_header Host $host;\
+        proxy_set_header X-Real-IP $remote_addr;\
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\
+        proxy_set_header X-Forwarded-Proto $scheme;\
+    }\
+    \
+    # Frontend routes (SPA)\
+    location / {\
+        try_files $uri $uri/ /index.html;\
+    }\
+}' > /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 80
