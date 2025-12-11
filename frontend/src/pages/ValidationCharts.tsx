@@ -819,7 +819,17 @@ const ValidationCharts: React.FC = () => {
                   })()}
                   label={{ value: 'Temperatura (°C)', angle: -90, position: 'insideLeft' }}
                 />
-                <Tooltip />
+                <Tooltip
+                  labelFormatter={(label: any) => formatDisplayTime(label)}
+                  formatter={(value: any, name: string) => {
+                    if (value === null || value === undefined || (typeof value === 'number' && isNaN(value))) return ['-', name];
+                    const num = Number(value);
+                    if (name && name.includes('Temp')) return [`${num.toFixed(2)}°C`, name];
+                    if (name && name.includes('Umid')) return [`${num.toFixed(2)}%`, name];
+                    // fallback
+                    return [typeof value === 'number' ? num.toFixed(2) : String(value), name];
+                  }}
+                />
                 <Legend />
 
                 {/* Reference Lines */}
@@ -896,7 +906,16 @@ const ValidationCharts: React.FC = () => {
                   })()}
                   label={{ value: 'Umidade (%RH)', angle: -90, position: 'insideLeft' }}
                 />
-                <Tooltip />
+                <Tooltip
+                  labelFormatter={(label: any) => formatDisplayTime(label)}
+                  formatter={(value: any, name: string) => {
+                    if (value === null || value === undefined || (typeof value === 'number' && isNaN(value))) return ['-', name];
+                    const num = Number(value);
+                    if (name && name.includes('Temp')) return [`${num.toFixed(2)}°C`, name];
+                    if (name && name.includes('Umid')) return [`${num.toFixed(2)}%`, name];
+                    return [typeof value === 'number' ? num.toFixed(2) : String(value), name];
+                  }}
+                />
                 <Legend />
 
                 {/* Reference Lines */}

@@ -229,7 +229,7 @@ const ValidationChartFullScreen: React.FC = () => {
                 {data.client.name} - Validação #{data.validationNumber} - {isTemp ? 'Temperatura' : 'Umidade'}
             </h2>
             <div className="flex-1 min-h-0">
-                <ResponsiveContainer width="100vw" height="100%">
+                <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
@@ -255,7 +255,16 @@ const ValidationChartFullScreen: React.FC = () => {
                             })()}
                             label={{ value: isTemp ? 'Temp (°C)' : 'Umid (%RH)', angle: -90, position: 'insideLeft' }}
                         />
-                        <Tooltip />
+                        <Tooltip
+                            labelFormatter={(label: any) => formatDisplayTime(label)}
+                            formatter={(value: any, name: string) => {
+                                if (value === null || value === undefined || (typeof value === 'number' && isNaN(value))) return ['-', name];
+                                const num = Number(value);
+                                if (name && name.toLowerCase().includes('temp')) return [`${num.toFixed(2)}°C`, name];
+                                if (name && name.toLowerCase().includes('umid')) return [`${num.toFixed(2)}%`, name];
+                                return [typeof value === 'number' ? num.toFixed(2) : String(value), name];
+                            }}
+                        />
                         <Legend verticalAlign="top" />
 
                         {/* Ciclos */}

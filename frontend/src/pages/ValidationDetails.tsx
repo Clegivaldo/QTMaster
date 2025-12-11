@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { 
@@ -88,6 +88,8 @@ interface ValidationData {
   };
   chartConfig?: any;
 }
+
+type EnrichedRow = SensorDataRow & { tsMs: number };
 
 const ValidationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -412,85 +414,96 @@ const ValidationDetails: React.FC = () => {
     );
   }
 
-  // De-duplicar linhas por timestamp+sensor para evitar repetição 3x
-  const uniqueRowsMap = new Map<string, SensorDataRow>();
-  data.sensorData.forEach((row) => {
-    const dt = parseToDate(row.timestamp);
-    const key = `${dt.toISOString()}|${row.sensor.id}`;
-    if (!uniqueRowsMap.has(key)) uniqueRowsMap.set(key, row);
-  });
-  const uniqueRows = Array.from(uniqueRowsMap.values());
-
-  // Util: formatar data como dd/mm/aa hh:mm
-  // Using shared formatBRShort from utils
-
-  // PIVOT VIEW: construir linhas por timestamp com cada sensor em colunas, alinhando por tolerância
-  const sensorOrderMap = new Map<string, SensorDataRow['sensor']>();
-  uniqueRows.forEach(r => {
-    if (!sensorOrderMap.has(r.sensor.serialNumber)) {
-      sensorOrderMap.set(r.sensor.serialNumber, r.sensor);
+  // Performance: heavy processing is memoized and we only compute pivot rows for current page.
+  const uniqueRows = useMemo<EnrichedRow[]>(() => {
+    if (!data || !data.sensorData) return [];
+    const map = new Map<string, SensorDataRow>();
+    for (const row of data.sensorData) {
+      const dt = parseToDate(row.timestamp);
+      const key = `${dt.toISOString()}|${row.sensor.id}`;
+      if (!map.has(key)) map.set(key, row);
     }
-  });
-  const sensors = Array.from(sensorOrderMap.values());
+    return Array.from(map.values()).map(r => ({ ...r, tsMs: parseToDate(r.timestamp).getTime() }));
+  }, [data?.sensorData]);
 
-  // Preparar listas por sensor (ordenadas por timestamp)
-  const readingsBySensor = new Map<string, SensorDataRow[]>();
-  sensors.forEach(s => readingsBySensor.set(s.serialNumber, []));
-  uniqueRows.forEach(r => {
-    const arr = readingsBySensor.get(r.sensor.serialNumber)!;
-    arr.push(r);
-  });
-  sensors.forEach(s => {
-    const arr = readingsBySensor.get(s.serialNumber)!;
-    arr.sort((a, b) => parseToDate(a.timestamp).getTime() - parseToDate(b.timestamp).getTime());
-  });
+  const sensors = useMemo(() => {
+    const order = new Map<string, SensorDataRow['sensor']>();
+    uniqueRows.forEach(r => {
+      if (!order.has(r.sensor.serialNumber)) order.set(r.sensor.serialNumber, r.sensor);
+    });
+    return Array.from(order.values());
+  }, [uniqueRows]);
 
-  const TOLERANCE_SECONDS = toleranceSec; // alinhar leituras conforme configuração
+  const readingsBySensor = useMemo(() => {
+    const m = new Map<string, EnrichedRow[]>();
+    sensors.forEach(s => m.set(s.serialNumber, []));
+    uniqueRows.forEach(r => {
+      const arr = m.get(r.sensor.serialNumber)!;
+      if (arr) arr.push(r);
+    });
+    m.forEach((arr) => arr.sort((a, b) => a.tsMs - b.tsMs));
+    return m;
+  }, [uniqueRows, sensors]);
+
+  const TOLERANCE_SECONDS = toleranceSec;
   const primarySensor = sensors[0]?.serialNumber;
-  const primaryTimeline = primarySensor ? readingsBySensor.get(primarySensor)! : [];
+  const primaryTimeline = primarySensor ? readingsBySensor.get(primarySensor) || [] : [];
 
-  // Função para achar leitura mais próxima dentro da tolerância
-  const findNearestWithinTolerance = (arr: SensorDataRow[], targetMs: number): SensorDataRow | undefined => {
-    if (arr.length === 0) return undefined;
-    // busca linear simples (dataset pequeno); pode otimizar com busca binária se necessário
-    let best: SensorDataRow | undefined;
+  // binary search nearest neighbor (faster than a linear scan)
+  const findNearestWithinToleranceBinary = useCallback((arr: EnrichedRow[], targetMs: number): EnrichedRow | undefined => {
+    if (!arr || arr.length === 0) return undefined;
+    let lo = 0, hi = arr.length - 1;
+    if (targetMs <= arr[0].tsMs) {
+      return Math.abs(arr[0].tsMs - targetMs) / 1000 <= TOLERANCE_SECONDS ? arr[0] : undefined;
+    }
+    if (targetMs >= arr[hi].tsMs) {
+      return Math.abs(arr[hi].tsMs - targetMs) / 1000 <= TOLERANCE_SECONDS ? arr[hi] : undefined;
+    }
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const midTs = arr[mid].tsMs;
+      if (midTs === targetMs) return arr[mid];
+      if (midTs < targetMs) lo = mid + 1;
+      else hi = mid - 1;
+    }
+    // lo is the insertion index; check neighbors lo and lo-1
+    const candidates = [] as EnrichedRow[];
+    if (arr[lo]) candidates.push(arr[lo]);
+    if (arr[lo - 1]) candidates.push(arr[lo - 1]);
+    let best: EnrichedRow | undefined;
     let bestDiff = Number.POSITIVE_INFINITY;
-    for (const r of arr) {
-      const diff = Math.abs(parseToDate(r.timestamp).getTime() - targetMs) / 1000;
+    for (const c of candidates) {
+      const diff = Math.abs(c.tsMs - targetMs) / 1000;
       if (diff < bestDiff) {
         bestDiff = diff;
-        best = r;
+        best = c;
       }
     }
     if (bestDiff <= TOLERANCE_SECONDS) return best;
     return undefined;
-  };
+  }, [TOLERANCE_SECONDS]);
 
-  // Construir pivotRows a partir da linha do sensor primário, alinhando os demais
-  const pivotRows = primaryTimeline.map(base => {
-    const baseMs = parseToDate(base.timestamp).getTime();
-    const map = new Map<string, SensorDataRow>();
-    // sempre incluir leitura do sensor primário
-    map.set(base.sensor.serialNumber, base);
-    // alinhar demais sensores
-    sensors.forEach(s => {
-      if (s.serialNumber === base.sensor.serialNumber) return;
-      const arr = readingsBySensor.get(s.serialNumber)!;
-      const nearest = findNearestWithinTolerance(arr, baseMs);
-      if (nearest) map.set(s.serialNumber, nearest);
+  const totalPivotRows = primaryTimeline.length;
+  const totalPages = Math.max(1, Math.ceil(totalPivotRows / rowsPerPage));
+
+  const paginatedData = useMemo(() => {
+    if (!primaryTimeline || primaryTimeline.length === 0) return [];
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = currentPage * rowsPerPage;
+    const pagePrimary = primaryTimeline.slice(start, end);
+    return pagePrimary.map(base => {
+      const map = new Map<string, SensorDataRow | EnrichedRow>();
+      map.set(base.sensor.serialNumber, base);
+      sensors.forEach(s => {
+        if (s.serialNumber === base.sensor.serialNumber) return;
+        const arr = readingsBySensor.get(s.serialNumber) || [];
+        const nearest = findNearestWithinToleranceBinary(arr, base.tsMs);
+        if (nearest) map.set(s.serialNumber, nearest);
+      });
+      return { ts: base.tsMs, readings: map };
     });
-    return {
-      // store timestamp as numeric ms since epoch (naive) — formatting happens on demand
-      ts: baseMs,
-      readings: map
-    };
-  });
-
-  const paginatedData = pivotRows.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
-  const totalPages = Math.ceil(pivotRows.length / rowsPerPage);
+  // Intentionally depend on these values so page recalculates when they change
+  }, [primaryTimeline, currentPage, rowsPerPage, sensors, readingsBySensor, findNearestWithinToleranceBinary]);
 
   return (
     <>
