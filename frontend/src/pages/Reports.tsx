@@ -310,7 +310,7 @@ export default function Reports() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Criado em
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
@@ -336,10 +336,10 @@ export default function Reports() {
                       {formatDate(report.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={() => handleViewReport(report)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
                           title="Visualizar"
                         >
                           <EyeIcon className="h-4 w-4" />
@@ -347,7 +347,7 @@ export default function Reports() {
                         {report.status !== 'FINALIZED' && (
                           <button
                             onClick={() => handleEditReport(report)}
-                            className="text-yellow-600 hover:text-yellow-900"
+                            className="text-yellow-600 hover:text-yellow-900 p-1 rounded hover:bg-yellow-50"
                             title="Editar"
                           >
                             <PencilIcon className="h-4 w-4" />
@@ -356,7 +356,7 @@ export default function Reports() {
                         {report.status !== 'DRAFT' && !report.pdfPath && (
                           <button
                             onClick={() => handleGeneratePdf(report)}
-                            className="text-purple-600 hover:text-purple-900"
+                            className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
                             title="Gerar PDF"
                             disabled={generatePdfMutation.isLoading}
                           >
@@ -366,7 +366,7 @@ export default function Reports() {
                         {report.status !== 'DRAFT' && (
                           <button
                             onClick={() => handlePreviewPdf(report)}
-                            className="text-indigo-600 hover:text-indigo-900"
+                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
                             title="Preview PDF"
                             disabled={previewPdfMutation.isLoading}
                           >
@@ -376,7 +376,7 @@ export default function Reports() {
                         {report.pdfPath && (
                           <button
                             onClick={() => handleDownloadReport(report)}
-                            className="text-green-600 hover:text-green-900"
+                            className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
                             title="Download PDF"
                             disabled={downloadReportMutation.isLoading}
                           >
@@ -385,7 +385,7 @@ export default function Reports() {
                         )}
                         <button
                           onClick={() => handleDeleteReport(report)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                           title="Excluir"
                         >
                           <TrashIcon className="h-4 w-4" />

@@ -8,7 +8,15 @@ import {
   Clock,
   Calendar,
   Thermometer,
-  Droplets
+  Droplets,
+  Eye,
+  Edit,
+  Trash2,
+  FileText,
+  Upload,
+  Download,
+  Check,
+  X
 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
 import { useValidations, useCreateValidation, useUpdateValidationApproval, useDeleteValidation } from '@/hooks/useValidations';
@@ -316,7 +324,6 @@ const Validations: React.FC = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Maleta</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criado em</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
@@ -325,9 +332,17 @@ const Validations: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {data?.validations.map((validation) => (
                     <tr key={validation.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{validation.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <div className="flex items-center">
+                          <div className="text-sm font-medium text-gray-900">{validation.name}</div>
+                          { (validation._count?.reports || 0) > 0 && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Laudo
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{validation.client?.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{validation.suitcase?.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(validation)}`}>
                           {getStatusText(validation)}
@@ -336,33 +351,56 @@ const Validations: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(validation.createdAt)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
-                          <button onClick={() => handleGenerateReport(validation)} className="btn-primary text-sm" disabled={(validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}>{generatingReport === validation.id ? '⏳' : '📊'}</button>
+                          <button
+                            onClick={() => handleGenerateReport(validation)}
+                            className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+                            disabled={(validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}
+                            title="Gerar relatório"
+                          >
+                            {generatingReport === validation.id ? '⏳' : <FileText className="h-4 w-4" />}
+                          </button>
                           {(validation._count?.reports || 0) > 0 && (
-                            <button onClick={async () => {
-                              try {
-                                setGeneratingReport(validation.id);
-                                const resp = await apiService.api.get(`/reports`, { params: { validationId: validation.id, page: 1, limit: 1 } });
-                                const reports = resp.data?.data?.reports || [];
-                                if (reports.length === 0) { toast.error('Nenhum relatório encontrado'); return; }
-                                const report = reports[0];
-                                const dl = await apiService.api.get(`/reports/${report.id}/download`, { responseType: 'blob' });
-                                const blob = dl.data as Blob;
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a'); a.href = url; a.download = report.name?.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf'; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
-                              } catch (err) { console.error('Erro ao baixar relatório:', err); toast.error('Erro ao baixar relatório'); } finally { setGeneratingReport(null); }
-                            }} className="btn-secondary text-sm">📄</button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  setGeneratingReport(validation.id);
+                                  const resp = await apiService.api.get(`/reports`, { params: { validationId: validation.id, page: 1, limit: 1 } });
+                                  const reports = resp.data?.data?.reports || [];
+                                  if (reports.length === 0) { toast.error('Nenhum relatório encontrado'); return; }
+                                  const report = reports[0];
+                                  const dl = await apiService.api.get(`/reports/${report.id}/download`, { responseType: 'blob' });
+                                  const blob = dl.data as Blob;
+                                  const url = window.URL.createObjectURL(blob);
+                                  const a = document.createElement('a'); a.href = url; a.download = report.name?.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf'; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
+                                } catch (err) { console.error('Erro ao baixar relatório:', err); toast.error('Erro ao baixar relatório'); } finally { setGeneratingReport(null); }
+                              }}
+                              className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                              title="Baixar último relatório"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
                           )}
-                          <button onClick={() => navigate(`/validations/${validation.id}/charts`)} className="btn-secondary text-sm" disabled={(validation._count?.sensorData || 0) === 0}>📈</button>
-                          <button onClick={() => navigate(`/validations/${validation.id}/details`)} className="btn-secondary text-sm">🔍</button>
-                          <button onClick={() => { setEditingValidation(validation); setShowCreationModal(true); }} className="btn-secondary text-sm">✏️</button>
-                          <button onClick={() => navigate(`/import?validationId=${validation.id}&clientId=${validation.clientId}&suitcaseId=${validation.suitcase?.id || ''}`)} className="btn-secondary text-sm">📤</button>
+                          <button onClick={() => navigate(`/validations/${validation.id}/charts`)} className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50" disabled={(validation._count?.sensorData || 0) === 0} title="Gráficos">
+                            <BarChart3 className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => navigate(`/validations/${validation.id}/details`)} className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-slate-600 hover:bg-slate-700 text-white" title="Detalhes">
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => { setEditingValidation(validation); setShowCreationModal(true); }} className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-amber-500 hover:bg-amber-600 text-white" title="Editar">
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => navigate(`/import?validationId=${validation.id}&clientId=${validation.clientId}&suitcaseId=${validation.suitcase?.id || ''}`)} className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-teal-600 hover:bg-teal-700 text-white" title="Importar dados">
+                            <Upload className="h-4 w-4" />
+                          </button>
                           {validation.isApproved === null && (
                             <>
-                              <button onClick={() => handleApproveValidation(validation.id, true)} className="px-3 py-1.5 text-sm font-medium text-green-600 border border-green-600 rounded-md">✓</button>
-                              <button onClick={() => handleApproveValidation(validation.id, false)} className="px-3 py-1.5 text-sm font-medium text-red-600 border border-red-600 rounded-md">✗</button>
+                              <button onClick={() => handleApproveValidation(validation.id, true)} className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-green-600 hover:bg-green-700 text-white" title="Aprovar"><Check className="h-4 w-4" /></button>
+                              <button onClick={() => handleApproveValidation(validation.id, false)} className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-red-600 hover:bg-red-700 text-white" title="Reprovar"><X className="h-4 w-4" /></button>
                             </>
                           )}
-                          <button onClick={() => setDeletingValidation(validation)} className="px-3 py-1.5 text-sm font-medium text-red-600 border border-red-200 rounded-md">🗑️</button>
+                          <button onClick={() => setDeletingValidation(validation)} className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-red-600 hover:bg-red-700 text-white" title="Excluir">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -381,8 +419,21 @@ const Validations: React.FC = () => {
                       <div className="mt-1 text-sm"><span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(validation)}`}>{getStatusText(validation)}</span></div>
                     </div>
                     <div className="flex space-x-2">
-                      <button onClick={() => handleGenerateReport(validation)} className="text-primary-600 p-1 rounded" disabled={(validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}>📊</button>
-                      <button onClick={() => setEditingValidation(validation)} className="text-gray-700 p-1 rounded">✏️</button>
+                      <button
+                        onClick={() => handleGenerateReport(validation)}
+                        className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-purple-600 hover:bg-purple-700 text-white"
+                        disabled={(validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}
+                        title="Gerar relatório"
+                      >
+                        {generatingReport === validation.id ? '⏳' : <FileText className="h-4 w-4" />}
+                      </button>
+                      <button
+                        onClick={() => setEditingValidation(validation)}
+                        className="h-8 w-8 inline-flex items-center justify-center rounded-full bg-amber-500 hover:bg-amber-600 text-white"
+                        title="Editar"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 </div>
