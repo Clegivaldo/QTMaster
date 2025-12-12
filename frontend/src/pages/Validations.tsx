@@ -310,230 +310,79 @@ const Validations: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-hidden">
-            {/* List of validations */}
-            <div className="divide-y p-0">
-              {data?.validations.map((validation) => (
-                <div key={validation.id} className="border-b last:border-b-0 p-4">
-                  {/* Header */}
-                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-start sm:justify-between sm:space-y-0 mb-4">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <BarChart3 className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
-                      </div>
-                      <div className="ml-3">
-                        <h3 className="text-base sm:text-lg font-medium text-gray-900">
-                          {validation.name}
-                        </h3>
-                        <div className="flex items-center text-xs sm:text-sm text-gray-500">
-                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          {formatDate(validation.createdAt)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2 self-start sm:self-auto">
-                      {getStatusIcon(validation)}
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(validation)}`}>
-                        {getStatusText(validation)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Client and Suitcase */}
-                  <div className="mb-4 space-y-2">
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-700">Cliente:</span>{' '}
-                      <span className="text-gray-900">{validation.client?.name}</span>
-                    </div>
-                    <div className="text-sm">
-                      <span className="font-medium text-gray-700">Maleta:</span>{' '}
-                      <span className="text-gray-900">{validation.suitcase?.name}</span>
-                    </div>
-                  </div>
-
-                  {/* Parameters */}
-                  <div className="mb-4">
-                    <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-2">Parâmetros</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
-                      <div className="flex items-center">
-                        <Thermometer className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 mr-2" />
-                        <span className="text-gray-600">
-                          {validation.minTemperature}°C - {validation.maxTemperature}°C
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Maleta</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criado em</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {data?.validations.map((validation) => (
+                    <tr key={validation.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{validation.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{validation.client?.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{validation.suitcase?.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(validation)}`}>
+                          {getStatusText(validation)}
                         </span>
-                      </div>
-                      {validation.minHumidity !== null && validation.maxHumidity !== null && (
-                        <div className="flex items-center">
-                          <Droplets className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 mr-2" />
-                          <span className="text-gray-600">
-                            {validation.minHumidity}% - {validation.maxHumidity}%
-                          </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(validation.createdAt)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-2">
+                          <button onClick={() => handleGenerateReport(validation)} className="btn-primary text-sm" disabled={(validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}>{generatingReport === validation.id ? '⏳' : '📊'}</button>
+                          {(validation._count?.reports || 0) > 0 && (
+                            <button onClick={async () => {
+                              try {
+                                setGeneratingReport(validation.id);
+                                const resp = await apiService.api.get(`/reports`, { params: { validationId: validation.id, page: 1, limit: 1 } });
+                                const reports = resp.data?.data?.reports || [];
+                                if (reports.length === 0) { toast.error('Nenhum relatório encontrado'); return; }
+                                const report = reports[0];
+                                const dl = await apiService.api.get(`/reports/${report.id}/download`, { responseType: 'blob' });
+                                const blob = dl.data as Blob;
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a'); a.href = url; a.download = report.name?.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf'; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
+                              } catch (err) { console.error('Erro ao baixar relatório:', err); toast.error('Erro ao baixar relatório'); } finally { setGeneratingReport(null); }
+                            }} className="btn-secondary text-sm">📄</button>
+                          )}
+                          <button onClick={() => navigate(`/validations/${validation.id}/charts`)} className="btn-secondary text-sm" disabled={(validation._count?.sensorData || 0) === 0}>📈</button>
+                          <button onClick={() => navigate(`/validations/${validation.id}/details`)} className="btn-secondary text-sm">🔍</button>
+                          <button onClick={() => { setEditingValidation(validation); setShowCreationModal(true); }} className="btn-secondary text-sm">✏️</button>
+                          <button onClick={() => navigate(`/import?validationId=${validation.id}&clientId=${validation.clientId}&suitcaseId=${validation.suitcase?.id || ''}`)} className="btn-secondary text-sm">📤</button>
+                          {validation.isApproved === null && (
+                            <>
+                              <button onClick={() => handleApproveValidation(validation.id, true)} className="px-3 py-1.5 text-sm font-medium text-green-600 border border-green-600 rounded-md">✓</button>
+                              <button onClick={() => handleApproveValidation(validation.id, false)} className="px-3 py-1.5 text-sm font-medium text-red-600 border border-red-600 rounded-md">✗</button>
+                            </>
+                          )}
+                          <button onClick={() => setDeletingValidation(validation)} className="px-3 py-1.5 text-sm font-medium text-red-600 border border-red-200 rounded-md">🗑️</button>
                         </div>
-                      )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="block md:hidden divide-y divide-gray-200">
+              {data?.validations.map((validation) => (
+                <div key={validation.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">{validation.name}</h3>
+                      <div className="text-sm text-gray-500">{validation.client?.name} • {validation.suitcase?.name}</div>
+                      <div className="mt-1 text-sm"><span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(validation)}`}>{getStatusText(validation)}</span></div>
                     </div>
-                  </div>
-
-                  {/* Statistics */}
-                  {validation.statistics && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Estatísticas</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center p-3 bg-gray-50 rounded-lg">
-                          <div className="text-lg font-bold text-gray-900">
-                            {validation.statistics.totalReadings}
-                          </div>
-                          <div className="text-xs text-gray-500">Leituras</div>
-                        </div>
-                        <div className="text-center p-3 bg-green-50 rounded-lg">
-                          <div className="text-lg font-bold text-green-600">
-                            {formatPercentage(validation.statistics.conformityPercentage)}
-                          </div>
-                          <div className="text-xs text-gray-500">Conformidade</div>
-                        </div>
-                      </div>
-
-                      {/* Temperature stats */}
-                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                        <div className="text-center">
-                          <div className="font-medium text-gray-900">
-                            {validation.statistics.temperature.min}°C
-                          </div>
-                          <div className="text-gray-500">Mín</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium text-gray-900">
-                            {validation.statistics.temperature.average}°C
-                          </div>
-                          <div className="text-gray-500">Média</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium text-gray-900">
-                            {validation.statistics.temperature.max}°C
-                          </div>
-                          <div className="text-gray-500">Máx</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex flex-wrap gap-2">
-                      {/* Primary Action - Generate Report */}
-                      <button
-                        onClick={() => handleGenerateReport(validation)}
-                        className="btn-primary text-sm"
-                        disabled={(validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}
-                        title={(validation._count?.sensorData || 0) === 0 ? 'Importe dados antes de gerar laudo' : 'Criar relatório/laudo desta validação'}
-                      >
-                        {generatingReport === validation.id ? '⏳ Gerando...' : '📊 Gerar Laudo'}
-                      </button>
-
-                      {/* Secondary Actions */}
-                      {/* Download existing report if present */}
-                      {(validation._count?.reports || 0) > 0 && (
-                        <button
-                          onClick={async () => {
-                            try {
-                              setGeneratingReport(validation.id);
-                              // Fetch latest report for this validation
-                              const resp = await apiService.api.get(`/reports`, { params: { validationId: validation.id, page: 1, limit: 1 } });
-                              const reports = resp.data?.data?.reports || [];
-                              if (reports.length === 0) {
-                                toast.error('Nenhum relatório encontrado');
-                                return;
-                              }
-                              const report = reports[0];
-                              const dl = await apiService.api.get(`/reports/${report.id}/download`, { responseType: 'blob' });
-                              const blob = dl.data as Blob;
-                              const url = window.URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = report.name?.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
-                              document.body.appendChild(a);
-                              a.click();
-                              window.URL.revokeObjectURL(url);
-                              document.body.removeChild(a);
-                            } catch (err) {
-                              console.error('Erro ao baixar relatório:', err);
-                              toast.error('Erro ao baixar relatório');
-                            } finally {
-                              setGeneratingReport(null);
-                            }
-                          }}
-                          className="btn-secondary text-sm"
-                        >
-                          📄 Baixar Laudo
-                        </button>
-                      )}
-                      <button
-                        onClick={() => navigate(`/validations/${validation.id}/charts`)}
-                        className="btn-secondary text-sm"
-                        disabled={(validation._count?.sensorData || 0) === 0}
-                        title="Ver gráficos de temperatura e umidade"
-                      >
-                        📈 Ver Gráficos
-                      </button>
-
-                      <button
-                        onClick={() => navigate(`/validations/${validation.id}/details`)}
-                        className="btn-secondary text-sm"
-                        title="Ver todos os dados importados"
-                      >
-                        🔍 Detalhes
-                      </button>
-
-                      {/* Edit Action */}
-                      <button
-                        onClick={() => {
-                          setEditingValidation(validation);
-                          setShowCreationModal(true);
-                        }}
-                        className="btn-secondary text-sm"
-                        title="Editar validação"
-                      >
-                        ✏️ Editar
-                      </button>
-
-                      <button
-                        onClick={() => navigate(`/import?validationId=${validation.id}&clientId=${validation.clientId}&suitcaseId=${validation.suitcase?.id || ''}`)}
-                        className="btn-secondary text-sm"
-                        title="Importar mais dados para esta validação"
-                      >
-                        📤 Importar Dados
-                      </button>
-
-                      {/* Approval Actions */}
-                      {validation.isApproved === null && (
-                        <>
-                          <button
-                            onClick={() => handleApproveValidation(validation.id, true)}
-                            className="px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-900 border border-green-600 hover:border-green-900 rounded-md transition-colors"
-                            title="Aprovar validação"
-                          >
-                            ✓ Aprovar
-                          </button>
-                          <button
-                            onClick={() => handleApproveValidation(validation.id, false)}
-                            className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-900 border border-red-600 hover:border-red-900 rounded-md transition-colors"
-                            title="Reprovar validação"
-                          >
-                            ✗ Reprovar
-                          </button>
-                        </>
-                      )}
-
-                      {/* Delete Action */}
-                      <button
-                        onClick={() => setDeletingValidation(validation)}
-                        className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-900 border border-red-200 hover:border-red-300 rounded-md transition-colors ml-auto"
-                        title="Excluir validação"
-                      >
-                        🗑️ Excluir
-                      </button>
-                    </div>
-
-                    {/* Info Footer */}
-                    <div className="mt-2 text-xs text-gray-500">
-                      {validation._count?.sensorData || 0} leituras • {validation._count?.reports || 0} relatórios
+                    <div className="flex space-x-2">
+                      <button onClick={() => handleGenerateReport(validation)} className="text-primary-600 p-1 rounded" disabled={(validation._count?.sensorData || 0) === 0 || generatingReport === validation.id}>📊</button>
+                      <button onClick={() => setEditingValidation(validation)} className="text-gray-700 p-1 rounded">✏️</button>
                     </div>
                   </div>
                 </div>

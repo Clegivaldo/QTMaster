@@ -270,16 +270,9 @@ const Templates: React.FC = () => {
                 }).map((template) => (
                   <tr key={template.id || Math.random().toString(36).slice(2)} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <FileText className="h-5 w-5 text-blue-600" />
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{template.name}</div>
-                          <div className="text-sm text-gray-500">{template.filename}</div>
-                        </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{template.name}</div>
+                        <div className="text-sm text-gray-500">{template.filename}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{template.type}</td>
@@ -307,18 +300,11 @@ const Templates: React.FC = () => {
             const s = filters.search.toLowerCase();
             return (t.name || '').toLowerCase().includes(s) || (t.type || '').toLowerCase().includes(s) || (t.filename || '').toLowerCase().includes(s);
           }).map((template) => (
-            <div key={template.id || Math.random().toString(36).slice(2)} className="p-4 hover:bg-gray-50">
+                <div key={template.id || Math.random().toString(36).slice(2)} className="p-4 hover:bg-gray-50">
               <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 h-10 w-10">
-                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-blue-600" />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">{template.name}</div>
-                    <div className="text-sm text-gray-500">{template.type} • {template.size} KB</div>
-                  </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-900">{template.name}</div>
+                  <div className="text-sm text-gray-500">{template.type} • {template.size} KB</div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button onClick={() => previewTemplate(template)} className="text-gray-700 p-2 rounded hover:bg-gray-100" title="Visualizar PDF"><Eye className="h-4 w-4"/></button>

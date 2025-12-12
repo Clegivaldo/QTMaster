@@ -96,31 +96,22 @@ const ClientTable: React.FC<ClientTableProps> = ({
             {clients.map((client) => (
               <div key={client.id} className="p-4 hover:bg-gray-50">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <span className="text-sm font-medium text-primary-600">
-                          {client.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {client.name}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {client.name}
+                    {client.email && (
+                      <div className="text-sm text-gray-500 truncate">
+                        {client.email}
                       </div>
-                      {client.email && (
-                        <div className="text-sm text-gray-500 truncate">
-                          {client.email}
-                        </div>
-                      )}
-                      {client.phone && (
-                        <div className="text-sm text-gray-500">
-                          {client.phone}
-                        </div>
-                      )}
-                      <div className="text-xs text-gray-400 mt-1">
-                        {formatDate(client.createdAt)}
+                    )}
+                    {client.phone && (
+                      <div className="text-sm text-gray-500">
+                        {client.phone}
                       </div>
+                    )}
+                    <div className="text-xs text-gray-400 mt-1">
+                      {formatDate(client.createdAt)}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 ml-2">
@@ -194,25 +185,16 @@ const ClientTable: React.FC<ClientTableProps> = ({
               clients.map((client) => (
                 <tr key={client.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                          <span className="text-sm font-medium text-primary-600">
-                            {client.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {client.name}
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {client.name}
+                      {client.cnpj && (
+                        <div className="text-sm text-gray-500 flex items-center">
+                          <Building className="h-3 w-3 mr-1" />
+                          {client.cnpj}
                         </div>
-                        {client.cnpj && (
-                          <div className="text-sm text-gray-500 flex items-center">
-                            <Building className="h-3 w-3 mr-1" />
-                            {client.cnpj}
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

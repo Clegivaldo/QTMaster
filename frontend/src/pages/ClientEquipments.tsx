@@ -149,16 +149,7 @@ const ClientEquipments: React.FC = () => {
                     filteredEquipments.map((equipment: any) => (
                       <tr key={equipment.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                                <span className="text-sm font-medium text-primary-600">{String(equipment.equipmentType?.name || '').charAt(0).toUpperCase()}</span>
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{equipment.equipmentType?.name || '-'}</div>
-                            </div>
-                          </div>
+                          <div className="text-sm font-medium text-gray-900">{equipment.equipmentType?.name || '-'}</div>
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{equipment.tag || '-'}</td>

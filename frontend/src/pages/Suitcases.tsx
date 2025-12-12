@@ -152,16 +152,7 @@ const Suitcases: React.FC = () => {
                   {data.suitcases.map((suitcase) => (
                     <tr key={suitcase.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                              <Package className="h-5 w-5 text-primary-600" />
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{suitcase.name}</div>
-                          </div>
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{suitcase.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(suitcase.createdAt)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{suitcase.sensors?.length || 0}</td>
