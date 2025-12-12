@@ -292,7 +292,7 @@ const Validations: React.FC = () => {
       )}
 
       {/* Content */}
-      <div className="bg-white shadow rounded-lg">
+      <div className="bg-white shadow rounded-lg overflow-hidden">
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
@@ -313,7 +313,7 @@ const Validations: React.FC = () => {
             {/* List of validations */}
             <div className="divide-y p-0">
               {data?.validations.map((validation) => (
-                <div key={validation.id} className="border-b last:border-b-0 px-4 py-4 sm:px-6">
+                <div key={validation.id} className="border-b last:border-b-0 p-4">
                   {/* Header */}
                   <div className="flex flex-col space-y-3 sm:flex-row sm:items-start sm:justify-between sm:space-y-0 mb-4">
                     <div className="flex items-center">
