@@ -772,11 +772,16 @@ export class EditorTemplateRenderer {
     const normalizedDatasets = datasets.map(ds => {
       const originalBW = (typeof ds.borderWidth === 'number' && ds.borderWidth > 0) ? ds.borderWidth : 2;
       const borderWidth = Math.max(0.75, originalBW * 0.75);
-      const pointRadius = Math.max(1, (typeof ds.pointRadius === 'number' ? ds.pointRadius : 1));
+      // Force line rendering: hide points (pointRadius = 0) but ensure line is shown
+      const pointRadius = (typeof ds.pointRadius === 'number') ? ds.pointRadius : 0;
+      const showLine = ds.showLine !== undefined ? ds.showLine : true;
+      const spanGaps = ds.spanGaps !== undefined ? ds.spanGaps : true;
       return {
         ...ds,
         borderWidth,
         pointRadius,
+        showLine,
+        spanGaps,
         fill: ds.fill ?? false,
       };
     });
