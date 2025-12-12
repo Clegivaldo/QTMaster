@@ -59,11 +59,17 @@ const ClientEquipments: React.FC = () => {
     }
   };
 
-  const filteredEquipments = equipmentsData?.filter((equipment: any) =>
-    !filters.search ||
-    equipment.serialNumber.toLowerCase().includes(filters.search.toLowerCase()) ||
-    equipment.client?.name.toLowerCase().includes(filters.search.toLowerCase())
-  );
+  const filteredEquipments = equipmentsData?.filter((equipment: any) => {
+    if (!filters.search) return true;
+    const s = String(filters.search).toLowerCase();
+    return (
+      String(equipment.serialNumber || '').toLowerCase().includes(s) ||
+      String(equipment.client?.name || '').toLowerCase().includes(s) ||
+      String(equipment.tag || '').toLowerCase().includes(s) ||
+      String(equipment.assetNumber || '').toLowerCase().includes(s) ||
+      String(equipment.equipmentType?.name || '').toLowerCase().includes(s)
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -88,11 +94,11 @@ const ClientEquipments: React.FC = () => {
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-gray-400" />
             </div>
-            <input
+              <input
               name="search"
               type="text"
-              className="mobile-form-input h-10 w-full pl-10"
-              placeholder="Buscar por número de série ou cliente..."
+              className="input w-full pl-10"
+              placeholder="Buscar por cliente, tag, série ou patrimônio..."
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value || '', page: 1 })}
             />
@@ -114,53 +120,92 @@ const ClientEquipments: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:p-6">
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          </div>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Série</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patrimônio</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {(!filteredEquipments || filteredEquipments.length === 0) ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500">Nenhum equipamento encontrado.</td>
+                    </tr>
+                  ) : (
+                    filteredEquipments.map((equipment: any) => (
+                      <tr key={equipment.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                                <span className="text-sm font-medium text-primary-600">{String(equipment.equipmentType?.name || '').charAt(0).toUpperCase()}</span>
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{equipment.equipmentType?.name || '-'}</div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{equipment.tag || '-'}</td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{equipment.serialNumber || '-'}</td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{equipment.assetNumber || '-'}</td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{equipment.client?.name || '-'}</td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button onClick={() => { console.log('ClientEquipments: Edit clicked', equipment); setEditingEquipment(equipment); }} className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50" title="Editar"><Edit className="h-4 w-4"/></button>
+                            <button onClick={() => { console.log('ClientEquipments: Delete clicked', equipment); setDeletingEquipment(equipment); }} className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Excluir"><Trash2 className="h-4 w-4"/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredEquipments?.map((equipment: any) => (
-                <div key={equipment.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">{equipment.serialNumber}</h3>
-                      <p className="mt-1 text-sm text-gray-600">
-                        {equipment.client?.name} • {equipment.brand?.name} • {equipment.model?.name}
-                      </p>
-                      {equipment.assetNumber && (
-                        <p className="mt-1 text-sm text-gray-500">Patrimônio: {equipment.assetNumber}</p>
-                      )}
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => { console.log('ClientEquipments: Edit clicked', equipment); setEditingEquipment(equipment); }}
-                        className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => { console.log('ClientEquipments: Delete clicked', equipment); setDeletingEquipment(equipment); }}
-                        className="inline-flex items-center px-3 py-1 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Excluir
-                      </button>
+
+            {/* Mobile list */}
+            <div className="block md:hidden divide-y divide-gray-200">
+              {(!filteredEquipments || filteredEquipments.length === 0) ? (
+                <div className="p-4 text-center text-gray-500">Nenhum equipamento encontrado.</div>
+              ) : (
+                filteredEquipments.map((equipment: any) => (
+                  <div key={equipment.id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900">{equipment.serialNumber}</h3>
+                        <p className="mt-1 text-sm text-gray-600">{equipment.client?.name || '-'} • {equipment.tag || '-'}</p>
+                        {equipment.assetNumber && (<p className="mt-1 text-sm text-gray-500">Patrimônio: {equipment.assetNumber}</p>)}
+                      </div>
+                      <div className="flex space-x-2">
+                        <button onClick={() => { setEditingEquipment(equipment); }} className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"><Edit className="h-4 w-4 mr-1"/>Editar</button>
+                        <button onClick={() => { setDeletingEquipment(equipment); }} className="inline-flex items-center px-3 py-1 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50"><Trash2 className="h-4 w-4 mr-1"/>Excluir</button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              {(!filteredEquipments || filteredEquipments.length === 0) && (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">Nenhum equipamento encontrado.</p>
-                </div>
+                ))
               )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Create/Edit Form Modal */}

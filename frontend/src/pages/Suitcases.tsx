@@ -123,146 +123,112 @@ const Suitcases: React.FC = () => {
         </div>
       )}
 
-      {/* Content */}
-      <div className="bg-white shadow rounded-lg">
-        {isLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Carregando maletas...</p>
-          </div>
-        ) : data?.suitcases.length === 0 ? (
-          <div className="text-center py-12">
-            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <div className="text-gray-400 text-lg mb-4">
-              Nenhuma maleta encontrada
+      {/* Content - standardized table like Clients */}
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="px-4 py-5 sm:p-6">
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Carregando maletas...</p>
             </div>
-            <p className="text-gray-600">
-              Crie sua primeira maleta para organizar os sensores.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-hidden">
-            {/* Grid of suitcases */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-              {data?.suitcases.map((suitcase) => (
-                <div key={suitcase.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                        <Package className="h-6 w-6 text-primary-600" />
-                      </div>
-                      <div className="ml-3">
-                        <h3 className="text-lg font-medium text-gray-900">
-                          {suitcase.name}
-                        </h3>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {formatDate(suitcase.createdAt)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={() => setEditingSuitcase(suitcase)}
-                        className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50"
-                        title="Editar maleta"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeletingSuitcase(suitcase)}
-                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                        title="Excluir maleta"
-                        disabled={(suitcase._count?.validations || 0) > 0}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  {suitcase.description && (
-                    <p className="text-sm text-gray-600 mb-4">
-                      {suitcase.description}
-                    </p>
-                  )}
-
-                  {/* Sensors */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">
-                      Sensores ({suitcase.sensors?.length || 0})
-                    </h4>
-                    {suitcase.sensors && suitcase.sensors.length > 0 ? (
-                      <div className="space-y-2">
-                        {suitcase.sensors.slice(0, 3).map((suitcaseSensor) => (
-                          <div key={suitcaseSensor.id} className="flex items-center text-sm">
-                            <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-medium mr-2">
-                              {suitcaseSensor.position || '?'}
+          ) : data?.suitcases.length === 0 ? (
+            <div className="text-center py-12">
+              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <div className="text-gray-400 text-lg mb-4">Nenhuma maleta encontrada</div>
+              <p className="text-gray-600">Crie sua primeira maleta para organizar os sensores.</p>
+            </div>
+          ) : (
+            <div>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criado</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sensores</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Validações</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {data.suitcases.map((suitcase) => (
+                      <tr key={suitcase.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                                <Package className="h-5 w-5 text-primary-600" />
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <span className="font-medium">{suitcaseSensor.sensor.serialNumber}</span>
-                              <span className="text-gray-500 ml-2">({suitcaseSensor.sensor.type.name})</span>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{suitcase.name}</div>
                             </div>
                           </div>
-                        ))}
-                        {suitcase.sensors.length > 3 && (
-                          <div className="text-xs text-gray-500">
-                            +{suitcase.sensors.length - 3} mais...
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(suitcase.createdAt)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{suitcase.sensors?.length || 0}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{suitcase._count?.validations || 0}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button onClick={() => setEditingSuitcase(suitcase)} className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50" title="Editar"><Edit className="h-4 w-4"/></button>
+                            <button onClick={() => setDeletingSuitcase(suitcase)} className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Excluir" disabled={(suitcase._count?.validations || 0) > 0}><Trash2 className="h-4 w-4"/></button>
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">Nenhum sensor configurado</p>
-                    )}
-                  </div>
-
-                  {/* Stats */}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {suitcase._count?.validations || 0} validações
-                    </span>
-                    <button 
-                      onClick={() => setEditingSuitcase(suitcase)}
-                      className="text-primary-600 hover:text-primary-900 font-medium"
-                    >
-                      Ver detalhes
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {data && data.pagination.totalPages > 1 && (
-              <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-700">
-                    Mostrando {(data.pagination.page - 1) * data.pagination.limit + 1} até{' '}
-                    {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} de{' '}
-                    {data.pagination.total} maletas
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setFilters({ ...filters, page: filters.page! - 1 })}
-                      disabled={!data.pagination.hasPrev}
-                      className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Anterior
-                    </button>
-                    <button
-                      onClick={() => setFilters({ ...filters, page: filters.page! + 1 })}
-                      disabled={!data.pagination.hasNext}
-                      className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Próximo
-                    </button>
-                  </div>
-                </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </div>
-        )}
+
+              <div className="block md:hidden divide-y divide-gray-200">
+                {data.suitcases.map((suitcase) => (
+                  <div key={suitcase.id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900">{suitcase.name}</h3>
+                        <div className="flex items-center text-sm text-gray-500"><Calendar className="h-4 w-4 mr-1"/>{formatDate(suitcase.createdAt)}</div>
+                        <p className="text-sm text-gray-500 mt-1">Sensores: {suitcase.sensors?.length || 0} • Validações: {suitcase._count?.validations || 0}</p>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button onClick={() => setEditingSuitcase(suitcase)} className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50" title="Editar"><Edit className="h-4 w-4"/></button>
+                        <button onClick={() => setDeletingSuitcase(suitcase)} className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Excluir" disabled={(suitcase._count?.validations || 0) > 0}><Trash2 className="h-4 w-4"/></button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {data && data.pagination.totalPages > 1 && (
+                <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                      Mostrando {(data.pagination.page - 1) * data.pagination.limit + 1} até {' '}
+                      {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} de {' '}
+                      {data.pagination.total} maletas
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setFilters({ ...filters, page: filters.page! - 1 })}
+                        disabled={!data.pagination.hasPrev}
+                        className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Anterior
+                      </button>
+                      <button
+                        onClick={() => setFilters({ ...filters, page: filters.page! + 1 })}
+                        disabled={!data.pagination.hasNext}
+                        className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Próximo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}

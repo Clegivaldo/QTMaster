@@ -216,61 +216,82 @@ const Templates: React.FC = () => {
         </button>
       </div>
 
-      {/* Templates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {templates.map((template) => (
-          <div
-            key={template.id || Math.random().toString(36).slice(2)}
-            className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
-          >
-            {/* Template Icon */}
-            <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
-              <FileText className="h-6 w-6 text-blue-600" />
-            </div>
+      {/* Templates Table */}
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="hidden md:block overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modificado</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tamanho</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {templates.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">Nenhum template encontrado</td>
+                </tr>
+              ) : (
+                templates.map((template) => (
+                  <tr key={template.id || Math.random().toString(36).slice(2)} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <FileText className="h-5 w-5 text-blue-600" />
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{template.name}</div>
+                          <div className="text-sm text-gray-500">{template.filename}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{template.type}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{template.lastModified}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{template.size} KB</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button onClick={() => previewTemplate(template)} className="text-gray-700 p-1 rounded hover:bg-gray-100" title="Visualizar PDF"><Eye className="h-4 w-4"/></button>
+                        <button onClick={() => openTemplateEditor(template.id)} className="text-blue-700 p-1 rounded hover:bg-blue-50" title="Editar no Editor"><Palette className="h-4 w-4"/></button>
+                        <button onClick={() => duplicateTemplate(template)} className="text-purple-700 p-1 rounded hover:bg-purple-50" title="Duplicar template"><Copy className="h-4 w-4"/></button>
+                        <button onClick={() => deleteTemplate(template)} className="text-red-700 p-1 rounded hover:bg-red-50" title="Deletar template"><Trash2 className="h-4 w-4"/></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-            {/* Template Info */}
-            <div className="space-y-2 mb-4">
-              <h3 className="font-semibold text-gray-900">{template.name}</h3>
-              <p className="text-sm text-gray-500">{template.type}</p>
-              <div className="flex justify-between text-xs text-gray-400">
-                <span>Modificado: {template.lastModified}</span>
-                <span>{template.size} KB</span>
+        {/* Mobile card list */}
+        <div className="block md:hidden divide-y divide-gray-200">
+          {templates.map((template) => (
+            <div key={template.id || Math.random().toString(36).slice(2)} className="p-4 hover:bg-gray-50">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0 h-10 w-10">
+                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">{template.name}</div>
+                    <div className="text-sm text-gray-500">{template.type} • {template.size} KB</div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button onClick={() => previewTemplate(template)} className="text-gray-700 p-2 rounded hover:bg-gray-100" title="Visualizar PDF"><Eye className="h-4 w-4"/></button>
+                  <button onClick={() => openTemplateEditor(template.id)} className="text-blue-700 p-2 rounded hover:bg-blue-50" title="Editar no Editor"><Palette className="h-4 w-4"/></button>
+                </div>
               </div>
             </div>
-
-            {/* Actions */}
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => previewTemplate(template)}
-                className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-colors shadow-sm hover:shadow-md"
-                title="Visualizar PDF"
-              >
-                <Eye className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => openTemplateEditor(template.id)}
-                className="w-10 h-10 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center justify-center transition-colors shadow-sm hover:shadow-md"
-                title="Editar no Editor"
-              >
-                <Palette className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => duplicateTemplate(template)}
-                className="w-10 h-10 rounded-full bg-purple-100 hover:bg-purple-200 text-purple-700 flex items-center justify-center transition-colors shadow-sm hover:shadow-md"
-                title="Duplicar template"
-              >
-                <Copy className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => deleteTemplate(template)}
-                className="w-10 h-10 rounded-full bg-red-100 hover:bg-red-200 text-red-700 flex items-center justify-center transition-colors shadow-sm hover:shadow-md"
-                title="Deletar template"
-              >
-                <Trash2 className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Empty State */}
