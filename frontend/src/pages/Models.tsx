@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, AlertTriangle, Edit, Trash2 } from 'lucide-react';
+import { Plus, AlertTriangle, Edit, Trash2, Search } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
 import { useEquipmentModels, useCreateEquipmentModel, useUpdateEquipmentModel, useDeleteEquipmentModel, useBrands, useEquipmentTypes } from '@/hooks/useEquipment';
 
@@ -14,6 +14,26 @@ const Models: React.FC = () => {
   const createMutation = useCreateEquipmentModel();
   const updateMutation = useUpdateEquipmentModel();
   const deleteMutation = useDeleteEquipmentModel();
+
+  const [filters, setFilters] = useState({ search: '' });
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const search = String(formData.get('search') || '');
+    setFilters({ ...filters, search });
+  };
+
+  const filteredModels = models?.filter((m: any) => {
+    if (!filters.search) return true;
+    const s = String(filters.search).toLowerCase();
+    return (
+      String(m.name || '').toLowerCase().includes(s) ||
+      String(m.description || '').toLowerCase().includes(s) ||
+      String(m.brand?.name || '').toLowerCase().includes(s) ||
+      String(m.type?.name || '').toLowerCase().includes(s)
+    );
+  });
 
   const handleCreate = async (data: any) => {
     try {
@@ -84,53 +104,86 @@ const Models: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:p-6">
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="mb-6">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
-          ) : (
-            <div className="space-y-4">
-              {models?.map((model: any) => (
-                <div key={model.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start">
+            <input
+              name="search"
+              type="text"
+              className="input w-full pl-10"
+              placeholder="Buscar por nome, marca, tipo ou descrição..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value || '' })}
+            />
+          </div>
+        </form>
+      </div>
+
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          </div>
+        ) : (
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {(!filteredModels || filteredModels.length === 0) ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-gray-500">Nenhum modelo encontrado.</td>
+                    </tr>
+                  ) : (
+                    filteredModels.map((model: any) => (
+                      <tr key={model.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{model.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{model.brand?.name || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{model.type?.name || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{model.description || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button onClick={() => setEditingModel(model)} className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50" title="Editar"><Edit className="h-4 w-4"/></button>
+                            <button onClick={() => setDeletingModel(model)} className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Excluir"><Trash2 className="h-4 w-4"/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="block md:hidden divide-y divide-gray-200">
+              {filteredModels?.map((model: any) => (
+                <div key={model.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex items-start justify-between">
                     <div>
                       <h3 className="text-lg font-medium text-gray-900">{model.name}</h3>
-                      <p className="mt-1 text-sm text-gray-600">
-                        {model.brand?.name} • {model.type?.name}
-                      </p>
-                      {model.description && (
-                        <p className="mt-1 text-sm text-gray-500">{model.description}</p>
-                      )}
+                      <p className="mt-1 text-sm text-gray-600">{model.brand?.name} • {model.type?.name}</p>
+                      {model.description && <p className="mt-1 text-sm text-gray-500">{model.description}</p>}
                     </div>
                     <div className="flex space-x-2">
-                      <button
-                        onClick={() => { console.log('Models: Edit clicked', model); setEditingModel(model); }}
-                        className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => { console.log('Models: Delete clicked', model); setDeletingModel(model); }}
-                        className="inline-flex items-center px-3 py-1 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Excluir
-                      </button>
+                      <button onClick={() => setEditingModel(model)} className="text-primary-600 hover:text-primary-900 p-2 rounded hover:bg-primary-50" title="Editar"><Edit className="h-4 w-4"/></button>
+                      <button onClick={() => setDeletingModel(model)} className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50" title="Excluir"><Trash2 className="h-4 w-4"/></button>
                     </div>
                   </div>
                 </div>
               ))}
-              {(!models || models.length === 0) && (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">Nenhum modelo encontrado.</p>
-                </div>
-              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Create/Edit Form Modal */}
