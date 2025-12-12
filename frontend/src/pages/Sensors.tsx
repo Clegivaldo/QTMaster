@@ -134,80 +134,78 @@ const Sensors: React.FC = () => {
 
       {/* Sensors Content - standardized table like Clients */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:p-6">
-          {sensorsLoading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Carregando sensores...</p>
-            </div>
-          ) : sensorsData?.sensors.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-lg mb-4">Nenhum sensor encontrado</div>
-              <p className="text-gray-600">Crie seu primeiro sensor para começar.</p>
-            </div>
-          ) : (
-            <div>
-              <div className="hidden md:block overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Série</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modelo</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calibração</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+        {sensorsLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Carregando sensores...</p>
+          </div>
+        ) : sensorsData?.sensors.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 text-lg mb-4">Nenhum sensor encontrado</div>
+            <p className="text-gray-600">Crie seu primeiro sensor para começar.</p>
+          </div>
+        ) : (
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número de Série</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modelo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calibração</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sensorsData.sensors.map((sensor) => (
+                    <tr key={sensor.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                              <span className="text-sm font-medium text-primary-600">{String(sensor.serialNumber || '').charAt(0).toUpperCase()}</span>
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{sensor.serialNumber}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sensor.model || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sensor.type?.name || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sensor.calibrationDate ? formatBRShort(sensor.calibrationDate) : '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-2">
+                          <button onClick={() => setEditingSensor(sensor)} className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50" title="Editar"><Edit className="h-4 w-4"/></button>
+                          <button onClick={() => setDeletingSensor(sensor)} className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Excluir"><Trash2 className="h-4 w-4"/></button>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {sensorsData.sensors.map((sensor) => (
-                      <tr key={sensor.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                                <span className="text-sm font-medium text-primary-600">{String(sensor.serialNumber || '').charAt(0).toUpperCase()}</span>
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{sensor.serialNumber}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sensor.model || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{sensor.type?.name || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sensor.calibrationDate ? formatBRShort(sensor.calibrationDate) : '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button onClick={() => setEditingSensor(sensor)} className="text-primary-600 hover:text-primary-900 p-1 rounded hover:bg-primary-50" title="Editar"><Edit className="h-4 w-4"/></button>
-                            <button onClick={() => setDeletingSensor(sensor)} className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" title="Excluir"><Trash2 className="h-4 w-4"/></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-              <div className="block md:hidden divide-y divide-gray-200">
-                {sensorsData.sensors.map((sensor) => (
-                  <div key={sensor.id} className="p-4 hover:bg-gray-50">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900">{sensor.serialNumber}</h3>
-                        <p className="mt-1 text-sm text-gray-600">{sensor.model} • {sensor.type?.name}</p>
-                        {sensor.calibrationDate && (<p className="text-xs text-gray-400">Calibrado em: {formatBRShort(sensor.calibrationDate)}</p>)}
-                      </div>
-                      <div className="flex space-x-2">
-                        <button onClick={() => setEditingSensor(sensor)} className="text-primary-600 hover:text-primary-900 p-2 rounded hover:bg-primary-50" title="Editar"><Edit className="h-4 w-4"/></button>
-                        <button onClick={() => setDeletingSensor(sensor)} className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50" title="Excluir"><Trash2 className="h-4 w-4"/></button>
-                      </div>
+            <div className="block md:hidden divide-y divide-gray-200">
+              {sensorsData.sensors.map((sensor) => (
+                <div key={sensor.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">{sensor.serialNumber}</h3>
+                      <p className="mt-1 text-sm text-gray-600">{sensor.model} • {sensor.type?.name}</p>
+                      {sensor.calibrationDate && (<p className="text-xs text-gray-400">Calibrado em: {formatBRShort(sensor.calibrationDate)}</p>)}
+                    </div>
+                    <div className="flex space-x-2">
+                      <button onClick={() => setEditingSensor(sensor)} className="text-primary-600 hover:text-primary-900 p-2 rounded hover:bg-primary-50" title="Editar"><Edit className="h-4 w-4"/></button>
+                      <button onClick={() => setDeletingSensor(sensor)} className="text-red-600 hover:text-red-900 p-2 rounded hover:bg-red-50" title="Excluir"><Trash2 className="h-4 w-4"/></button>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Create Sensor Form Modal */}
