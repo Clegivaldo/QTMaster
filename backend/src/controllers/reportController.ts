@@ -70,7 +70,13 @@ export class ReportController {
         }
       }
 
-      const filename = `laudo_${validationId}_${Date.now()}.pdf`;
+      // Build a human-friendly filename: "Validação QT - <Client Name> - <CertificateNumber>.pdf"
+      const clientName = validation.client?.name || 'Cliente';
+      const certNumber = (validation as any).validationNumber || validation.id;
+      const rawFilename = `Validação QT - ${clientName} - ${certNumber}`;
+      // sanitize filename: remove characters not allowed in filenames and trim
+      const safeFilename = rawFilename.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim();
+      const filename = `${safeFilename}.pdf`;
       const filepath = path.join(reportsDir, filename);
       fs.writeFileSync(filepath, pdfBuffer);
 
