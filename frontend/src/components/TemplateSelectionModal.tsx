@@ -27,6 +27,7 @@ const TemplateSelectionModal: React.FC<TemplateSelectionModalProps> = ({
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -49,7 +50,7 @@ const TemplateSelectionModal: React.FC<TemplateSelectionModalProps> = ({
   };
 
   const handleSelectTemplate = (templateId: string) => {
-    onSelectTemplate(templateId);
+    setSelectedTemplateId(templateId);
   };
 
   if (!isOpen) return null;
@@ -103,7 +104,7 @@ const TemplateSelectionModal: React.FC<TemplateSelectionModalProps> = ({
               {templates.map((template) => (
                 <div
                   key={template.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer"
+                  className={`border rounded-lg p-4 transition-all cursor-pointer ${selectedTemplateId === template.id ? 'border-primary-500 shadow-md' : 'border-gray-200 hover:border-primary-300 hover:shadow-sm'}`}
                   onClick={() => handleSelectTemplate(template.id)}
                 >
                   <div className="aspect-video bg-gray-100 rounded mb-3 flex items-center justify-center">
@@ -147,6 +148,13 @@ const TemplateSelectionModal: React.FC<TemplateSelectionModalProps> = ({
             disabled={isLoading}
           >
             Cancelar
+          </button>
+          <button
+            onClick={() => selectedTemplateId && onSelectTemplate(selectedTemplateId)}
+            className="btn-primary"
+            disabled={!selectedTemplateId || isLoading}
+          >
+            {isLoading ? 'Gerando...' : 'Gerar'}
           </button>
         </div>
       </div>

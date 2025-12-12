@@ -8,6 +8,8 @@ interface ValidationCreationModalProps {
   onClose: () => void;
   onSubmit: (data: ValidationCreationData) => void;
   isLoading?: boolean;
+  initialData?: Partial<ValidationCreationData> | null;
+  isEdit?: boolean;
 }
 
 export interface ValidationCreationData {
@@ -27,6 +29,8 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
   onClose,
   onSubmit,
   isLoading = false,
+  initialData = null,
+  isEdit = false,
 }) => {
   const [formData, setFormData] = useState<ValidationCreationData>({
     clientId: '',
@@ -41,27 +45,34 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
   });
 
   const { data: clientsData } = useClients({ page: 1, limit: 100 });
-  const { data: equipmentData } = useClientEquipments();
+  const { data: equipmentData } = useClientEquipments(formData.clientId || undefined);
   
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        clientId: '',
-        equipmentId: '',
-        certificateNumber: '',
-        name: '',
-        description: '',
-        minTemperature: 2,
-        maxTemperature: 8,
-        minHumidity: undefined,
-        maxHumidity: undefined,
-      });
+      if ((initialData && Object.keys(initialData).length > 0)) {
+        setFormData(prev => ({
+          ...prev,
+          ...(initialData as Partial<ValidationCreationData>),
+        } as ValidationCreationData));
+      } else {
+        setFormData({
+          clientId: '',
+          equipmentId: '',
+          certificateNumber: '',
+          name: '',
+          description: '',
+          minTemperature: 2,
+          maxTemperature: 8,
+          minHumidity: undefined,
+          maxHumidity: undefined,
+        });
+      }
       setErrors({});
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -140,7 +151,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                         className={`mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
                           errors.clientId ? 'border-red-300' : ''
                         }`}
-                        disabled={isLoading}
+                        disabled={isLoading || !!isEdit}
                       >
                         <option value="">Selecione um cliente</option>
                         {clientsData?.clients.map((client) => (
@@ -165,14 +176,21 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                         className={`mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
                           errors.equipmentId ? 'border-red-300' : ''
                         }`}
-                        disabled={isLoading}
+                        disabled={isLoading || !!isEdit}
                       >
                         <option value="">Selecione um equipamento</option>
-                        {equipmentData?.map((equipment) => (
-                          <option key={equipment.id} value={equipment.id}>
-                            {equipment.model?.brand?.name} - {equipment.model?.name} - {equipment.serialNumber}
-                          </option>
-                        ))}
+                        {equipmentData?.map((equipment) => {
+                          const parts: string[] = [];
+                          if (equipment.model?.brand?.name) parts.push(equipment.model.brand.name);
+                          if (equipment.model?.name) parts.push(equipment.model.name);
+                          if (equipment.serialNumber) parts.push(equipment.serialNumber);
+                          const label = parts.join(' - ');
+                          return (
+                            <option key={equipment.id} value={equipment.id}>
+                              {label}
+                            </option>
+                          );
+                        })}
                       </select>
                       {errors.equipmentId && (
                         <p className="mt-1 text-sm text-red-600">{errors.equipmentId}</p>
@@ -194,7 +212,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                           errors.certificateNumber ? 'border-red-300' : ''
                         }`}
                         placeholder="Ex: CERT-2024-001"
-                        disabled={isLoading}
+                        disabled={isLoading || !!isEdit}
                       />
                       {errors.certificateNumber && (
                         <p className="mt-1 text-sm text-red-600">{errors.certificateNumber}</p>
@@ -214,7 +232,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                           errors.name ? 'border-red-300' : ''
                         }`}
                         placeholder="Ex: Validação Câmara Fria 01"
-                        disabled={isLoading}
+                        disabled={isLoading || !!isEdit}
                       />
                       {errors.name && (
                         <p className="mt-1 text-sm text-red-600">{errors.name}</p>
@@ -222,18 +240,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                     </div>
 
                     <div>
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                        Descrição
-                      </label>
-                      <textarea
-                        id="description"
-                        rows={3}
-                        value={formData.description}
-                        onChange={(e) => handleChange('description', e.target.value)}
-                        className="mt-1 block w-full h-24 border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Descreva os objetivos desta validação..."
-                        disabled={isLoading}
-                      />
+                      {/* descrição removida conforme solicitado */}
                     </div>
 
                     {/* Critérios de Aceitação */}
@@ -308,27 +315,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-4">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <AlertTriangle className="h-5 w-5 text-blue-400" />
-                      </div>
-                      <div className="ml-3">
-                        <h3 className="text-sm font-medium text-blue-800">
-                          Próximos Passos
-                        </h3>
-                        <div className="mt-2 text-sm text-blue-700">
-                          <p>Após criar a validação, você poderá:</p>
-                          <ul className="list-disc list-inside mt-1 space-y-1">
-                            <li>Importar dados dos sensores</li>
-                            <li>Configurar ciclos (vazio, cheio, porta aberta, falta de energia)</li>
-                            <li>Definir períodos de início e fim</li>
-                            <li>Analisar os resultados e gerar relatórios</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Próximos Passos removido conforme solicitado */}
                 </div>
               </div>
               </div>
@@ -338,7 +325,7 @@ const ValidationCreationModal: React.FC<ValidationCreationModalProps> = ({
                 disabled={isLoading}
                 className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Criando...' : 'Criar Validação'}
+                {isLoading ? (isEdit ? 'Salvando...' : 'Criando...') : (isEdit ? 'Salvar Alterações' : 'Criar Validação')}
               </button>
               <button
                 type="button"

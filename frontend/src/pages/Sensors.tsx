@@ -96,7 +96,8 @@ const Sensors: React.FC = () => {
               type="text"
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
               placeholder="Buscar por número de série ou modelo..."
-              defaultValue={filters.search || ''}
+              value={filters.search || ''}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value || undefined, page: 1 })}
             />
           </div>
           <select

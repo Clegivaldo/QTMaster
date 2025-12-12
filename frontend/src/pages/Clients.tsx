@@ -103,7 +103,8 @@ const Clients: React.FC = () => {
               type="text"
               className="input w-full pl-10"
               placeholder="Buscar por nome, email ou CNPJ..."
-              defaultValue={filters.search || ''}
+              value={filters.search || ''}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value || undefined, page: 1 })}
             />
           </div>
 

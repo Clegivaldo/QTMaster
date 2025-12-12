@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
 import { useValidations, useCreateValidation, useUpdateValidationApproval, useDeleteValidation } from '@/hooks/useValidations';
+import { useQueryClient } from 'react-query';
+import { validationKeys } from '@/hooks/useValidations';
 import { useNavigate } from 'react-router-dom';
 import { Validation, ValidationFilters } from '@/types/validation';
 import { useToast } from '@/components/ToastContext';
@@ -31,12 +33,14 @@ const Validations: React.FC = () => {
     sortOrder: 'desc',
   });
   const [showCreationModal, setShowCreationModal] = useState(false);
+  const [editingValidation, setEditingValidation] = useState<Validation | null>(null);
   const [deletingValidation, setDeletingValidation] = useState<Validation | null>(null);
   const [generatingReport, setGeneratingReport] = useState<string | null>(null);
   const [selectedValidationForReport, setSelectedValidationForReport] = useState<Validation | null>(null);
 
   const { data, isLoading, error } = useValidations(filters);
   const createMutation = useCreateValidation();
+  const queryClient = useQueryClient();
   const updateApprovalMutation = useUpdateValidationApproval();
   const deleteMutation = useDeleteValidation();
   const toast = useToast();
@@ -53,7 +57,23 @@ const Validations: React.FC = () => {
 
   const handleCreateValidation = async (data: ValidationCreationData) => {
     try {
-      // Transformar os dados do modal de criação para o formato esperado pelo backend
+      if (editingValidation) {
+        // Update criteria endpoint only (name/client/equipment are kept readonly in edit)
+        const payload = {
+          minTemperature: data.minTemperature,
+          maxTemperature: data.maxTemperature,
+          minHumidity: data.minHumidity ?? null,
+          maxHumidity: data.maxHumidity ?? null,
+        };
+        await apiService.api.put(`/validations/${editingValidation.id}/criteria`, payload);
+        toast.success('Validação atualizada com sucesso');
+        setShowCreationModal(false);
+        setEditingValidation(null);
+        setFilters(f => ({ ...f }));
+        return;
+      }
+
+      // Transform create data
       const validationData = {
         name: data.name,
         description: data.description,
@@ -70,16 +90,15 @@ const Validations: React.FC = () => {
       };
 
       const response = await createMutation.mutateAsync(validationData);
-      // If API returns created validation, navigate to Import page for user to import sensor data
       const createdId = response?.data?.data?.validation?.id;
       setShowCreationModal(false);
       if (createdId) {
         navigate(`/import?validationId=${createdId}&clientId=${validationData.clientId}`);
       }
     } catch (error) {
-      console.error('Error creating validation:', error);
+      console.error('Error creating/updating validation:', error);
       const message = parseApiError(error);
-      toast.error(message || 'Erro ao criar validação');
+      toast.error(message || 'Erro ao criar/atualizar validação');
     }
   };
 
@@ -231,7 +250,8 @@ const Validations: React.FC = () => {
               type="text"
               className="input w-full pl-10"
               placeholder="Buscar por nome ou descrição..."
-              defaultValue={filters.search || ''}
+              value={filters.search || ''}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value || undefined, page: 1 })}
             />
           </div>
           <select
@@ -290,10 +310,10 @@ const Validations: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-hidden">
-            {/* Grid of validations */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6">
+            {/* List of validations */}
+            <div className="divide-y p-0">
               {data?.validations.map((validation) => (
-                <div key={validation.id} className="border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow">
+                <div key={validation.id} className="border-b last:border-b-0 px-4 py-4 sm:px-6">
                   {/* Header */}
                   <div className="flex flex-col space-y-3 sm:flex-row sm:items-start sm:justify-between sm:space-y-0 mb-4">
                     <div className="flex items-center">
@@ -461,6 +481,18 @@ const Validations: React.FC = () => {
                         🔍 Detalhes
                       </button>
 
+                      {/* Edit Action */}
+                      <button
+                        onClick={() => {
+                          setEditingValidation(validation);
+                          setShowCreationModal(true);
+                        }}
+                        className="btn-secondary text-sm"
+                        title="Editar validação"
+                      >
+                        ✏️ Editar
+                      </button>
+
                       <button
                         onClick={() => navigate(`/import?validationId=${validation.id}&clientId=${validation.clientId}&suitcaseId=${validation.suitcase?.id || ''}`)}
                         className="btn-secondary text-sm"
@@ -558,9 +590,21 @@ const Validations: React.FC = () => {
       {showCreationModal && (
         <ValidationCreationModal
           isOpen={showCreationModal}
-          onClose={() => setShowCreationModal(false)}
+          onClose={() => { setShowCreationModal(false); setEditingValidation(null); }}
           onSubmit={handleCreateValidation}
           isLoading={createMutation.isLoading}
+          initialData={editingValidation ? {
+            clientId: editingValidation.clientId,
+            equipmentId: editingValidation.equipmentId,
+            certificateNumber: editingValidation.validationNumber,
+            name: editingValidation.name,
+            description: editingValidation.description || undefined,
+            minTemperature: editingValidation.minTemperature,
+            maxTemperature: editingValidation.maxTemperature,
+            minHumidity: editingValidation.minHumidity ?? undefined,
+            maxHumidity: editingValidation.maxHumidity ?? undefined,
+          } : undefined}
+          isEdit={!!editingValidation}
         />
       )}
 

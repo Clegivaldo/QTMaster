@@ -174,26 +174,11 @@ const ClientTable: React.FC<ClientTableProps> = ({
                   {getSortIcon('name')}
                 </div>
               </th>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('email')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Email</span>
-                  {getSortIcon('email')}
-                </div>
-              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contato
+                Relatórios
               </th>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('createdAt')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Criado em</span>
-                  {getSortIcon('createdAt')}
-                </div>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Ações
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Relatórios
@@ -206,7 +191,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {clients.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={3} className="px-6 py-12 text-center text-gray-500">
                   Nenhum cliente encontrado
                 </td>
               </tr>
@@ -233,32 +218,6 @@ const ClientTable: React.FC<ClientTableProps> = ({
                           </div>
                         )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {client.email ? (
-                      <div className="flex items-center text-sm text-gray-900">
-                        <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                        {client.email}
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {client.phone ? (
-                      <div className="flex items-center text-sm text-gray-900">
-                        <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                        {client.phone}
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center text-sm text-gray-900">
-                      <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                      {formatDate(client.createdAt)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

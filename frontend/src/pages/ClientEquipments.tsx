@@ -93,7 +93,8 @@ const ClientEquipments: React.FC = () => {
               type="text"
               className="mobile-form-input h-10 w-full pl-10"
               placeholder="Buscar por número de série ou cliente..."
-              defaultValue={filters.search}
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value || '', page: 1 })}
             />
           </div>
         </form>
