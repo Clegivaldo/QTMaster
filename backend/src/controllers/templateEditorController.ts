@@ -805,6 +805,31 @@ export class TemplateEditorController {
                         </div>
                     \`;
                     break;
+                case 'chart': {
+                    // Create a canvas to render the chart in the editor
+                    const chartCanvas = document.createElement('canvas');
+                    // apply size from styles if available
+                    const widthPx = element.styles?.width && String(element.styles.width).includes('px') ? parseInt(String(element.styles.width).replace('px','')) : 400;
+                    const heightPx = element.styles?.height && String(element.styles.height).includes('px') ? parseInt(String(element.styles.height).replace('px','')) : 300;
+                    chartCanvas.width = widthPx;
+                    chartCanvas.height = heightPx;
+                    chartCanvas.style.width = (element.styles?.width) ? element.styles.width : (widthPx + 'px');
+                    chartCanvas.style.height = (element.styles?.height) ? element.styles.height : (heightPx + 'px');
+                    chartCanvas.style.maxWidth = '100%';
+                    chartCanvas.dataset.elementId = element.id;
+
+                    contentDiv.appendChild(chartCanvas);
+
+                    // Render initial chart using element.data or fallback config
+                    try {
+                        const config = element.data?.chartConfig || element.content || { type: 'line', data: { labels: [], datasets: [] }, options: {} };
+                        renderChartInEditor(chartCanvas, config);
+                    } catch (err) {
+                        console.warn('Erro ao renderizar chart no editor:', err);
+                    }
+
+                    break;
+                }
                 default:
                     contentDiv.innerHTML = element.content;
                     contentDiv.contentEditable = true;
@@ -905,6 +930,90 @@ export class TemplateEditorController {
                 }
             });
         }
+
+            // ===== CHART RENDERING (EDITOR) =====
+            function renderChartInEditor(canvas, config) {
+                try {
+                    // Destroy previous chart instance if exists
+                    if (canvas._editorChart) {
+                        try { canvas._editorChart.destroy(); } catch (e) { }
+                        canvas._editorChart = null;
+                    }
+
+                    // Normalize dataset defaults
+                    if (config && config.data && Array.isArray(config.data.datasets)) {
+                        config.data.datasets = config.data.datasets.map(ds => ({
+                            pointRadius: ds.pointRadius ?? 0,
+                            borderWidth: ds.borderWidth ?? 2,
+                            ...ds
+                        }));
+                    }
+
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
+
+                    const options = config.options || {};
+                    const plugins = config.plugins || [];
+
+                    if (options.customLegendAsLines) {
+                        options.plugins = options.plugins || {};
+                        options.plugins.legend = { display: false };
+                        const lineLegendPlugin = {
+                            id: 'line-legend-plugin',
+                            afterDraw: function(chart) {
+                                try {
+                                    const ctx = chart.ctx;
+                                    ctx.save();
+                                    ctx.font = '12px Arial';
+                                    ctx.fillStyle = '#222';
+                                    let x = chart.width - 220;
+                                    let y = 8;
+                                    (chart.data.datasets || []).forEach(function(ds) {
+                                        const lineW = (ds.borderWidth && typeof ds.borderWidth === 'number') ? ds.borderWidth : (options.legend && options.legend.lineWidth) || 3;
+                                        const stroke = ds.borderColor || ds.backgroundColor || '#000';
+                                        ctx.beginPath();
+                                        ctx.lineWidth = lineW;
+                                        ctx.strokeStyle = stroke;
+                                        ctx.moveTo(x + 10, y + 6);
+                                        ctx.lineTo(x + 40, y + 6);
+                                        ctx.stroke();
+                                        ctx.fillStyle = '#222';
+                                        ctx.fillText(String(ds.label || ''), x + 48, y + 10);
+                                        y += 18;
+                                    });
+                                    ctx.restore();
+                                } catch (err) { }
+                            }
+                        };
+                        plugins.push(lineLegendPlugin);
+                    }
+
+                    // Create Chart instance
+                    /* global Chart */
+                    const chart = new Chart(ctx, {
+                        type: config.type || 'line',
+                        data: config.data || { labels: [], datasets: [] },
+                        options: options,
+                        plugins: plugins
+                    });
+
+                    canvas._editorChart = chart;
+                } catch (err) {
+                    console.warn('Erro ao renderizar chart editor:', err);
+                }
+            }
+
+                function updateChartForSelected() {
+                    if (!selectedElement || !selectedElementDiv) return;
+                    const canvas = selectedElementDiv.querySelector('canvas');
+                    if (!canvas) return;
+                    const cfg = selectedElement.data?.chartConfig || selectedElement.content || { type: 'line', data: { labels: [], datasets: [] }, options: {} };
+                    try {
+                        renderChartInEditor(canvas, cfg);
+                    } catch (e) {
+                        console.warn('Erro ao atualizar chart selecionado:', e);
+                    }
+                }
         
         // ===== SELEÇÃO DE ELEMENTOS =====
         function selectElement(elementId) {
@@ -1003,6 +1112,75 @@ export class TemplateEditorController {
                 updateControl('imageHeight', parseInt(styles.height) || 150);
                 updateControl('imageFit', styles.backgroundSize || 'contain');
             }
+
+                // Mostrar controles do gráfico se for um gráfico
+                if (selectedElement.type === 'chart') {
+                    let chartControls = document.getElementById('chartControls');
+                    if (!chartControls) {
+                        chartControls = document.createElement('div');
+                        chartControls.id = 'chartControls';
+                        chartControls.className = 'property-group';
+                        chartControls.innerHTML =
+                            '<h3>📈 Controles do Gráfico</h3>' +
+                            '<div class="property-item">' +
+                                '<label class="property-label">Campo</label>' +
+                                '<select class="property-input" id="chartField">' +
+                                    '<option value="temperature">Temperatura</option>' +
+                                    '<option value="humidity">Umidade</option>' +
+                                '</select>' +
+                            '</div>' +
+                            '<div class="property-item">' +
+                                '<label class="property-label"><input type="checkbox" id="chartLegendLines"> Legenda como linhas</label>' +
+                            '</div>' +
+                            '<div class="property-item">' +
+                                '<label class="property-label">Espessura da legenda (px)</label>' +
+                                '<input type="number" class="property-input" id="chartLegendLineWidth" min="1" max="10" value="3">' +
+                            '</div>';
+
+                        document.querySelector('.properties-panel').appendChild(chartControls);
+
+                        // listeners
+                        document.getElementById('chartField').addEventListener('change', function(e) {
+                            const v = this.value;
+                            selectedElement.data = selectedElement.data || {};
+                            selectedElement.data.chartConfig = selectedElement.data.chartConfig || {};
+                            selectedElement.data.chartConfig.dataSource = selectedElement.data.chartConfig.dataSource || {};
+                            selectedElement.data.chartConfig.dataSource.field = v;
+                            updateChartForSelected();
+                        });
+
+                        document.getElementById('chartLegendLines').addEventListener('change', function(e) {
+                            const checked = this.checked;
+                            selectedElement.data = selectedElement.data || {};
+                            selectedElement.data.chartConfig = selectedElement.data.chartConfig || {};
+                            selectedElement.data.chartConfig.options = selectedElement.data.chartConfig.options || {};
+                            selectedElement.data.chartConfig.options.customLegendAsLines = checked;
+                            updateChartForSelected();
+                        });
+
+                        document.getElementById('chartLegendLineWidth').addEventListener('input', function(e) {
+                            const value = Number(this.value || 3);
+                            selectedElement.data = selectedElement.data || {};
+                            selectedElement.data.chartConfig = selectedElement.data.chartConfig || {};
+                            selectedElement.data.chartConfig.options = selectedElement.data.chartConfig.options || {};
+                            selectedElement.data.chartConfig.options.legend = selectedElement.data.chartConfig.options.legend || {};
+                            selectedElement.data.chartConfig.options.legend.lineWidth = value;
+                            updateChartForSelected();
+                        });
+                    }
+
+                    // set current values
+                    const cfg = selectedElement.data?.chartConfig || {};
+                    const fieldSel = document.getElementById('chartField');
+                    if (fieldSel) fieldSel.value = (cfg.dataSource && cfg.dataSource.field) ? cfg.dataSource.field : 'temperature';
+                    const legendChk = document.getElementById('chartLegendLines');
+                    if (legendChk) legendChk.checked = !!(cfg.options && cfg.options.customLegendAsLines);
+                    const legendWidth = document.getElementById('chartLegendLineWidth');
+                    if (legendWidth) legendWidth.value = (cfg.options && cfg.options.legend && cfg.options.legend.lineWidth) ? String(cfg.options.legend.lineWidth) : '3';
+                } else {
+                    const existing = document.getElementById('chartControls');
+                    if (existing) existing.remove();
+                }
             
             // Atualizar botões de formatação
             updateButton('boldBtn', styles.fontWeight === 'bold');
@@ -1637,7 +1815,7 @@ export class TemplateEditorController {
   /**
    * Gera preview do template criado no editor
    */
-  static async previewTemplate(req: Request, res: Response) {
+    static async previewTemplate(req: Request, res: Response) {
     try {
       const templateLayout: TemplateLayout = req.body;
 
@@ -1648,8 +1826,8 @@ export class TemplateEditorController {
         });
       }
 
-      // Converter layout para HTML
-      const html = TemplateEditorController.convertLayoutToHTML(templateLayout);
+    // Converter layout para HTML
+    const html = await TemplateEditorController.convertLayoutToHTML(templateLayout);
 
       try {
         // Tentar gerar PDF
@@ -1735,7 +1913,7 @@ export class TemplateEditorController {
   /**
    * Converte layout do editor para HTML
    */
-  private static convertLayoutToHTML(layout: TemplateLayout): string {
+    private static async convertLayoutToHTML(layout: TemplateLayout): Promise<string> {
         const esc = (s: any) => String(s ?? '')
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -1743,83 +1921,271 @@ export class TemplateEditorController {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
 
-        const elementsHtml = layout.elements.map(element => {
-      const styles = Object.entries(element.styles)
-        .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
-        .join('; ');
+        let elementsHtml = '';
+        for (const element of layout.elements) {
+            const styles = Object.entries(element.styles || {})
+                .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+                .join('; ');
 
-      switch (element.type) {
-        case 'text':
-          return `<div style="${styles}">${element.content}</div>`;
-        case 'header':
-          return `<h1 style="${styles}">${element.content}</h1>`;
-        case 'image':
-          return `<div style="${styles}; background: #f3f4f6; padding: 20px; text-align: center; border: 2px dashed #d1d5db;">🖼️ ${element.content}</div>`;
-                case 'table': {
-                    const tableCfg: any = element.content || {};
-                    const columns = Array.isArray(tableCfg.columns) ? tableCfg.columns : (tableCfg.properties?.columns || [ { header: 'Coluna 1', field: 'col1' } ]);
-                    const rows = Array.isArray(tableCfg.data) ? tableCfg.data : (tableCfg.properties?.data || []);
+            if (element.type === 'text') {
+                elementsHtml += `<div style="${styles}">${element.content}</div>`;
+                elementsHtml += '\n';
+                continue;
+            }
 
-                    const headerCells = columns.map((col: any) => `<th style=\"padding:6px 8px; border:1px solid #ddd; background:#f3f4f6; text-align:${col.align||'left'};\">${esc(col.header || col.field || '')}</th>`).join('');
+            if (element.type === 'header') {
+                elementsHtml += `<h1 style="${styles}">${element.content}</h1>`;
+                elementsHtml += '\n';
+                continue;
+            }
 
-                    const bodyRows = rows.map((r: any) => {
-                                        const cells = columns.map((col: any) => {
-                                            const value = (typeof r === 'object' && r !== null) ? (r[col.field] ?? r[col.header] ?? '') : r;
-                                            return `<td style=\"padding:6px 8px; border:1px solid #ddd;\">${esc(String(value || ''))}</td>`;
-                                        }).join('');
-                        return `<tr>${cells}</tr>`;
+            if (element.type === 'image') {
+                elementsHtml += `<div style="${styles}; background: #f3f4f6; padding: 20px; text-align: center; border: 2px dashed #d1d5db;">🖼️ ${element.content}</div>`;
+                elementsHtml += '\n';
+                continue;
+            }
+
+            if (element.type === 'table') {
+                const tableCfg: any = element.content || {};
+                const columns = Array.isArray(tableCfg.columns) ? tableCfg.columns : (tableCfg.properties?.columns || [{ header: 'Coluna 1', field: 'col1' }]);
+                const rows = Array.isArray(tableCfg.data) ? tableCfg.data : (tableCfg.properties?.data || []);
+
+                const headerCells = columns.map((col: any) => `<th style=\"padding:6px 8px; border:1px solid #ddd; background:#f3f4f6; text-align:${col.align||'left'};\">${esc(col.header || col.field || '')}</th>`).join('');
+
+                const bodyRows = rows.map((r: any) => {
+                    const cells = columns.map((col: any) => {
+                        const value = (typeof r === 'object' && r !== null) ? (r[col.field] ?? r[col.header] ?? '') : r;
+                        return `<td style=\"padding:6px 8px; border:1px solid #ddd;\">${esc(String(value || ''))}</td>`;
                     }).join('');
+                    return `<tr>${cells}</tr>`;
+                }).join('');
 
-                    const tableHtml = `
-                        <div class="editor-element editor-table" style="${styles}; overflow: hidden;">
-                            <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                                <thead><tr>${headerCells}</tr></thead>
-                                <tbody>${bodyRows}</tbody>
-                            </table>
+                const tableHtml = `
+                    <div class="editor-element editor-table" style="${styles}; overflow: hidden;">
+                        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                            <thead><tr>${headerCells}</tr></thead>
+                            <tbody>${bodyRows}</tbody>
+                        </table>
+                    </div>
+                `;
+
+                elementsHtml += tableHtml + '\n';
+                continue;
+            }
+
+            if (element.type === 'chart') {
+                // Prefer server-side rendering for PDFs: use chartRenderService to produce a base64 PNG
+                try {
+                    const { chartRenderService } = await import('../services/chartRenderService.js');
+
+                    const cfgSource = element.data?.chartConfig || element.content || {};
+
+                    let width = 400, height = 300;
+                    if (element.styles) {
+                        try {
+                            if (element.styles.width && String(element.styles.width).includes('px')) width = parseInt(String(element.styles.width).replace('px', '')) || width;
+                            if (element.styles.height && String(element.styles.height).includes('px')) height = parseInt(String(element.styles.height).replace('px', '')) || height;
+                        } catch (e) { /* ignore */ }
+                    }
+
+                    const chartConfigForRender = {
+                        type: cfgSource.type || 'line',
+                        data: cfgSource.data || { labels: [], datasets: [] },
+                        options: cfgSource.options || {},
+                        width: Math.round(width),
+                        height: Math.round(height)
+                    };
+
+                    // If the chart config contains a dataSource.field, filter datasets to only that field
+                    try {
+                        const selectedField = cfgSource.dataSource?.field || cfgSource.dataSource?.fieldName;
+                        if (selectedField && Array.isArray(chartConfigForRender.data.datasets) && chartConfigForRender.data.datasets.length > 0) {
+                            const originalDatasets = chartConfigForRender.data.datasets.slice();
+                            const fieldLower = String(selectedField).toLowerCase();
+                            const filtered = originalDatasets.filter((ds: any) => {
+                                if (ds == null) return false;
+                                if (ds.field) return String(ds.field).toLowerCase() === fieldLower;
+                                if (ds.label) {
+                                    const lbl = String(ds.label).toLowerCase();
+                                    if (lbl.includes(fieldLower)) return true;
+                                    if (fieldLower === 'temperature' && lbl.includes('temp')) return true;
+                                    if (fieldLower === 'humidity' && (lbl.includes('humid') || lbl.includes('umid'))) return true;
+                                }
+                                return false;
+                            });
+
+                            if (filtered.length > 0) {
+                                chartConfigForRender.data.datasets = filtered;
+                            }
+                        }
+                    } catch (e) {
+                        // ignore filtering errors and fall back to full datasets
+                    }
+
+                    const base64 = await chartRenderService.renderChartToBase64(chartConfigForRender as any);
+
+                    elementsHtml += `<div style="${styles}; border: 1px solid #ddd; padding: 12px; text-align: center;"><img src="${base64}" style="width:100%; height:auto;" alt="Chart"/></div>`;
+                    elementsHtml += '\n';
+                } catch (err) {
+                    const chartPayload = Buffer.from(JSON.stringify(element.data || element.content || {})).toString('base64');
+                    let w = 400; let h = 300;
+                    try {
+                        const rawW = element.styles?.width || '';
+                        const rawH = element.styles?.height || '';
+                        if (rawW && String(rawW).includes('px')) w = parseInt(String(rawW).replace('px', '')) || w;
+                        if (rawH && String(rawH).includes('px')) h = parseInt(String(rawH).replace('px', '')) || h;
+                    } catch (e) { }
+
+                    elementsHtml += `
+                        <div style="${styles}; border: 1px solid #ddd; padding: 12px; text-align: center;">
+                            <canvas id="chart-${element.id}" data-chart-b64="${chartPayload}" width="${w}" height="${h}"></canvas>
                         </div>
                     `;
-
-                    return tableHtml;
+                    elementsHtml += '\n';
                 }
-        case 'chart':
-          return `<div style="${styles}; border: 1px solid #ddd; padding: 20px; text-align: center;">📈 ${element.content}</div>`;
-        case 'signature':
-          return `<div style="${styles}; border: 1px dashed #ccc; padding: 20px; text-align: center;">✍️ ${element.content}</div>`;
-        case 'footer':
-          return `<div style="${styles}; border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px; text-align: center; font-size: 12px; color: #666;">🦶 ${element.content}</div>`;
-        default:
-          return `<div style="${styles}">${element.content}</div>`;
-      }
-    }).join('\n');
 
-    return `
+                continue;
+            }
+
+            if (element.type === 'signature') {
+                elementsHtml += `<div style="${styles}; border: 1px dashed #ccc; padding: 20px; text-align: center;">✍️ ${element.content}</div>`;
+                elementsHtml += '\n';
+                continue;
+            }
+
+            if (element.type === 'footer') {
+                elementsHtml += `<div style="${styles}; border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px; text-align: center; font-size: 12px; color: #666;">🦶 ${element.content}</div>`;
+                elementsHtml += '\n';
+                continue;
+            }
+
+            // default fallback
+            elementsHtml += `<div style="${styles}">${element.content}</div>`;
+            elementsHtml += '\n';
+        }
+
+        return `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${layout.name}</title>
-    <style>
-        body {
-            font-family: ${layout.globalStyles.fontFamily || 'Arial, sans-serif'};
-            background-color: ${layout.globalStyles.backgroundColor || '#ffffff'};
-            margin: ${layout.globalStyles.margins?.top || '20mm'} ${layout.globalStyles.margins?.right || '15mm'} ${layout.globalStyles.margins?.bottom || '20mm'} ${layout.globalStyles.margins?.left || '15mm'};
-            padding: 0;
-            color: #333;
-            line-height: 1.6;
-        }
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${layout.name}</title>
+        <style>
+                body {
+                        font-family: ${layout.globalStyles.fontFamily || 'Arial, sans-serif'};
+                        background-color: ${layout.globalStyles.backgroundColor || '#ffffff'};
+                        margin: ${layout.globalStyles.margins?.top || '20mm'} ${layout.globalStyles.margins?.right || '15mm'} ${layout.globalStyles.margins?.bottom || '20mm'} ${layout.globalStyles.margins?.left || '15mm'};
+                        padding: 0;
+                        color: #333;
+                        line-height: 1.6;
+                }
         
-        @page {
-            size: ${layout.globalStyles.pageSize || 'A4'};
-            margin: ${layout.globalStyles.margins?.top || '20mm'} ${layout.globalStyles.margins?.right || '15mm'} ${layout.globalStyles.margins?.bottom || '20mm'} ${layout.globalStyles.margins?.left || '15mm'};
-        }
-    </style>
+                @page {
+                        size: ${layout.globalStyles.pageSize || 'A4'};
+                        margin: ${layout.globalStyles.margins?.top || '20mm'} ${layout.globalStyles.margins?.right || '15mm'} ${layout.globalStyles.margins?.bottom || '20mm'} ${layout.globalStyles.margins?.left || '15mm'};
+                }
+        </style>
+        <!-- Chart.js for client-side rendering in preview and PDF generation -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    ${elementsHtml}
+        ${elementsHtml}
+
+        <script>
+        (function(){
+            function b64DecodeUnicode(str) {
+                // atob returns binary string; convert to UTF-8
+                try {
+                    return decodeURIComponent(Array.prototype.map.call(atob(str), function(c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+                } catch (e) {
+                    try { return atob(str); } catch (e2) { return '' + str; }
+                }
+            }
+
+            function parseCfgFromB64(b64) {
+                try {
+                    const decoded = b64DecodeUnicode(b64);
+                    return JSON.parse(decoded || '{}');
+                } catch (e) {
+                    try { return JSON.parse(atob(b64)); } catch (e2) { return {}; }
+                }
+            }
+
+            document.querySelectorAll('canvas[data-chart-b64]').forEach(function(canvas) {
+                const b64 = canvas.getAttribute('data-chart-b64');
+                if (!b64) return;
+                const cfg = parseCfgFromB64(b64) || {};
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                const options = cfg.options || {};
+                const plugins = cfg.plugins || [];
+
+                if (options.customLegendAsLines) {
+                    options.plugins = options.plugins || {};
+                    options.plugins.legend = { display: false };
+
+                    const lineLegendPlugin = {
+                        id: 'line-legend-plugin',
+                        afterDraw: function(chart) {
+                            try {
+                                const ctx = chart.ctx;
+                                ctx.save();
+                                ctx.font = '12px Arial';
+                                ctx.fillStyle = '#222';
+                                const padding = 8;
+                                let x = chart.width - 220; // position block from right
+                                let y = padding;
+
+                                (chart.data.datasets || []).forEach(function(ds) {
+                                    const lineW = (ds.borderWidth && typeof ds.borderWidth === 'number') ? ds.borderWidth : (options.legend && options.legend.lineWidth) || 3;
+                                    const stroke = ds.borderColor || ds.backgroundColor || '#000';
+
+                                    ctx.beginPath();
+                                    ctx.lineWidth = lineW;
+                                    ctx.strokeStyle = stroke;
+                                    ctx.moveTo(x + 10, y + 6);
+                                    ctx.lineTo(x + 40, y + 6);
+                                    ctx.stroke();
+
+                                    ctx.fillStyle = '#222';
+                                    ctx.fillText(String(ds.label || ''), x + 48, y + 10);
+
+                                    y += 18;
+                                });
+
+                                ctx.restore();
+                            } catch (err) {
+                                // ignore drawing errors
+                            }
+                        }
+                    };
+
+                    plugins.push(lineLegendPlugin);
+                }
+
+                // Initialize chart
+                try {
+                    /* eslint-disable no-undef */
+                    new Chart(ctx, {
+                        type: cfg.type || 'line',
+                        data: cfg.data || { labels: [], datasets: [] },
+                        options: options,
+                        plugins: plugins
+                    });
+                } catch (err) {
+                    // if Chart.js failed, leave placeholder
+                    console.warn('Chart initialization failed', err);
+                }
+            });
+        })();
+        </script>
 </body>
 </html>
-    `;
+        `;
   }
 
   /**
@@ -1891,8 +2257,8 @@ export class TemplateEditorController {
         fs.mkdirSync(templatesDir, { recursive: true });
       }
 
-      // Salvar como arquivo .hbs
-      const templateHtml = TemplateEditorController.convertLayoutToHTML(templateLayout);
+    // Salvar como arquivo .hbs
+    const templateHtml = await TemplateEditorController.convertLayoutToHTML(templateLayout);
       const fileName = `${templateLayout.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
       const templatePath = path.join(templatesDir, `${fileName}.hbs`);
       

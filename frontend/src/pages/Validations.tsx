@@ -112,7 +112,7 @@ const Validations: React.FC = () => {
       console.error('Error deleting validation:', error);
       const message = parseApiError(error);
       if (message.includes('Cannot delete validation with associated reports')) {
-        toast.error(message + '\nRemova ou arquive os relatórios antes de excluir esta validação.', 8000);
+        toast.error('Remova ou arquive os relatórios antes de excluir esta validação.', 8000);
       } else {
         toast.error(message || 'Erro ao excluir validação');
       }

@@ -1,0 +1,30 @@
+{
+  "id": "test-template-temp",
+  "name": "Template Teste Temperatura",
+  "elements": [
+    {
+      "id": "chart-temp",
+      "type": "chart",
+      "content": "Gráfico Temperatura - campo em PT",
+      "styles": { "width": "600px", "height": "300px" },
+      "data": {
+        "chartConfig": {
+          "type": "line",
+          "data": {
+            "labels": ["10:00", "11:00", "12:00", "13:00"],
+            "datasets": [
+              { "label": "Sensor Temp (°C)", "data": [21.5,22.0,22.3,22.8], "borderColor": "#d62728", "backgroundColor": "rgba(214,39,40,0.1)", "pointRadius": 1 }
+            ]
+          },
+          "options": {
+            "scales": { "y": { "beginAtZero": false } },
+            "dataSource": { "field": "temperatura" },
+            "customLegendAsLines": true,
+            "legend": { "lineWidth": 3 }
+          }
+        }
+      }
+    }
+  ],
+  "globalStyles": { "fontFamily": "Arial", "pageSize": "A4", "margins": { "top": "15mm", "right": "15mm", "bottom": "15mm", "left": "15mm" } }
+}

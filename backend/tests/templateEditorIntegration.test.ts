@@ -203,7 +203,7 @@ describe('Template Editor - Testes de Integração', () => {
         ]
       };
 
-      const html = (TemplateEditorController as any).convertLayoutToHTML(complexTemplate);
+      const html = await (TemplateEditorController as any).convertLayoutToHTML(complexTemplate);
 
       // Verificar estrutura HTML
       expect(html).toContain('<!DOCTYPE html>');
@@ -249,7 +249,7 @@ describe('Template Editor - Testes de Integração', () => {
         }]
       };
 
-      const html = (TemplateEditorController as any).convertLayoutToHTML(styledTemplate);
+      const html = await (TemplateEditorController as any).convertLayoutToHTML(styledTemplate);
 
       // Verificar conversão de estilos camelCase para kebab-case
       expect(html).toContain('font-size: 18px');
@@ -416,7 +416,7 @@ describe('Template Editor - Testes de Integração', () => {
       };
 
       const startTime = Date.now();
-      const html = (TemplateEditorController as any).convertLayoutToHTML(largeTemplate);
+      const html = await (TemplateEditorController as any).convertLayoutToHTML(largeTemplate);
       const endTime = Date.now();
 
       expect(html).toContain('<!DOCTYPE html>');
@@ -452,7 +452,7 @@ describe('Template Editor - Testes de Integração', () => {
         }]
       };
 
-      const html = (TemplateEditorController as any).convertLayoutToHTML(complexTemplate);
+      const html = await (TemplateEditorController as any).convertLayoutToHTML(complexTemplate);
 
       expect(html).toContain(complexContent);
       expect(html).toContain('<!DOCTYPE html>');

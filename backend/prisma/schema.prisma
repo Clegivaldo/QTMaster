@@ -122,6 +122,7 @@ model SensorData {
   @@index([fileName])
   @@index([sensorId, timestamp])
   @@index([validationId, timestamp])
+  @@unique([sensorId, timestamp, rowNumber, fileName])
   @@map("sensor_data")
 }
 

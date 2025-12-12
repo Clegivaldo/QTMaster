@@ -357,11 +357,10 @@ export async function seedTemplates() {
             });
         }
 
-        const templates = [
-            technicalReportTemplate,
-            chartsReportTemplate,
-            executiveSummaryTemplate,
-        ];
+        // NOTE: Disabled default seeded templates to avoid overwriting or duplicating
+        // user-created templates like '123'. If you need to re-enable these seeds,
+        // restore the array below.
+        const templates: any[] = [];
 
         for (const templateData of templates) {
             // Check if template already exists

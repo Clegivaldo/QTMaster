@@ -1,0 +1,60 @@
+{
+  "id": "test-template-1",
+  "name": "Template Teste Preview",
+  "description": "Template de teste com gráfico de umidade e tabela",
+  "elements": [
+    {
+      "id": "chart-1",
+      "type": "chart",
+      "content": "Gráfico de Umidade",
+      "styles": { "width": "600px", "height": "300px" },
+      "data": {
+        "chartConfig": {
+          "type": "line",
+          "data": {
+            "labels": ["01/01/25 10:00", "01/01/25 11:00", "01/01/25 12:00", "01/01/25 13:00"],
+            "datasets": [
+              {
+                "label": "Sensor A (%)",
+                "data": [45, 50, 48, 52],
+                "borderColor": "#1f77b4",
+                "backgroundColor": "rgba(31,119,180,0.1)",
+                "pointRadius": 1,
+                "borderWidth": 2
+              }
+            ]
+          },
+          "options": {
+            "scales": { "y": { "beginAtZero": true } },
+            "customLegendAsLines": true,
+            "legend": { "lineWidth": 4 }
+          }
+        }
+      }
+    },
+    {
+      "id": "table-1",
+      "type": "table",
+      "content": {
+        "columns": [
+          { "header": "Timestamp", "field": "timestamp", "align": "left" },
+          { "header": "Temperatura (°C)", "field": "temperature", "align": "right" },
+          { "header": "Umidade (%)", "field": "humidity", "align": "right" }
+        ],
+        "data": [
+          { "timestamp": "01/01/25 10:00", "temperature": 22.5, "humidity": 45 },
+          { "timestamp": "01/01/25 11:00", "temperature": 23.0, "humidity": 50 },
+          { "timestamp": "01/01/25 12:00", "temperature": 22.8, "humidity": 48 },
+          { "timestamp": "01/01/25 13:00", "temperature": 23.2, "humidity": 52 }
+        ]
+      },
+      "styles": { "width": "100%" }
+    }
+  ],
+  "globalStyles": {
+    "fontFamily": "Arial, sans-serif",
+    "backgroundColor": "#ffffff",
+    "pageSize": "A4",
+    "margins": { "top": "15mm", "right": "15mm", "bottom": "15mm", "left": "15mm" }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "console": [],
+  "errors": [],
+  "network": [
+    {
+      "url": "http://localhost:8080/login",
+      "method": "GET",
+      "failure": {
+        "errorText": "net::ERR_CONNECTION_REFUSED"
+      }
+    }
+  ],
+  "pages": {},
+  "scriptError": "Error: net::ERR_CONNECTION_REFUSED at http://localhost:8080/login"
+}

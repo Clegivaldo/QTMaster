@@ -411,6 +411,20 @@ export class EditorTemplateRenderer {
       // Prepare chart data
       const chartData = this.prepareChartDataFromSource(chartConfig, data);
 
+      // If the chart uses sensor data, prefer a line chart for series visibility
+      // unless explicitly configured otherwise in the template.
+      try {
+        const dataSource = chartConfig.dataSource || {};
+        const isSensorSource = dataSource.type === 'sensorData' || dataSource.type === 'validation' || (chartData && Array.isArray(chartData.datasets) && chartData.datasets.length > 0);
+        if (isSensorSource) {
+          // Ensure both properties are set so dumps and renderer see 'line'
+          chartConfig.chartType = chartConfig.chartType || 'line';
+          chartConfig.type = chartConfig.type || 'line';
+        }
+      } catch (err) {
+        logger.warn('Failed to enforce line chart for sensor data', { error: err, elementId: element.id });
+      }
+
       // Extract annotations if present (added by prepareSensorDataChartData)
       const annotations = (chartData as any).annotations;
 
@@ -463,6 +477,44 @@ export class EditorTemplateRenderer {
             options.scales.y.ticks = { ...options.scales.y.ticks, stepSize: Number(yAxisConfig.humTick) };
           }
         }
+      }
+
+      // Debug: optionally dump the final chart config/data/options to disk
+      try {
+        const shouldDump = process.env.DEBUG_DUMP_CHARTS === '1' || (data?.validation?.id === 'cmj2spg2t0003oc4ie4hsb7t1');
+        if (shouldDump) {
+          const fs = await import('fs');
+          const path = await import('path');
+          // Before dumping, reduce final borderWidth by half to make lines thinner in PDF
+          try {
+            if (chartData && Array.isArray(chartData.datasets)) {
+              chartData.datasets = chartData.datasets.map((ds: any) => ({
+                ...ds,
+                borderWidth: Math.max(0.5, (typeof ds.borderWidth === 'number' && ds.borderWidth > 0) ? ds.borderWidth / 2 : 1)
+              }));
+            }
+          } catch (e) {
+            // ignore
+          }
+
+          const dump = {
+                elementId: element.id,
+                chartConfig,
+                chartData,
+                options
+              };
+          const uploadsDir = path.default.join(process.cwd(), 'uploads');
+          if (!fs.default.existsSync(uploadsDir)) fs.default.mkdirSync(uploadsDir, { recursive: true });
+          const fname = path.default.join(uploadsDir, `debug-chart-${data?.validation?.id || 'unknown'}-${element.id}.json`);
+          try {
+            fs.default.writeFileSync(fname, JSON.stringify(dump, null, 2), { encoding: 'utf8' });
+            logger.info('Wrote debug chart dump', { fname });
+          } catch (err) {
+            logger.error('Error writing debug chart dump', { error: err, fname });
+          }
+        }
+      } catch (err) {
+        logger.warn('Failed to create debug chart dump', { error: err });
       }
 
       // Render chart to base64 image
@@ -541,7 +593,12 @@ export class EditorTemplateRenderer {
    * Prepare chart data from sensor data
    */
   private prepareSensorDataChartData(dataSource: any, data: TemplateData): any {
-    const field = dataSource.field || 'temperature';
+    // Normalize field names so templates using Portuguese or short names still work
+    const rawField = (dataSource.field || 'temperature') as string;
+    const fieldKey = String(rawField).toLowerCase();
+    const tempKeys = ['temperature', 'temp', 'temperatura', 't'];
+    const humKeys = ['humidity', 'hum', 'umidade', 'u'];
+    const field = tempKeys.includes(fieldKey) ? 'temperature' : (humKeys.includes(fieldKey) ? 'humidity' : 'temperature');
     const sensorIds = dataSource.sensorIds || [];
 
     logger.debug('prepareSensorDataChartData called', {
@@ -558,7 +615,7 @@ export class EditorTemplateRenderer {
     }
 
     // Filter data
-    let filteredData = data.sensorData;
+    let filteredData = data.sensorData.slice();
     if (sensorIds.length > 0) {
       filteredData = filteredData.filter(d => sensorIds.includes(d.sensorId));
     }
@@ -584,24 +641,33 @@ export class EditorTemplateRenderer {
       return { labels: [], datasets: [] };
     }
 
-    // Group by sensor if multiple sensors
+    // Normalize timestamps and sort all data by timestamp ascending
+    filteredData.forEach((d: any) => {
+      d._ts = new Date(d.timestamp).getTime();
+    });
+    filteredData.sort((a: any, b: any) => a._ts - b._ts);
+
+    // Group by sensor id
     const sensorGroups = new Map<string, any[]>();
     filteredData.forEach(item => {
       const sId = item.sensorId || 'unknown';
-      if (!sensorGroups.has(sId)) {
-        sensorGroups.set(sId, []);
-      }
+      if (!sensorGroups.has(sId)) sensorGroups.set(sId, []);
       sensorGroups.get(sId)!.push(item);
     });
 
     logger.debug('Sensor groups formed', { groupCount: sensorGroups.size });
 
-    // Generate labels from timestamps (using the first sensor's timestamps)
-    // Format: dd/mm/yy hh:mm
-    const firstGroup = Array.from(sensorGroups.values())[0] || [];
-    const labels = firstGroup.map(d => {
+    // Build a sorted union of all timestamps across sensors
+    const tsSet = new Set<number>();
+    for (const items of sensorGroups.values()) {
+      for (const it of items) tsSet.add(it._ts);
+    }
+    const allTimestamps = Array.from(tsSet).sort((a, b) => a - b);
+
+    // Format labels from timestamps
+    const labels = allTimestamps.map(ts => {
       try {
-        const date = new Date(d.timestamp);
+        const date = new Date(ts);
         const day = date.getDate().toString().padStart(2, '0');
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         const year = date.getFullYear().toString().slice(-2);
@@ -613,27 +679,35 @@ export class EditorTemplateRenderer {
       }
     });
 
-    // Generate datasets
+    // Generate datasets aligned to labels
     const datasets = Array.from(sensorGroups.entries()).map(([sensorId, items], index) => {
       const sensor = data.sensors?.find(s => s.id === sensorId);
+
+      // Create a map from timestamp -> value for quick lookup
+      const valueMap = new Map<number, any>();
+      for (const it of items) {
+        const ts = it._ts;
+        const val = field === 'temperature' ? it.temperature : it.humidity;
+        valueMap.set(ts, val !== undefined ? val : null);
+      }
+
+      // Build data array aligned with allTimestamps (use null for missing values)
+      const alignedData = allTimestamps.map(ts => (valueMap.has(ts) ? valueMap.get(ts) : null));
 
       // Generate distinct colors using golden angle approximation
       const hue = (index * 137.508) % 360;
       const color = `hsl(${hue}, 70%, 50%)`;
-
-      // Convert HSL to RGB/RGBA for Chart.js (simple approximation or let browser handle it if supported)
-      // Chart.js supports HSL strings
       const safeColor = color;
       const backgroundColor = `hsla(${hue}, 70%, 50%, 0.1)`;
 
       return {
         label: `${sensor?.serialNumber || sensorId} (${field === 'temperature' ? '°C' : '%'})`,
-        data: items.map(d => field === 'temperature' ? d.temperature : d.humidity),
+        data: alignedData,
         borderColor: safeColor,
         backgroundColor: backgroundColor,
         tension: 0.4,
-        pointRadius: 0, // Optimize for many points
-        borderWidth: 2
+        pointRadius: 0,
+        borderWidth: 2,
       };
     });
 
@@ -642,34 +716,75 @@ export class EditorTemplateRenderer {
     // Add annotations for limits if available
     const annotations: any = {};
 
-    if (data.validation?.minTemperature !== undefined) {
-      annotations.minLine = {
-        type: 'line',
-        yMin: data.validation.minTemperature,
-        yMax: data.validation.minTemperature,
-        borderColor: '#000000', // Black
-        borderWidth: 2,
-        borderDash: [5, 5]
-      };
+    // Add annotations according to the field (temperature or humidity)
+    if (field === 'temperature') {
+      if (data.validation?.minTemperature !== undefined) {
+        annotations.minLine = {
+          type: 'line',
+          yMin: data.validation.minTemperature,
+          yMax: data.validation.minTemperature,
+          borderColor: '#000000',
+          borderWidth: 1,
+          borderDash: [5, 5],
+        };
+      }
+
+      if (data.validation?.maxTemperature !== undefined) {
+        annotations.maxLine = {
+          type: 'line',
+          yMin: data.validation.maxTemperature,
+          yMax: data.validation.maxTemperature,
+          borderColor: '#000000',
+          borderWidth: 1,
+          borderDash: [5, 5],
+        };
+      }
+    } else if (field === 'humidity') {
+      const yAxisCfg = data.validation?.chartConfig?.yAxisConfig;
+      const minHum = data.validation?.minHumidity ?? yAxisCfg?.humMin;
+      const maxHum = data.validation?.maxHumidity ?? yAxisCfg?.humMax;
+
+      if (minHum !== undefined) {
+        annotations.minLine = {
+          type: 'line',
+          yMin: minHum,
+          yMax: minHum,
+          borderColor: '#000000',
+          borderWidth: 1,
+          borderDash: [5, 5],
+        };
+      }
+
+      if (maxHum !== undefined) {
+        annotations.maxLine = {
+          type: 'line',
+          yMin: maxHum,
+          yMax: maxHum,
+          borderColor: '#000000',
+          borderWidth: 1,
+          borderDash: [5, 5],
+        };
+      }
     }
 
-    if (data.validation?.maxTemperature !== undefined) {
-      annotations.maxLine = {
-        type: 'line',
-        yMin: data.validation.maxTemperature,
-        yMax: data.validation.maxTemperature,
-        borderColor: '#000000', // Black
-        borderWidth: 2,
-        borderDash: [5, 5]
+    // Ensure datasets have sensible defaults for rendering
+    // Adjust line thickness (75% of original) and ensure point visibility
+    const normalizedDatasets = datasets.map(ds => {
+      const originalBW = (typeof ds.borderWidth === 'number' && ds.borderWidth > 0) ? ds.borderWidth : 2;
+      const borderWidth = Math.max(0.75, originalBW * 0.75);
+      const pointRadius = Math.max(1, (typeof ds.pointRadius === 'number' ? ds.pointRadius : 1));
+      return {
+        ...ds,
+        borderWidth,
+        pointRadius,
+        fill: ds.fill ?? false,
       };
-    }
+    });
 
     return {
       labels,
-      datasets,
-      // Pass annotations in a way that chartRenderService can use
-      // Note: chart.js annotation plugin configuration structure
-      annotations
+      datasets: normalizedDatasets,
+      annotations,
     };
   }
 
@@ -720,20 +835,22 @@ export class EditorTemplateRenderer {
       { header: 'Column 1', field: 'col1' },
       { header: 'Column 2', field: 'col2' }
     ];
-    const styles = tableConfig.styles || {};
+
+    // tableConfig.styles is an object describing table appearance
+    const tableStylesObj: any = tableConfig.styles || {};
 
     const headerStyle = `
-      background-color: ${styles.headerBackground || '#f3f4f6'};
-      color: ${styles.headerColor || '#374151'};
+      background-color: ${tableStylesObj.headerBackground || '#f3f4f6'};
+      color: ${tableStylesObj.headerColor || '#374151'};
       font-weight: 600;
       padding: 8px 12px;
-      border: 1px solid ${styles.borderColor || '#d1d5db'};
+      border: 1px solid ${tableStylesObj.borderColor || '#d1d5db'};
       text-align: left;
     `;
 
     const cellStyle = `
-      font-size: ${styles.fontSize || 12}px;
-      border: 1px solid ${styles.borderColor || '#d1d5db'};
+      font-size: ${tableStylesObj.fontSize || 12}px;
+      border: 1px solid ${tableStylesObj.borderColor || '#d1d5db'};
       padding: 8px 12px;
     `;
 
@@ -746,7 +863,7 @@ export class EditorTemplateRenderer {
 
     // Render rows
     const rowsHTML = data.map((row, index) => {
-      const rowStyle = styles.alternateRows && index % 2 === 1
+      const rowStyle = tableStylesObj.alternateRows && index % 2 === 1
         ? 'background-color: #f9fafb;'
         : '';
 
@@ -775,18 +892,12 @@ export class EditorTemplateRenderer {
          </div>`
       : '';
 
-    // We wrap the table in a div that applies the element's position and size
-    // Note: The element styles are already passed in 'styles' arg to renderTableElement, 
-    // but here we are constructing the inner HTML. 
-    // The caller (convertElementToHTML) wraps this return value in a div if needed, 
-    // OR we return the full HTML.
-    // Looking at other render methods, they return the inner content or the full element.
-    // convertElementToHTML uses the return value as the content of the element div?
-    // No, convertElementToHTML returns the FULL HTML string for the element.
-    // So we need to wrap it.
+    // Build wrapper style string combining element styles (passed via `element.styles` => styles param
+    // from caller) and table-specific inline styles
+    const wrapperStyle = `${element.styles ? this.applyStyles(element.styles) : ''}; overflow: hidden; background-color: ${tableStylesObj.backgroundColor || 'transparent'};`;
 
     return `
-      <div class="editor-element editor-table" style="${styles} overflow: hidden;">
+      <div class="editor-element editor-table" style="${wrapperStyle}">
         <table style="width: 100%; border-collapse: collapse; background-color: white;">
           <thead>
             <tr>${headersHTML}</tr>

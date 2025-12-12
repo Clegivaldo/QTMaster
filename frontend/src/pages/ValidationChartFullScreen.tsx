@@ -169,9 +169,10 @@ const ValidationChartFullScreen: React.FC = () => {
         filtered = filtered.filter(d => visibleSensors.has(d.sensor.id));
 
         const bucketMs = Math.max(1, alignmentBucketSec) * 1000;
+        // Use floor bucketing to ensure consistent grouping across sensors
         const grouped = filtered.reduce((acc: any, reading) => {
             const ts = parseToDate(reading.timestamp).getTime();
-            const bucketTs = Math.round(ts / bucketMs) * bucketMs;
+            const bucketTs = Math.floor(ts / bucketMs) * bucketMs;
             const key = String(bucketTs);
             if (!acc[key]) {
                 acc[key] = {
@@ -207,8 +208,8 @@ const ValidationChartFullScreen: React.FC = () => {
     const getCycleBands = () => {
         if (!data?.cycles || data.cycles.length === 0) return [];
         return data.cycles.map(c => ({
-            x1: formatDisplayTime(c.startAt),
-            x2: formatDisplayTime(c.endAt),
+            x1: parseToDate(c.startAt).getTime(),
+            x2: parseToDate(c.endAt).getTime(),
             type: c.cycleType
         }));
     };

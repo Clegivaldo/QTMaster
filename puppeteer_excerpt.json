@@ -1,0 +1,3032 @@
+{
+  "chartConfig": {
+    "dateRange": {
+      "end": "2025-11-12T09:12",
+      "start": "2025-11-11T16:34"
+    },
+    "yAxisConfig": {
+      "humMax": 80,
+      "humMin": 20,
+      "humTick": 10,
+      "tempMax": 25,
+      "tempMin": 0,
+      "tempTick": 5
+    }
+  },
+  "statistics": {
+    "totalReadings": 7504,
+    "conformityPercentage": 28.718017057569295,
+    "temperature": {
+      "min": 1.1,
+      "max": 44.3,
+      "average": 19.21529850746274
+    },
+    "humidity": {
+      "min": 57.9,
+      "max": 76.2,
+      "average": 62.973121002131364
+    }
+  },
+  "sensorDataSample": [
+    {
+      "id": "cmj1i1j0o00rzmo4jksnfaz5j",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:34:27.000Z",
+      "temperature": 23.7,
+      "humidity": 60.7,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 1,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mr21d4kmo4jl7rsexnp",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:34:28.000Z",
+      "temperature": 23.6,
+      "humidity": 61.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 1,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kuc0m3xmo4j4exef89p",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:34:31.000Z",
+      "temperature": 23.9,
+      "humidity": 60.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 1,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j0o00s0mo4jorrf6s4t",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:35:27.000Z",
+      "temperature": 23.6,
+      "humidity": 61.8,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 2,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mjt14limo4jv28xjb90",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:35:28.000Z",
+      "temperature": 23.3,
+      "humidity": 62.1,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 2,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kz40renmo4j0xq560tj",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:35:31.000Z",
+      "temperature": 23.6,
+      "humidity": 61.3,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 2,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j5d04ncmo4jgiyhl65u",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:36:27.000Z",
+      "temperature": 23.5,
+      "humidity": 62.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 3,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mw81g95mo4jta5y2xn5",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:36:28.000Z",
+      "temperature": 23.2,
+      "humidity": 63.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 3,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krk0ivlmo4j33heto7p",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:36:31.000Z",
+      "temperature": 23.6,
+      "humidity": 62.2,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 3,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j5d04ndmo4jfx24koib",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:37:27.000Z",
+      "temperature": 23.4,
+      "humidity": 62.8,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 4,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mny1ajkmo4jvnzygo24",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:37:28.000Z",
+      "temperature": 23.2,
+      "humidity": 63.5,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 4,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krs0jm0mo4jo1pf3vy8",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:37:31.000Z",
+      "temperature": 23.5,
+      "humidity": 62.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 4,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j5d04nemo4jdhkaf704",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:38:27.000Z",
+      "temperature": 23.2,
+      "humidity": 62.9,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 5,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1n091je4mo4jetp7zfsk",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:38:28.000Z",
+      "temperature": 23,
+      "humidity": 63.4,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 5,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kxd0punmo4j9bq8t5em",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:38:31.000Z",
+      "temperature": 23.4,
+      "humidity": 62.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 5,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j2g02brmo4j1r79we65",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:39:27.000Z",
+      "temperature": 23,
+      "humidity": 63.1,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 6,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mpc1c2pmo4jvgipbwbq",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:39:28.000Z",
+      "temperature": 22.7,
+      "humidity": 63.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 6,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krs0jm4mo4jbf21hfdr",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:39:31.000Z",
+      "temperature": 23.2,
+      "humidity": 62.7,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 6,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6905femo4ja5nm0y6g",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:40:27.000Z",
+      "temperature": 22.7,
+      "humidity": 63.2,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 7,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mrq1dtwmo4jafaaizk0",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:40:28.000Z",
+      "temperature": 22.4,
+      "humidity": 63.4,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 7,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kvq0oaqmo4juexqk1n4",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:40:31.000Z",
+      "temperature": 22.9,
+      "humidity": 62.8,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 7,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j9k08jhmo4jl7ifcvgc",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:41:27.000Z",
+      "temperature": 22.4,
+      "humidity": 63.4,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 8,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1moy1bkomo4j27zcjxd9",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:41:28.000Z",
+      "temperature": 22,
+      "humidity": 63.5,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 8,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kub0lz0mo4j7xehov7o",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:41:31.000Z",
+      "temperature": 22.6,
+      "humidity": 63,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 8,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j5e04nimo4jpud5421b",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:42:27.000Z",
+      "temperature": 22.1,
+      "humidity": 63.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 9,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mxb1h5umo4jjmewtd40",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:42:28.000Z",
+      "temperature": 21.6,
+      "humidity": 63.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 9,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kuv0niumo4jzx70ucbv",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:42:31.000Z",
+      "temperature": 22.2,
+      "humidity": 63.1,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 9,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j2g02bvmo4j4tflo92s",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:43:27.000Z",
+      "temperature": 21.7,
+      "humidity": 63.7,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 10,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mmk18eomo4jr54fjhom",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:43:28.000Z",
+      "temperature": 21.2,
+      "humidity": 63.7,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 10,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kvq0oatmo4j2qh67u3e",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:43:31.000Z",
+      "temperature": 21.9,
+      "humidity": 63.2,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 10,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j3j03vnmo4j0vo1ehce",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:44:27.000Z",
+      "temperature": 21.4,
+      "humidity": 63.9,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 11,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mvf1ep2mo4jfoer8ajy",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:44:28.000Z",
+      "temperature": 20.8,
+      "humidity": 63.8,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 11,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kud0m4imo4jtrintam5",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:44:31.000Z",
+      "temperature": 21.6,
+      "humidity": 63.4,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 11,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1izx000imo4jul0miry6",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:45:27.000Z",
+      "temperature": 21.1,
+      "humidity": 64,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 12,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mmk18esmo4ja4jklbi9",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:45:28.000Z",
+      "temperature": 20.5,
+      "humidity": 63.9,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 12,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kz40rexmo4jetsd6qm8",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:45:31.000Z",
+      "temperature": 21.2,
+      "humidity": 63.5,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 12,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6905fkmo4j9k9f7rcu",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:46:27.000Z",
+      "temperature": 20.8,
+      "humidity": 64.1,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 13,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mw81g9fmo4jltn9nsl0",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:46:28.000Z",
+      "temperature": 20,
+      "humidity": 64,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 13,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1ky60qmwmo4jfu5c7zhu",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:46:31.000Z",
+      "temperature": 20.9,
+      "humidity": 63.5,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 13,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j8c07rlmo4jn0f05l3a",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:47:27.000Z",
+      "temperature": 20.4,
+      "humidity": 64.2,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 14,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mko15dmmo4jeikaxzf9",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:47:28.000Z",
+      "temperature": 19.7,
+      "humidity": 64,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 14,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kt70l7bmo4joaroeu0q",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:47:31.000Z",
+      "temperature": 20.6,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 14,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6t067lmo4j2c9y0uw0",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:48:27.000Z",
+      "temperature": 20.1,
+      "humidity": 64.3,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 15,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mvf1ep6mo4j71midvjk",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:48:28.000Z",
+      "temperature": 19.3,
+      "humidity": 64.1,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 15,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krk0ivxmo4jrozwrbis",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:48:31.000Z",
+      "temperature": 20.2,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 15,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j3j03vsmo4jhdksns26",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:49:27.000Z",
+      "temperature": 19.8,
+      "humidity": 64.4,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 16,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mpc1c37mo4jjbi2s05o",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:49:28.000Z",
+      "temperature": 18.8,
+      "humidity": 64.1,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 16,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kz40rf1mo4jobhpxqld",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:49:31.000Z",
+      "temperature": 19.9,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 16,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6905fomo4jsehxsddo",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:50:27.000Z",
+      "temperature": 19.4,
+      "humidity": 64.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 17,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mxp1igwmo4jiqstqcah",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:50:28.000Z",
+      "temperature": 18.5,
+      "humidity": 64.2,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 17,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krs0jmrmo4js44ii9cn",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:50:31.000Z",
+      "temperature": 19.6,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 17,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j1g01k9mo4jpyn4e2ug",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:51:27.000Z",
+      "temperature": 19.2,
+      "humidity": 64.6,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 18,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mko15dqmo4j093l90ch",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:51:28.000Z",
+      "temperature": 18,
+      "humidity": 64.2,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 18,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kxd0pv0mo4jxrb579sl",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:51:31.000Z",
+      "temperature": 19.3,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 18,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j9k08jsmo4jiir8o0ae",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:52:27.000Z",
+      "temperature": 18.8,
+      "humidity": 64.7,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 19,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mvf1epamo4jowg603d2",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:52:28.000Z",
+      "temperature": 17.6,
+      "humidity": 64.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 19,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kt70l7gmo4j7ix7ieqp",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:52:31.000Z",
+      "temperature": 19,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 19,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j0o00simo4jnju6dng1",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:53:27.000Z",
+      "temperature": 18.4,
+      "humidity": 64.8,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 20,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mpc1c3emo4jqm57r08d",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:53:28.000Z",
+      "temperature": 17.2,
+      "humidity": 64.4,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 20,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kz40rf5mo4jav9nwrbu",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:53:31.000Z",
+      "temperature": 18.6,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 20,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j1g01kcmo4jf2ff28w8",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:54:27.000Z",
+      "temperature": 18.1,
+      "humidity": 64.9,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 21,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1n2o1kz7mo4jwptq848a",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:54:28.000Z",
+      "temperature": 16.9,
+      "humidity": 64.5,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 21,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kud0m50mo4jn3mifztl",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:54:31.000Z",
+      "temperature": 18.4,
+      "humidity": 63.7,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 21,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j9k08jvmo4j8w53st0f",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:55:27.000Z",
+      "temperature": 17.9,
+      "humidity": 65,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 22,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mmk18f9mo4j1680flgg",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:55:28.000Z",
+      "temperature": 16.5,
+      "humidity": 64.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 22,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kub0lzemo4jch71tqvu",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:55:31.000Z",
+      "temperature": 18.1,
+      "humidity": 63.7,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 22,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j7e06ztmo4jre6it1wc",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:56:27.000Z",
+      "temperature": 17.5,
+      "humidity": 65.1,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 23,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mvk1ev6mo4j5a13gpnm",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:56:28.000Z",
+      "temperature": 16.2,
+      "humidity": 64.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 23,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kvq0ob6mo4jzp6hfdzg",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:56:31.000Z",
+      "temperature": 17.8,
+      "humidity": 63.7,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 23,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j1g01kfmo4jj31dft5u",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:57:27.000Z",
+      "temperature": 17.3,
+      "humidity": 65.2,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 24,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mko15dwmo4jqv7hgz5d",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:57:28.000Z",
+      "temperature": 15.8,
+      "humidity": 64.7,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 24,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kt70l7lmo4j8b6efshc",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:57:31.000Z",
+      "temperature": 17.6,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 24,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j2t02uemo4jl4m17lni",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:58:27.000Z",
+      "temperature": 17,
+      "humidity": 65.3,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 25,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mx71h1xmo4j5k3grqxf",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:58:28.000Z",
+      "temperature": 15.4,
+      "humidity": 64.7,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 25,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1ky60qn8mo4j0h7pd3gb",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:58:31.000Z",
+      "temperature": 17.3,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 25,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6t067wmo4jjhg3axzq",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T16:59:27.000Z",
+      "temperature": 16.7,
+      "humidity": 65.4,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 26,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mpc1c3mmo4jgklc2cz6",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T16:59:28.000Z",
+      "temperature": 15.1,
+      "humidity": 64.8,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 26,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kvq0ob9mo4j6h66xz8t",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T16:59:31.000Z",
+      "temperature": 17,
+      "humidity": 63.7,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 26,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j0p00spmo4j52go24u0",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:00:27.000Z",
+      "temperature": 16.5,
+      "humidity": 65.4,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 27,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mrr1dusmo4juwzzoo5b",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:00:28.000Z",
+      "temperature": 14.8,
+      "humidity": 64.9,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 27,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kvr0obamo4jtqftsf5x",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:00:31.000Z",
+      "temperature": 16.8,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 27,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j5e04o1mo4jxs187di0",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:01:27.000Z",
+      "temperature": 16.2,
+      "humidity": 65.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 28,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1moz1bl8mo4jpgv4vpn8",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:01:28.000Z",
+      "temperature": 14.5,
+      "humidity": 64.9,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 28,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kt70l7pmo4jtctqy3z1",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:01:31.000Z",
+      "temperature": 16.5,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 28,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j5e04o2mo4jz9xsb77p",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:02:27.000Z",
+      "temperature": 15.9,
+      "humidity": 65.6,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 29,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mxb1h6mmo4jks48j4jd",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:02:28.000Z",
+      "temperature": 14.2,
+      "humidity": 65,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 29,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krs0jngmo4jsqzq83hx",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:02:31.000Z",
+      "temperature": 16.3,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 29,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j1g01klmo4j8drdugqe",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:03:27.000Z",
+      "temperature": 15.7,
+      "humidity": 65.7,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 30,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mnq1a1bmo4jv1stfa4i",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:03:28.000Z",
+      "temperature": 14,
+      "humidity": 65,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 30,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kud0m5jmo4jvmfhbqrw",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:03:31.000Z",
+      "temperature": 16.1,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 30,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j9l08k4mo4j4evbaria",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:04:27.000Z",
+      "temperature": 15.4,
+      "humidity": 65.7,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 31,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mx81h23mo4jgfxics30",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:04:28.000Z",
+      "temperature": 13.7,
+      "humidity": 65.1,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 31,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kud0m5mmo4jkq36i4yj",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:04:31.000Z",
+      "temperature": 15.8,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 31,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6t0682mo4j5bwl5c5t",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:05:27.000Z",
+      "temperature": 15.2,
+      "humidity": 65.8,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 32,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mko15e4mo4jd5ne88se",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:05:28.000Z",
+      "temperature": 13.4,
+      "humidity": 65.1,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 32,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kwm0p3emo4jad0pu9tf",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:05:31.000Z",
+      "temperature": 15.6,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 32,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j7e0703mo4jhmg7739h",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:06:27.000Z",
+      "temperature": 15,
+      "humidity": 65.9,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 33,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1n2o1kzjmo4jkkf381wm",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:06:28.000Z",
+      "temperature": 13.1,
+      "humidity": 65.2,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 33,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kz40rfimo4jkouu36xp",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:06:31.000Z",
+      "temperature": 15.4,
+      "humidity": 63.5,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 33,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j0p00swmo4j8pjvcg1q",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:07:27.000Z",
+      "temperature": 14.8,
+      "humidity": 65.9,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 34,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mnq1a1fmo4jnh3zv74x",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:07:28.000Z",
+      "temperature": 12.9,
+      "humidity": 65.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 34,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1ksg0kg1mo4jibjz5hfz",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:07:31.000Z",
+      "temperature": 15.2,
+      "humidity": 63.5,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 34,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j1g01kqmo4jzjv3i2mg",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:08:27.000Z",
+      "temperature": 14.6,
+      "humidity": 66,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 35,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1n0u1k79mo4jhnamujvq",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:08:28.000Z",
+      "temperature": 12.6,
+      "humidity": 65.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 35,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kwm0p3hmo4jok2bg436",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:08:31.000Z",
+      "temperature": 15,
+      "humidity": 63.5,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 35,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6905g7mo4ji4xbaez9",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:09:27.000Z",
+      "temperature": 14.4,
+      "humidity": 66,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 36,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mko15e8mo4jsukkjb2v",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:09:28.000Z",
+      "temperature": 12.4,
+      "humidity": 65.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 36,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kt70l7xmo4jc8j7y64l",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:09:31.000Z",
+      "temperature": 14.8,
+      "humidity": 63.5,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 36,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j0p00szmo4jbnbjjq4m",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:10:27.000Z",
+      "temperature": 14.1,
+      "humidity": 66.1,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 37,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mw91ga3mo4ju06bxzvl",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:10:28.000Z",
+      "temperature": 12.2,
+      "humidity": 65.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 37,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kvr0obkmo4jhbogvee0",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:10:31.000Z",
+      "temperature": 14.7,
+      "humidity": 63.5,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 37,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j9l08kbmo4jcfr2zm1z",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:11:27.000Z",
+      "temperature": 14,
+      "humidity": 66.1,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 38,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mnz1altmo4j2ba9scai",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:11:28.000Z",
+      "temperature": 11.9,
+      "humidity": 65.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 38,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1ksg0kg5mo4jz8ut1h2a",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:11:31.000Z",
+      "temperature": 14.4,
+      "humidity": 63.4,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 38,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j7e0709mo4j17sm4kjz",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:12:27.000Z",
+      "temperature": 13.8,
+      "humidity": 66.1,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 39,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mxb1h70mo4jx6id1tqh",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:12:28.000Z",
+      "temperature": 11.7,
+      "humidity": 65.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 39,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1ksg0kg6mo4j5fuew7nl",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:12:31.000Z",
+      "temperature": 14.2,
+      "humidity": 63.3,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 39,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j8c07sbmo4jam97uklf",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:13:27.000Z",
+      "temperature": 13.5,
+      "humidity": 66.1,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 40,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mpd1c4cmo4jbnaz4950",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:13:28.000Z",
+      "temperature": 11.4,
+      "humidity": 65.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 40,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kud0m65mo4ju1g8yuul",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:13:31.000Z",
+      "temperature": 14,
+      "humidity": 63.3,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 40,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j7f070bmo4jt3zr21km",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:14:27.000Z",
+      "temperature": 13.3,
+      "humidity": 66.1,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 41,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1n091jf4mo4jlmz8s3py",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:14:28.000Z",
+      "temperature": 11.2,
+      "humidity": 65.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 41,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kwm0p3nmo4jsgte7h9y",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:14:31.000Z",
+      "temperature": 13.9,
+      "humidity": 63.2,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 41,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j9l08kfmo4j4dwykt1u",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:15:27.000Z",
+      "temperature": 13.2,
+      "humidity": 66.2,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 42,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mkr15ksmo4jhf67k51e",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:15:28.000Z",
+      "temperature": 11,
+      "humidity": 65.3,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 42,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krk0iwomo4jkxool4qr",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:15:31.000Z",
+      "temperature": 13.7,
+      "humidity": 63.2,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 42,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j7f070dmo4jmnesbtj8",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:16:27.000Z",
+      "temperature": 13,
+      "humidity": 66.2,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 43,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1n091jf6mo4jrjqumx2z",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:16:28.000Z",
+      "temperature": 10.8,
+      "humidity": 65.4,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 43,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krk0iwpmo4j8cu1avq1",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:16:31.000Z",
+      "temperature": 13.5,
+      "humidity": 63.2,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 43,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j1g01kzmo4j15j5pl7q",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:17:27.000Z",
+      "temperature": 12.8,
+      "humidity": 66.2,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 44,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mlz17pymo4jwu6u7h25",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:17:28.000Z",
+      "temperature": 10.6,
+      "humidity": 65.4,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 44,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krk0iwqmo4jg7hua5cx",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:17:31.000Z",
+      "temperature": 13.3,
+      "humidity": 63.2,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 44,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j8c07sgmo4jb87279xb",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:18:27.000Z",
+      "temperature": 12.6,
+      "humidity": 66.2,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 45,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mwa1gabmo4jteyfsrmc",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:18:28.000Z",
+      "temperature": 10.4,
+      "humidity": 65.4,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 45,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kwm0p3rmo4jue83ka8g",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:18:31.000Z",
+      "temperature": 13.1,
+      "humidity": 63.2,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 45,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j9l08kjmo4jkvh2w3qn",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:19:27.000Z",
+      "temperature": 12.5,
+      "humidity": 66.3,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 46,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mkr15l0mo4jaq6l2264",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:19:28.000Z",
+      "temperature": 10.2,
+      "humidity": 65.4,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 46,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kuw0njvmo4jkeghqc1t",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:19:31.000Z",
+      "temperature": 13,
+      "humidity": 63.1,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 46,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j5e04okmo4ja3ixgwwb",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:20:27.000Z",
+      "temperature": 12.3,
+      "humidity": 66.3,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 47,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mvf1eq2mo4jf5j4ya97",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:20:28.000Z",
+      "temperature": 10,
+      "humidity": 65.5,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 47,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krk0iwtmo4jcypek128",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:20:31.000Z",
+      "temperature": 12.8,
+      "humidity": 63.1,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 47,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1izz001imo4jtgdxg61w",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:21:27.000Z",
+      "temperature": 12.1,
+      "humidity": 66.3,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 48,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mmz199vmo4jjc3rjszm",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:21:28.000Z",
+      "temperature": 9.8,
+      "humidity": 65.5,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 48,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kvr0obvmo4jvqkx745t",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:21:31.000Z",
+      "temperature": 12.6,
+      "humidity": 63.1,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 48,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j9l08kmmo4ja45824f9",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:22:27.000Z",
+      "temperature": 12,
+      "humidity": 66.3,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 49,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1n0u1k7nmo4jfnvubet1",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:22:28.000Z",
+      "temperature": 9.6,
+      "humidity": 65.5,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 49,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kuw0njymo4jokwwt0ie",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:22:31.000Z",
+      "temperature": 12.5,
+      "humidity": 63,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 49,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6u068kmo4j1f9j08ym",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:23:27.000Z",
+      "temperature": 11.8,
+      "humidity": 66.4,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 50,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mju14mumo4jcf5cdmr3",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:23:28.000Z",
+      "temperature": 9.4,
+      "humidity": 65.5,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 50,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kxe0pvwmo4jz2s1z96p",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:23:31.000Z",
+      "temperature": 12.3,
+      "humidity": 63,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 50,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6u068lmo4jlflyz9nt",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:24:27.000Z",
+      "temperature": 11.6,
+      "humidity": 66.4,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 51,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mx81h2nmo4jpm0ddfk6",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:24:28.000Z",
+      "temperature": 9.2,
+      "humidity": 65.5,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 51,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1ksg0kgimo4jg01yrry6",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:24:31.000Z",
+      "temperature": 12.2,
+      "humidity": 63,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 51,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1izz001mmo4j0ccm2g1o",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:25:27.000Z",
+      "temperature": 11.5,
+      "humidity": 66.4,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 52,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mmz199zmo4j9yb6ea7m",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:25:28.000Z",
+      "temperature": 9.1,
+      "humidity": 65.5,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 52,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kz40rg1mo4j8e4iws11",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:25:31.000Z",
+      "temperature": 12,
+      "humidity": 62.9,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 52,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j3j03wtmo4ju331itz7",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:26:27.000Z",
+      "temperature": 11.3,
+      "humidity": 66.4,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 53,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mpd1c50mo4jttkrub9v",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:26:28.000Z",
+      "temperature": 8.9,
+      "humidity": 65.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 53,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kvr0oc0mo4j9oraxvjs",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:26:31.000Z",
+      "temperature": 11.9,
+      "humidity": 62.9,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 53,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j8d07spmo4jg4f5m4fq",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:27:27.000Z",
+      "temperature": 11.2,
+      "humidity": 66.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 54,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mko15eqmo4jgicsujlu",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:27:28.000Z",
+      "temperature": 8.7,
+      "humidity": 65.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 54,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kz40rg3mo4jdv5qo2k1",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:27:31.000Z",
+      "temperature": 11.8,
+      "humidity": 62.9,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 54,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j1h01lamo4jyptgjrtn",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:28:27.000Z",
+      "temperature": 11.1,
+      "humidity": 66.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 55,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mwa1galmo4ja5d6txdg",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:28:28.000Z",
+      "temperature": 8.6,
+      "humidity": 65.7,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 55,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kxe0pw1mo4jdvqxt59f",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:28:31.000Z",
+      "temperature": 11.6,
+      "humidity": 62.9,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 55,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1izz001qmo4jdyosfqlf",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:29:27.000Z",
+      "temperature": 10.9,
+      "humidity": 66.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 56,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mn019a3mo4jjtlqiyrt",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:29:28.000Z",
+      "temperature": 8.4,
+      "humidity": 65.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 56,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kxe0pw2mo4jel0diqo7",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:29:31.000Z",
+      "temperature": 11.4,
+      "humidity": 62.8,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 56,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1izz001rmo4jqcu2bsco",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:30:27.000Z",
+      "temperature": 10.8,
+      "humidity": 66.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 57,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mwb1ganmo4jn9dt767b",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:30:28.000Z",
+      "temperature": 8.3,
+      "humidity": 65.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 57,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kuw0nk6mo4jp1pr3dyw",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:30:31.000Z",
+      "temperature": 11.3,
+      "humidity": 62.8,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 57,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j8d07stmo4jh1lnq9jm",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:31:27.000Z",
+      "temperature": 10.7,
+      "humidity": 66.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 58,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mju14n2mo4jdo6ufob1",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:31:28.000Z",
+      "temperature": 8.2,
+      "humidity": 65.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 58,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kxe0pw4mo4jor6otmnm",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:31:31.000Z",
+      "temperature": 11.2,
+      "humidity": 62.8,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 58,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6a05gumo4jcvdc0rfo",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:32:27.000Z",
+      "temperature": 10.5,
+      "humidity": 66.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 59,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1n0u1k7xmo4j2pc6so03",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:32:28.000Z",
+      "temperature": 8,
+      "humidity": 65.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 59,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kz40rg8mo4jo5a5j8b2",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:32:31.000Z",
+      "temperature": 11.1,
+      "humidity": 62.7,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 59,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j3j03x0mo4j5d89p7as",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:33:27.000Z",
+      "temperature": 10.4,
+      "humidity": 66.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 60,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mkr15ltmo4jqr0lb7fw",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:33:28.000Z",
+      "temperature": 7.8,
+      "humidity": 65.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 60,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kt80l8lmo4jpubmx6e7",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:33:31.000Z",
+      "temperature": 10.9,
+      "humidity": 62.7,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 60,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j6a05gwmo4jz6l3twxs",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:34:27.000Z",
+      "temperature": 10.3,
+      "humidity": 66.5,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 61,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1n0u1k7zmo4jk9ek5ae9",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:34:28.000Z",
+      "temperature": 7.7,
+      "humidity": 65.6,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 61,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kuw0nkamo4jynkzpwi9",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:34:31.000Z",
+      "temperature": 10.8,
+      "humidity": 62.7,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 61,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j9l08kzmo4juqd7xmz9",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:35:27.000Z",
+      "temperature": 10.2,
+      "humidity": 66.7,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 62,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mo01anxmo4j6b9dces2",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:35:28.000Z",
+      "temperature": 7.6,
+      "humidity": 66.4,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 62,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1ksh0kgtmo4j2w4io462",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:35:31.000Z",
+      "temperature": 10.7,
+      "humidity": 63.2,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 62,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j8d07symo4jbb0v5wi4",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:36:27.000Z",
+      "temperature": 10.2,
+      "humidity": 66.9,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 63,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mx81h2zmo4jpl8ynpxa",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:36:28.000Z",
+      "temperature": 7.6,
+      "humidity": 66.7,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 63,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1ksh0kgumo4jp88p5xat",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:36:31.000Z",
+      "temperature": 10.6,
+      "humidity": 63.4,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 63,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1izz001ymo4j33llblag",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:37:27.000Z",
+      "temperature": 10.1,
+      "humidity": 67,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 64,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mkp15f0mo4jlbh06nm3",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:37:28.000Z",
+      "temperature": 7.6,
+      "humidity": 67,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 64,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1krl0ixamo4jnfo8h6ex",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:37:31.000Z",
+      "temperature": 10.5,
+      "humidity": 63.5,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 64,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j7f070zmo4j6skbhbd7",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:38:27.000Z",
+      "temperature": 10.1,
+      "humidity": 67.1,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 65,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mvf1eqkmo4jjcri80jc",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:38:28.000Z",
+      "temperature": 7.7,
+      "humidity": 67.1,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 65,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1kvr0occmo4j98rxwmuj",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:38:31.000Z",
+      "temperature": 10.5,
+      "humidity": 63.6,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 65,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j3j03x6mo4jwx56d9dk",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:39:27.000Z",
+      "temperature": 10.1,
+      "humidity": 67.1,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 66,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1mo01ao7mo4jmanjmiky",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:39:28.000Z",
+      "temperature": 7.8,
+      "humidity": 67,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 66,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    },
+    {
+      "id": "cmj1i1ksh0kgxmo4jeai4t0kb",
+      "sensorId": "cmiyxytgu0jc6se4ng0rrrgnj",
+      "timestamp": "2025-11-11T17:39:31.000Z",
+      "temperature": 10.5,
+      "humidity": 63.7,
+      "fileName": "EF7216103439.xls",
+      "rowNumber": 66,
+      "createdAt": "2025-12-11T13:54:07.232Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmiyxytgu0jc6se4ng0rrrgnj",
+        "serialNumber": "EF7216103439"
+      }
+    },
+    {
+      "id": "cmj1i1j5f04p4mo4jzopqqyj3",
+      "sensorId": "cmj1i1hof0004mo4jt7uko8tc",
+      "timestamp": "2025-11-11T17:40:27.000Z",
+      "temperature": 10.1,
+      "humidity": 67.2,
+      "fileName": "EF721B101082.xls",
+      "rowNumber": 67,
+      "createdAt": "2025-12-11T13:54:04.945Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmj1i1hof0004mo4jt7uko8tc",
+        "serialNumber": "EF721B101082_1765461243324"
+      }
+    },
+    {
+      "id": "cmj1i1n091jfumo4juyvnkv2q",
+      "sensorId": "cmizwmyge0a1tp651j148cgzg",
+      "timestamp": "2025-11-11T17:40:28.000Z",
+      "temperature": 7.9,
+      "humidity": 66.9,
+      "fileName": "EF7217100050.xls",
+      "rowNumber": 67,
+      "createdAt": "2025-12-11T13:54:09.566Z",
+      "validationId": "cmj1i18ks0002mo4jio13l46s",
+      "sensor": {
+        "id": "cmizwmyge0a1tp651j148cgzg",
+        "serialNumber": "EF7217100050"
+      }
+    }
+  ]
+}

@@ -13,18 +13,22 @@ let testsPassed = 0;
 let testsFailed = 0;
 
 // Função de teste simples
+const testPromises = [];
 function test(name, testFn) {
-  testsRun++;
-  try {
-    console.log(`🧪 Executando: ${name}`);
-    testFn();
-    testsPassed++;
-    console.log(`✅ PASSOU: ${name}\n`);
-  } catch (error) {
-    testsFailed++;
-    console.log(`❌ FALHOU: ${name}`);
-    console.log(`   Erro: ${error.message}\n`);
-  }
+  const p = (async () => {
+    testsRun++;
+    try {
+      console.log(`🧪 Executando: ${name}`);
+      await testFn();
+      testsPassed++;
+      console.log(`✅ PASSOU: ${name}\n`);
+    } catch (error) {
+      testsFailed++;
+      console.log(`❌ FALHOU: ${name}`);
+      console.log(`   Erro: ${error.message}\n`);
+    }
+  })();
+  testPromises.push(p);
 }
 
 // Mock simples para Request/Response
@@ -176,9 +180,9 @@ test('Funções JavaScript devem estar incluídas', async () => {
 });
 
 // Teste 5: Conversão de Layout para HTML
-test('Conversão de layout para HTML deve funcionar', () => {
-  const html = TemplateEditorController.convertLayoutToHTML(mockTemplate);
-  
+test('Conversão de layout para HTML deve funcionar', async () => {
+  const html = await TemplateEditorController.convertLayoutToHTML(mockTemplate);
+
   if (!html.includes('<!DOCTYPE html>')) throw new Error('DOCTYPE não encontrado');
   if (!html.includes('<html lang="pt-BR">')) throw new Error('Tag HTML não encontrada');
   if (!html.includes('<title>Template de Teste</title>')) throw new Error('Título não encontrado');
@@ -201,7 +205,7 @@ test('Validação de entrada deve funcionar', async () => {
 });
 
 // Teste 7: Conversão de estilos CSS
-test('Conversão de estilos CSS deve funcionar', () => {
+test('Conversão de estilos CSS deve funcionar', async () => {
   const testTemplate = {
     ...mockTemplate,
     elements: [{
@@ -217,7 +221,7 @@ test('Conversão de estilos CSS deve funcionar', () => {
     }]
   };
   
-  const html = TemplateEditorController.convertLayoutToHTML(testTemplate);
+  const html = await TemplateEditorController.convertLayoutToHTML(testTemplate);
   
   if (!html.includes('font-size: 18px')) throw new Error('fontSize não convertido');
   if (!html.includes('font-weight: bold')) throw new Error('fontWeight não convertido');
@@ -226,7 +230,7 @@ test('Conversão de estilos CSS deve funcionar', () => {
 });
 
 // Teste 8: Diferentes tipos de elementos
-test('Diferentes tipos de elementos devem ser renderizados', () => {
+test('Diferentes tipos de elementos devem ser renderizados', async () => {
   const multiElementTemplate = {
     ...mockTemplate,
     elements: [
@@ -240,7 +244,7 @@ test('Diferentes tipos de elementos devem ser renderizados', () => {
     ]
   };
   
-  const html = TemplateEditorController.convertLayoutToHTML(multiElementTemplate);
+  const html = await TemplateEditorController.convertLayoutToHTML(multiElementTemplate);
   
   if (!html.includes('<div style="">Texto</div>')) throw new Error('Elemento text não renderizado');
   if (!html.includes('<h1 style="">Cabeçalho</h1>')) throw new Error('Elemento header não renderizado');
@@ -281,8 +285,9 @@ test('HTML gerado deve ter estrutura válida', () => {
 // Executar todos os testes
 console.log('📋 Executando testes unitários...\n');
 
-// Aguardar um pouco para garantir que tudo está carregado
-setTimeout(() => {
+(async () => {
+  await Promise.allSettled(testPromises);
+
   // Mostrar resultados
   console.log('📊 RESULTADOS DOS TESTES:');
   console.log(`   Total: ${testsRun}`);
@@ -309,4 +314,4 @@ setTimeout(() => {
   console.log('  ✅ Estrutura HTML válida');
   
   process.exit(testsFailed > 0 ? 1 : 0);
-}, 100);
+})();

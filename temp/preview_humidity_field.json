@@ -1,0 +1,30 @@
+{
+  "id": "test-template-hum",
+  "name": "Template Teste Umidade",
+  "elements": [
+    {
+      "id": "chart-hum",
+      "type": "chart",
+      "content": "Gráfico Umidade - campo em PT",
+      "styles": { "width": "600px", "height": "300px" },
+      "data": {
+        "chartConfig": {
+          "type": "line",
+          "data": {
+            "labels": ["10:00", "11:00", "12:00", "13:00"],
+            "datasets": [
+              { "label": "Sensor Hum (%)", "data": [40,45,50,55], "borderColor": "#2ca02c", "backgroundColor": "rgba(44,160,44,0.1)", "pointRadius": 1 }
+            ]
+          },
+          "options": {
+            "scales": { "y": { "beginAtZero": true } },
+            "dataSource": { "field": "umidade" },
+            "customLegendAsLines": true,
+            "legend": { "lineWidth": 3 }
+          }
+        }
+      }
+    }
+  ],
+  "globalStyles": { "fontFamily": "Arial", "pageSize": "A4", "margins": { "top": "15mm", "right": "15mm", "bottom": "15mm", "left": "15mm" } }
+}

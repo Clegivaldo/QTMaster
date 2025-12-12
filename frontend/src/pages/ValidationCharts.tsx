@@ -233,9 +233,10 @@ const ValidationCharts: React.FC = () => {
 
     // Agrupar por bucket temporal (alinhamento entre sensores)
     const bucketMs = Math.max(1, alignmentBucketSec) * 1000;
+    // Anchor buckets to epoch using floor so timestamps in the same interval map consistently
     const grouped = filtered.reduce((acc: any, reading) => {
       const ts = parseToDate(reading.timestamp).getTime();
-      const bucketTs = Math.round(ts / bucketMs) * bucketMs; // arredonda para o mais próximo
+      const bucketTs = Math.floor(ts / bucketMs) * bucketMs; // floor to bucket start
       const key = String(bucketTs);
       if (!acc[key]) {
         acc[key] = {
@@ -258,13 +259,13 @@ const ValidationCharts: React.FC = () => {
 
 
   const getCycleBands = () => {
-    if (!data?.cycles || data.cycles.length === 0) return [] as Array<{ x1: string; x2: string; label: string; type: string }>;
+    if (!data?.cycles || data.cycles.length === 0) return [] as Array<{ x1: number; x2: number; label: string; type: string }>;
     const cyclesToShow = selectedCycleId
       ? data.cycles.filter(c => c.id === selectedCycleId)
       : data.cycles;
     return cyclesToShow.map(c => ({
-      x1: formatDisplayTime(c.startAt),
-      x2: formatDisplayTime(c.endAt),
+      x1: parseToDate(c.startAt).getTime(),
+      x2: parseToDate(c.endAt).getTime(),
       label: `${c.name} (${c.cycleType})`,
       type: c.cycleType
     }));
