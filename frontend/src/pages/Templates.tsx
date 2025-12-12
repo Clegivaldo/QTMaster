@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { formatBRShort } from '@/utils/parseDate';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FileText, Eye, Palette, Copy, Trash2 } from 'lucide-react';
+import { FileText, Eye, Palette, Copy, Trash2, Search } from 'lucide-react';
+import PageHeader from '@/components/Layout/PageHeader';
 import { apiService } from '../services/api';
 import ConfirmationModal from '../components/Modals/ConfirmationModal';
 import TemplatePreviewModal from '../components/Modals/TemplatePreviewModal';
@@ -18,6 +19,7 @@ interface Template {
 const Templates: React.FC = () => {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [filters, setFilters] = useState({ search: '' });
   const [loading, setLoading] = useState(true);
   
   // Estados para modais de confirmação
@@ -99,6 +101,13 @@ const Templates: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const search = String(formData.get('search') || '');
+    setFilters({ ...filters, search });
   };
 
   const openTemplateEditor = (templateId?: string) => {
@@ -199,24 +208,39 @@ const Templates: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Templates de Relatórios</h1>
-          <p className="text-gray-600 mt-1">
-            Gerencie e crie templates personalizados para seus laudos
-          </p>
-        </div>
-        <button
-          onClick={() => openTemplateEditor()}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Palette className="h-4 w-4" />
-          Novo Template
-        </button>
-      </div>
+      <PageHeader
+        title="Templates de Relatórios"
+        description="Gerencie e crie templates personalizados para seus laudos"
+        actions={
+          <button
+            onClick={() => openTemplateEditor()}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            <Palette className="h-5 w-5 mr-2" />
+            Novo Template
+          </button>
+        }
+      />
 
       {/* Templates Table */}
+      <div className="mb-6">
+        <form onSubmit={handleSearch} className="flex gap-4">
+          <div className="flex-1 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              name="search"
+              type="text"
+              className="input w-full pl-10"
+              placeholder="Buscar templates por nome ou tipo..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value || '' })}
+            />
+          </div>
+        </form>
+      </div>
+
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -230,12 +254,20 @@ const Templates: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {templates.length === 0 ? (
+              {(!templates || templates.filter(t => {
+                if (!filters.search) return true;
+                const s = filters.search.toLowerCase();
+                return (t.name || '').toLowerCase().includes(s) || (t.type || '').toLowerCase().includes(s) || (t.filename || '').toLowerCase().includes(s);
+              }).length === 0) ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-gray-500">Nenhum template encontrado</td>
                 </tr>
               ) : (
-                templates.map((template) => (
+                templates.filter(t => {
+                  if (!filters.search) return true;
+                  const s = filters.search.toLowerCase();
+                  return (t.name || '').toLowerCase().includes(s) || (t.type || '').toLowerCase().includes(s) || (t.filename || '').toLowerCase().includes(s);
+                }).map((template) => (
                   <tr key={template.id || Math.random().toString(36).slice(2)} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -270,7 +302,11 @@ const Templates: React.FC = () => {
 
         {/* Mobile card list */}
         <div className="block md:hidden divide-y divide-gray-200">
-          {templates.map((template) => (
+          {templates.filter(t => {
+            if (!filters.search) return true;
+            const s = filters.search.toLowerCase();
+            return (t.name || '').toLowerCase().includes(s) || (t.type || '').toLowerCase().includes(s) || (t.filename || '').toLowerCase().includes(s);
+          }).map((template) => (
             <div key={template.id || Math.random().toString(36).slice(2)} className="p-4 hover:bg-gray-50">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">

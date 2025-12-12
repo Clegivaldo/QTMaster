@@ -63,7 +63,6 @@ const navigation: NavigationItem[] = [
       { name: 'Modelo', href: '/models', icon: Wrench },
     ],
   },
-  { name: 'Importar Dados', href: '/import', icon: Upload },
   { name: 'Validações', href: '/validations', icon: BarChart3 },
   { name: 'Relatórios', href: '/reports', icon: FileText },
   { name: 'Templates', href: '/templates', icon: Layout },

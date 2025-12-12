@@ -54,6 +54,16 @@ const ImportData: React.FC = () => {
     }
   }, [suitcaseIdFromQuery]);
 
+  // Redirect away if page is accessed directly without context
+  useEffect(() => {
+    if (!validationIdFromQuery && !suitcaseIdFromQuery) {
+      // Only allow entering this page when coming from a validation or with suitcase pre-selection
+      toast?.warning('A página de importação só pode ser acessada a partir da tela de Validações. Redirecionando.');
+      navigate('/validations');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const checkForDuplicates = async (): Promise<boolean> => {
     if (!validationIdFromQuery) {
       // Se não há validação associada, não há como ter duplicatas

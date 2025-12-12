@@ -24,7 +24,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: Home, shortName: 'Início' },
   { name: 'Clientes', href: '/clients', icon: Users, shortName: 'Clientes' },
-  { name: 'Importar', href: '/import', icon: Upload, shortName: 'Importar' },
+  // Importar removed from mobile bottom nav - access via Validações import
   { name: 'Validações', href: '/validations', icon: BarChart3, shortName: 'Validar' },
   { name: 'Relatórios', href: '/reports', icon: FileText, shortName: 'Relatórios' },
 ];
