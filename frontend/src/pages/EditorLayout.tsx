@@ -7,7 +7,7 @@ import { useErrorHandler } from '../hooks/useErrorHandler';
 import { usePageSettings } from '../hooks/usePageSettings';
 import { useToast } from '../hooks/useToast';
 import { useTemplateStorage } from '../hooks/useTemplateStorage';
-import { X, Save, Eye, Grid, Ruler, Download, FolderOpen, Settings, Minus, Plus, FileImage, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Save, Eye, Grid, Ruler, Download, FolderOpen, Settings, Minus, Plus, FileImage, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { KEYBOARD_SHORTCUTS } from '../types/editor-constants';
 import { Canvas } from '../components/EditorLayoutProfissional/components/EditorCanvas';
 import ImageGalleryModal from '../components/EditorLayoutProfissional/components/Modals/ImageGalleryModal';
@@ -232,6 +232,56 @@ const EditorLayout: React.FC = () => {
   const handleLoadComplete = useCallback((loadedTemplate: any) => {
     editor.loadTemplate(loadedTemplate);
   }, [editor]);
+
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImportClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const template = JSON.parse(content);
+
+        // Basic validation
+        if (!template.elements || !Array.isArray(template.elements)) {
+          throw new Error('Formato de template inválido');
+        }
+
+        // Strip ID to treat as new template (useful for migration)
+        // We set a temporary ID so the editor treats it as a new UNSAVED template
+        const { id, createdAt, updatedAt, createdBy, ...templateData } = template;
+
+        const importedTemplate = {
+          ...templateData,
+          id: `template-${Date.now()}`, // Temp ID
+          name: `${template.name || 'Template'} (Importado)`,
+          elements: template.elements,
+          pageSettings: template.pageSettings,
+          globalStyles: template.globalStyles || {},
+          lastSaved: Date.now()
+        };
+
+        editor.loadTemplate(importedTemplate as any);
+        showSuccessToast('Template importado com sucesso! Salve para persistir.', 'Importado');
+      } catch (err) {
+        console.error('Erro ao importar template:', err);
+        // Fallback error handling if toast not available or error complex
+        alert('Erro ao importar arquivo. Verifique se é um arquivo JSON válido.');
+      } finally {
+        // Reset input
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
+  }, [editor, showSuccessToast]);
 
   const handlePreview = useCallback(() => {
     setShowPreviewModal(true);
@@ -551,8 +601,8 @@ const EditorLayout: React.FC = () => {
               }
             }}
             className={`lg:hidden p-2 rounded transition-colors ${(showElementPalette || showPropertiesPanel)
-                ? 'text-white bg-gray-700'
-                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              ? 'text-white bg-gray-700'
+              : 'text-gray-300 hover:text-white hover:bg-gray-700'
               }`}
             title="Alternar painéis (Ctrl+3)"
           >
@@ -618,6 +668,21 @@ const EditorLayout: React.FC = () => {
           >
             <Download className="h-4 w-4" />
           </button>
+
+          <button
+            onClick={handleImportClick}
+            className="bg-orange-600 hover:bg-orange-700 p-2 rounded-full flex items-center justify-center transition-colors"
+            title="Importar template (JSON)"
+          >
+            <Upload className="h-4 w-4" />
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".json"
+            className="hidden"
+          />
 
           <button
             onClick={() => setShowPageSettingsModal(true)}

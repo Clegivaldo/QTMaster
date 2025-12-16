@@ -498,11 +498,11 @@ export class EditorTemplateRenderer {
           }
 
           const dump = {
-                elementId: element.id,
-                chartConfig,
-                chartData,
-                options
-              };
+            elementId: element.id,
+            chartConfig,
+            chartData,
+            options
+          };
           const uploadsDir = path.default.join(process.cwd(), 'uploads');
           if (!fs.default.existsSync(uploadsDir)) fs.default.mkdirSync(uploadsDir, { recursive: true });
           const fname = path.default.join(uploadsDir, `debug-chart-${data?.validation?.id || 'unknown'}-${element.id}.json`);
@@ -799,7 +799,9 @@ export class EditorTemplateRenderer {
   private renderTableElement(element: EditorElement, data: TemplateData, styles: string): string {
     const tableElement = element as any; // Cast to TableElement
     const tableConfig = tableElement.content || {};
-    const dataSource = tableConfig.dataSource || 'sensorData';
+    const dataSource = (typeof tableConfig.dataSource === 'string' && tableConfig.dataSource)
+      ? tableConfig.dataSource
+      : 'sensorData';
 
     // Resolve data source
     let tableData = this.resolveDataPath(dataSource, data);
@@ -836,7 +838,9 @@ export class EditorTemplateRenderer {
   ): string {
     const tableElement = element as any;
     const tableConfig = tableElement.content || {};
-    const columns = tableConfig.columns || [
+    // Ensure columns is an array. If not (e.g. from bad state or legacy), use defaults.
+    const rawColumns = tableConfig.columns;
+    const columns = Array.isArray(rawColumns) ? rawColumns : [
       { header: 'Column 1', field: 'col1' },
       { header: 'Column 2', field: 'col2' }
     ];
