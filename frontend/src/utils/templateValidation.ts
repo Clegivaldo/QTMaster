@@ -473,11 +473,16 @@ export const sanitizeTemplate = (template: EditorTemplate): EditorTemplate => {
 
     sanitized.pages = [defaultPage];
   } else {
-    // ensure each page has elements array
-    sanitized.pages = sanitized.pages.map((p) => ({
-      ...p,
-      elements: Array.isArray(p.elements) ? p.elements : []
-    }));
+    // IMPORTANT: Sync template.elements (with pageId) into each page.elements array
+    // The frontend stores elements in template.elements with pageId for multi-page support
+    // The backend expects elements in page.elements when rendering
+    sanitized.pages = sanitized.pages.map((p) => {
+      const pageElements = (sanitized.elements || []).filter(el => el.pageId === p.id);
+      return {
+        ...p,
+        elements: pageElements.length > 0 ? pageElements : (Array.isArray(p.elements) ? p.elements : [])
+      };
+    });
   }
 
   // Garantir estilos globais
