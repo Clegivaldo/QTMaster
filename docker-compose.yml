@@ -11,8 +11,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Host port for Postgres (use POSTGRES_PORT_HOST to avoid overriding container-internal POSTGRES_PORT)
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT_HOST:-5432}:5432"
     networks:
       - laudo-network
     healthcheck:
@@ -49,9 +50,9 @@ services:
       NODE_ENV: ${NODE_ENV}
       PORT: ${BACKEND_PORT}
       # Use the compose postgres service and credentials used by this stack
-      DATABASE_URL: "postgresql://postgres:postgres123@postgres:5432/report_system"
-      # Point to the redis container provided by the backend compose file (report_system_redis)
-      REDIS_URL: "redis://report_system_redis:${REDIS_PORT:-6379}"
+      DATABASE_URL: ${DATABASE_URL}
+      # Point to the redis container provided by this compose stack
+      REDIS_URL: "redis://redis:${REDIS_PORT:-6379}"
       FRONTEND_URL: ${FRONTEND_URL}
     ports:
       - "${BACKEND_PORT}:3000"

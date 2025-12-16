@@ -34,4 +34,16 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
   },
+  build: {
+    sourcemap: true,
+    // TEMP: produce a non-minified dev-like bundle so React shows full errors for debugging
+    minify: false,
+    rollupOptions: {
+      // ensure dev build of React is used during this temporary debug build
+    },
+  },
+  define: {
+    // Force dev mode for React (temporary, revert after debugging)
+    'process.env.NODE_ENV': JSON.stringify('development'),
+  },
 })

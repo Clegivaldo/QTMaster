@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { apiService } from '@/services/api';
 import { 
   ArrowLeft, 
   Download, 
@@ -113,31 +114,74 @@ const ValidationDetails: React.FC = () => {
     const tempHeaders = ['Data/Hora'];
     const humHeaders = ['Data/Hora'];
     
-    // Add sensor columns with names
-    sensors.forEach(s => {
-      tempHeaders.push(`${s.type.name} Temp (°C)`);
-      humHeaders.push(`${s.type.name} Umidade (%RH)`);
+    // Determine which sensors are selected in the chart (respect saved selection / hidden list)
+    const selectedSensorIds: Set<string> = new Set();
+    // If chartConfig has explicit selectedSensorIds, prefer it
+    const cfgSelected: string[] | undefined = data.chartConfig?.selectedSensorIds || data.chartConfig?.visibleSensors;
+    if (Array.isArray(cfgSelected) && cfgSelected.length > 0) {
+      cfgSelected.forEach(id => selectedSensorIds.add(id));
+    } else if (Array.isArray((data as any).hiddenSensorIds)) {
+      // If backend stores hiddenSensorIds, consider sensors not in that list as selected
+      const hidden = new Set((data as any).hiddenSensorIds as string[]);
+      sensors.forEach(s => {
+        const sid = (s as any).id || s.serialNumber;
+        if (!hidden.has(sid)) selectedSensorIds.add(sid);
+      });
+    } else {
+      // default: all sensors selected
+      sensors.forEach(s => selectedSensorIds.add((s as any).id || s.serialNumber));
+    }
+
+    // Add sensor columns with names (defensive: some sensors may not have `type`)
+    const visibleSensorsList = sensors.filter(s => selectedSensorIds.has((s as any).id || s.serialNumber));
+    visibleSensorsList.forEach(s => {
+      const sensorName = (s && (s.type?.name || s.serialNumber)) || 'Sensor';
+      tempHeaders.push(`${sensorName} Temp (°C)`);
+      humHeaders.push(`${sensorName} Umidade (%RH)`);
     });
     
-    // Add acceptance limits columns
-    tempHeaders.push('Temp Mín Aceitação (°C)', 'Temp Máx Aceitação (°C)');
-    humHeaders.push('Umidade Mín Aceitação (%RH)', 'Umidade Máx Aceitação (%RH)');
+    // Add acceptance limits columns (rename per request)
+    tempHeaders.push('Limite Min', 'Limite Max');
+    humHeaders.push('Limite Min', 'Limite Max');
     
-    // Add calculated statistics columns
-    tempHeaders.push('Temp Mín Calculada (°C)', 'Temp Média Calculada (°C)', 'Temp Máx Calculada (°C)');
-    humHeaders.push('Umidade Mín Calculada (%RH)', 'Umidade Média Calculada (%RH)', 'Umidade Máx Calculada (%RH)');
+    // Add calculated statistics columns (short names)
+    tempHeaders.push('Mín', 'Média', 'Máx');
+    humHeaders.push('Mín', 'Média', 'Máx');
 
     const tempRows: any[][] = [tempHeaders];
     const humRows: any[][] = [humHeaders];
     
-    pivotRows.forEach(pr => {
-      const dt = formatBRShort(pr.ts);
+    // Export should respect chart dateRange and visible sensors. Use full primary timeline (no pagination)
+    const chartRange = data.chartConfig?.dateRange;
+    const startMs = chartRange ? parseToDate(chartRange.start).getTime() : Number.MIN_SAFE_INTEGER;
+    const endMs = chartRange ? parseToDate(chartRange.end).getTime() : Number.MAX_SAFE_INTEGER;
+
+    // Use primary timeline (all rows) instead of paginatedData
+    const primaryTimelineAll = primarySensor ? readingsBySensor.get(primarySensor) || [] : [];
+    // Build exportPrimary in the same shape as paginatedData (ts/readings map)
+    const exportPrimary = primaryTimelineAll
+      .filter(base => base.tsMs >= startMs && base.tsMs <= endMs)
+      .map(base => {
+        const map = new Map<string, SensorDataRow | EnrichedRow>();
+        map.set(base.sensor.serialNumber, base);
+        visibleSensorsList.forEach(s => {
+          if (s.serialNumber === base.sensor.serialNumber) return;
+          const arr = readingsBySensor.get(s.serialNumber) || [];
+          const nearest = findNearestWithinToleranceBinary(arr, base.tsMs);
+          if (nearest) map.set(s.serialNumber, nearest);
+        });
+        return { tsMs: base.tsMs, readings: map };
+      });
+
+    exportPrimary.forEach(pr => {
+      const dt = formatBRShort(pr.tsMs);
       const tRow: any[] = [dt];
       const hRow: any[] = [dt];
-      
-      // Add sensor readings
-      sensors.forEach(s => {
-        const r = pr.readings.get(s.serialNumber);
+
+      // Add sensor readings only for visible sensors
+      visibleSensorsList.forEach(s => {
+        const sid = s.serialNumber;
+        const r = pr.readings.get(sid);
         tRow.push(r ? Number(r.temperature.toFixed(2)) : '');
         hRow.push(r && r.humidity !== null ? Number(r.humidity.toFixed(2)) : '');
       });
@@ -146,9 +190,13 @@ const ValidationDetails: React.FC = () => {
       tRow.push(data.minTemperature, data.maxTemperature);
       hRow.push(data.minHumidity || '', data.maxHumidity || '');
       
-      // Calculate statistics for this row
-      const tempValues = Array.from(pr.readings.values()).map(r => r.temperature).filter(v => v !== null);
-      const humValues = Array.from(pr.readings.values()).map(r => r.humidity).filter(v => v !== null && v !== undefined);
+      // Calculate statistics for this row (only visible sensors)
+      const tempValues = Array.from(pr.readings.entries())
+        .filter(([k]) => visibleSensorsList.some(s => s.serialNumber === k))
+        .map(([, r]) => r.temperature).filter(v => v !== null);
+      const humValues = Array.from(pr.readings.entries())
+        .filter(([k]) => visibleSensorsList.some(s => s.serialNumber === k))
+        .map(([, r]) => r.humidity).filter(v => v !== null && v !== undefined);
       
       if (tempValues.length > 0) {
         const minTemp = Math.min(...tempValues);
@@ -176,10 +224,10 @@ const ValidationDetails: React.FC = () => {
     const wsTemp = XLSX.utils.aoa_to_sheet(tempRows);
     // Ensure column A (Data/Hora) is written as Excel date cells with format dd/mm/yy hh:mm
     try {
-      for (let i = 0; i < pivotRows.length; i++) {
+      for (let i = 0; i < exportPrimary.length; i++) {
         const rowIndex = i + 1; // aoa_to_sheet has header at row 0
         const cellAddr = XLSX.utils.encode_cell({ c: 0, r: rowIndex });
-        const tsMs = pivotRows[i].ts; // stored as numeric ms
+        const tsMs = exportPrimary[i].tsMs; // stored as numeric ms
         if (tsMs == null) continue;
         // overwrite cell with date type
         wsTemp[cellAddr] = { t: 'd', v: new Date(Number(tsMs)), z: 'dd/mm/yy hh:mm' } as any;
@@ -192,10 +240,10 @@ const ValidationDetails: React.FC = () => {
     if (data.statistics?.humidity) {
       const wsHum = XLSX.utils.aoa_to_sheet(humRows);
       try {
-        for (let i = 0; i < pivotRows.length; i++) {
+        for (let i = 0; i < exportPrimary.length; i++) {
           const rowIndex = i + 1;
           const cellAddr = XLSX.utils.encode_cell({ c: 0, r: rowIndex });
-          const tsMs = pivotRows[i].ts;
+          const tsMs = exportPrimary[i].tsMs;
           if (tsMs == null) continue;
           wsHum[cellAddr] = { t: 'd', v: new Date(Number(tsMs)), z: 'dd/mm/yy hh:mm' } as any;
         }
@@ -204,7 +252,7 @@ const ValidationDetails: React.FC = () => {
       }
       XLSX.utils.book_append_sheet(wb, wsHum, 'Umidade');
     }
-    const fileName = `validacao_${data.validationNumber}_pivot.xlsx`;
+    const fileName = `validacao_${data.validationNumber}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
@@ -214,22 +262,108 @@ const ValidationDetails: React.FC = () => {
     }
   }, [id]);
 
+  // Performance: heavy processing is memoized and must be declared before any early returns
+  const uniqueRows = useMemo<EnrichedRow[]>(() => {
+    if (!data || !Array.isArray(data.sensorData)) return [];
+    const map = new Map<string, SensorDataRow>();
+    for (const row of data.sensorData) {
+      try {
+        if (!row || !row.timestamp || !row.sensor) continue;
+        const dt = parseToDate(row.timestamp);
+        const serial = (row.sensor as any).serialNumber || (row.sensor as any).id || 'unknown';
+        const key = `${dt.toISOString()}|${serial}`;
+        if (!map.has(key)) map.set(key, row);
+      } catch (e) {
+        continue;
+      }
+    }
+    return Array.from(map.values()).map(r => ({ ...r, tsMs: (() => { try { return parseToDate(r.timestamp).getTime(); } catch { return 0; } })() }));
+  }, [data?.sensorData]);
+
+  const sensors = useMemo(() => {
+    const order = new Map<string, SensorDataRow['sensor']>();
+    uniqueRows.forEach(r => {
+      if (!order.has(r.sensor.serialNumber)) order.set(r.sensor.serialNumber, r.sensor);
+    });
+    return Array.from(order.values());
+  }, [uniqueRows]);
+
+  const readingsBySensor = useMemo(() => {
+    const m = new Map<string, EnrichedRow[]>();
+    sensors.forEach(s => m.set(s.serialNumber, []));
+    uniqueRows.forEach(r => {
+      const arr = m.get(r.sensor.serialNumber)!;
+      if (arr) arr.push(r);
+    });
+    m.forEach((arr) => arr.sort((a, b) => a.tsMs - b.tsMs));
+    return m;
+  }, [uniqueRows, sensors]);
+
+  const TOLERANCE_SECONDS = toleranceSec;
+  const primarySensor = sensors[0]?.serialNumber;
+  const primaryTimeline = primarySensor ? readingsBySensor.get(primarySensor) || [] : [];
+
+  const findNearestWithinToleranceBinary = useCallback((arr: EnrichedRow[], targetMs: number): EnrichedRow | undefined => {
+    if (!arr || arr.length === 0) return undefined;
+    let lo = 0, hi = arr.length - 1;
+    if (targetMs <= arr[0].tsMs) {
+      return Math.abs(arr[0].tsMs - targetMs) / 1000 <= TOLERANCE_SECONDS ? arr[0] : undefined;
+    }
+    if (targetMs >= arr[hi].tsMs) {
+      return Math.abs(arr[hi].tsMs - targetMs) / 1000 <= TOLERANCE_SECONDS ? arr[hi] : undefined;
+    }
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const midTs = arr[mid].tsMs;
+      if (midTs === targetMs) return arr[mid];
+      if (midTs < targetMs) lo = mid + 1;
+      else hi = mid - 1;
+    }
+    const candidates = [] as EnrichedRow[];
+    if (arr[lo]) candidates.push(arr[lo]);
+    if (arr[lo - 1]) candidates.push(arr[lo - 1]);
+    let best: EnrichedRow | undefined;
+    let bestDiff = Number.POSITIVE_INFINITY;
+    for (const c of candidates) {
+      const diff = Math.abs(c.tsMs - targetMs) / 1000;
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = c;
+      }
+    }
+    if (bestDiff <= TOLERANCE_SECONDS) return best;
+    return undefined;
+  }, [TOLERANCE_SECONDS]);
+
+  const totalPivotRows = primaryTimeline.length;
+  const totalPages = Math.max(1, Math.ceil(totalPivotRows / rowsPerPage));
+
+  const paginatedData = useMemo(() => {
+    if (!primaryTimeline || primaryTimeline.length === 0) return [];
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = currentPage * rowsPerPage;
+    const pagePrimary = primaryTimeline.slice(start, end);
+    return pagePrimary.map(base => {
+      const map = new Map<string, SensorDataRow | EnrichedRow>();
+      map.set(base.sensor.serialNumber, base);
+      sensors.forEach(s => {
+        if (s.serialNumber === base.sensor.serialNumber) return;
+        const arr = readingsBySensor.get(s.serialNumber) || [];
+        const nearest = findNearestWithinToleranceBinary(arr, base.tsMs);
+        if (nearest) map.set(s.serialNumber, nearest);
+      });
+      return { ts: base.tsMs, readings: map };
+    });
+  // Intentionally depend on these values so page recalculates when they change
+  }, [primaryTimeline, currentPage, rowsPerPage, sensors, readingsBySensor, findNearestWithinToleranceBinary]);
+
   // Using shared parseToDate from utils for deterministic parsing
 
   const fetchValidationDetails = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/validations/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Erro ao buscar dados');
-
-      const result = await response.json();
-      const validationData = result.data.validation;
+      const resp = await apiService.api.get(`/validations/${id}`);
+      const validationData = resp.data?.data?.validation;
       
       // Calcular statistics se não existir
       if (!validationData.statistics && validationData.sensorData && validationData.sensorData.length > 0) {
@@ -261,7 +395,7 @@ const ValidationDetails: React.FC = () => {
           if (cycleData.length === 0) {
             return {
               id: cycle.id,
-              name: cycle.name,
+              name: cycle?.name || `Ciclo ${cycle.id || ''}`,
               totalReadings: 0,
               conformityPercentage: 0,
               temperature: { min: 0, max: 0, average: 0 },
@@ -284,7 +418,7 @@ const ValidationDetails: React.FC = () => {
 
           return {
             id: cycle.id,
-            name: cycle.name,
+            name: cycle?.name || `Ciclo ${cycle.id || ''}`,
             totalReadings: cycleData.length,
             conformityPercentage: (cycleConformCount / cycleData.length) * 100,
             temperature: {
@@ -331,21 +465,8 @@ const ValidationDetails: React.FC = () => {
     
     try {
       setIsDeleting(true);
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/validations/${id}/sensor-data`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erro ao deletar dados');
-      }
-
-      const result = await response.json();
-      toast.success(result.message || 'Dados deletados com sucesso!');
+      const response = await apiService.api.delete(`/validations/${id}/sensor-data`);
+      toast.success(response.data?.message || 'Dados deletados com sucesso!');
       setShowDeleteModal(false);
       
       // Recarregar página para atualizar dados
@@ -414,102 +535,13 @@ const ValidationDetails: React.FC = () => {
     );
   }
 
-  // Performance: heavy processing is memoized and we only compute pivot rows for current page.
-  const uniqueRows = useMemo<EnrichedRow[]>(() => {
-    if (!data || !data.sensorData) return [];
-    const map = new Map<string, SensorDataRow>();
-    for (const row of data.sensorData) {
-      const dt = parseToDate(row.timestamp);
-      const key = `${dt.toISOString()}|${row.sensor.id}`;
-      if (!map.has(key)) map.set(key, row);
-    }
-    return Array.from(map.values()).map(r => ({ ...r, tsMs: parseToDate(r.timestamp).getTime() }));
-  }, [data?.sensorData]);
-
-  const sensors = useMemo(() => {
-    const order = new Map<string, SensorDataRow['sensor']>();
-    uniqueRows.forEach(r => {
-      if (!order.has(r.sensor.serialNumber)) order.set(r.sensor.serialNumber, r.sensor);
-    });
-    return Array.from(order.values());
-  }, [uniqueRows]);
-
-  const readingsBySensor = useMemo(() => {
-    const m = new Map<string, EnrichedRow[]>();
-    sensors.forEach(s => m.set(s.serialNumber, []));
-    uniqueRows.forEach(r => {
-      const arr = m.get(r.sensor.serialNumber)!;
-      if (arr) arr.push(r);
-    });
-    m.forEach((arr) => arr.sort((a, b) => a.tsMs - b.tsMs));
-    return m;
-  }, [uniqueRows, sensors]);
-
-  const TOLERANCE_SECONDS = toleranceSec;
-  const primarySensor = sensors[0]?.serialNumber;
-  const primaryTimeline = primarySensor ? readingsBySensor.get(primarySensor) || [] : [];
-
-  // binary search nearest neighbor (faster than a linear scan)
-  const findNearestWithinToleranceBinary = useCallback((arr: EnrichedRow[], targetMs: number): EnrichedRow | undefined => {
-    if (!arr || arr.length === 0) return undefined;
-    let lo = 0, hi = arr.length - 1;
-    if (targetMs <= arr[0].tsMs) {
-      return Math.abs(arr[0].tsMs - targetMs) / 1000 <= TOLERANCE_SECONDS ? arr[0] : undefined;
-    }
-    if (targetMs >= arr[hi].tsMs) {
-      return Math.abs(arr[hi].tsMs - targetMs) / 1000 <= TOLERANCE_SECONDS ? arr[hi] : undefined;
-    }
-    while (lo <= hi) {
-      const mid = Math.floor((lo + hi) / 2);
-      const midTs = arr[mid].tsMs;
-      if (midTs === targetMs) return arr[mid];
-      if (midTs < targetMs) lo = mid + 1;
-      else hi = mid - 1;
-    }
-    // lo is the insertion index; check neighbors lo and lo-1
-    const candidates = [] as EnrichedRow[];
-    if (arr[lo]) candidates.push(arr[lo]);
-    if (arr[lo - 1]) candidates.push(arr[lo - 1]);
-    let best: EnrichedRow | undefined;
-    let bestDiff = Number.POSITIVE_INFINITY;
-    for (const c of candidates) {
-      const diff = Math.abs(c.tsMs - targetMs) / 1000;
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        best = c;
-      }
-    }
-    if (bestDiff <= TOLERANCE_SECONDS) return best;
-    return undefined;
-  }, [TOLERANCE_SECONDS]);
-
-  const totalPivotRows = primaryTimeline.length;
-  const totalPages = Math.max(1, Math.ceil(totalPivotRows / rowsPerPage));
-
-  const paginatedData = useMemo(() => {
-    if (!primaryTimeline || primaryTimeline.length === 0) return [];
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = currentPage * rowsPerPage;
-    const pagePrimary = primaryTimeline.slice(start, end);
-    return pagePrimary.map(base => {
-      const map = new Map<string, SensorDataRow | EnrichedRow>();
-      map.set(base.sensor.serialNumber, base);
-      sensors.forEach(s => {
-        if (s.serialNumber === base.sensor.serialNumber) return;
-        const arr = readingsBySensor.get(s.serialNumber) || [];
-        const nearest = findNearestWithinToleranceBinary(arr, base.tsMs);
-        if (nearest) map.set(s.serialNumber, nearest);
-      });
-      return { ts: base.tsMs, readings: map };
-    });
-  // Intentionally depend on these values so page recalculates when they change
-  }, [primaryTimeline, currentPage, rowsPerPage, sensors, readingsBySensor, findNearestWithinToleranceBinary]);
+  // production: no debug logs here
 
   return (
     <>
       <PageHeader
-        title={data.name}
-        description={`Validação #${data.validationNumber} - ${data.client.name}`}
+        title={data.name || `Validação #${data.validationNumber}`}
+        description={`Validação #${data.validationNumber} - ${data.client?.name || ''}`}
         actions={(
           <button
             onClick={() => navigate('/validations')}
@@ -719,7 +751,7 @@ const ValidationDetails: React.FC = () => {
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
                     {sensors.map(s => (
                       <th key={s.serialNumber + '-temp'} className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {s.serialNumber} Temp (°C)
+                        {s.serialNumber}
                       </th>
                     ))}
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Máx</th>
@@ -924,4 +956,13 @@ const ValidationDetails: React.FC = () => {
   );
 };
 
-export default ValidationDetails;
+// Wrap with ErrorBoundary to capture runtime render errors and log details
+import ErrorBoundary from '@/components/ErrorBoundary';
+
+export default function ValidationDetailsWrapper() {
+  return (
+    <ErrorBoundary componentName="ValidationDetails">
+      <ValidationDetails />
+    </ErrorBoundary>
+  );
+}

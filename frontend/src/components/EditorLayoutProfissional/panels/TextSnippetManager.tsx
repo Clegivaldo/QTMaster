@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Trash2, Edit2, Save, X, Type } from 'lucide-react';
 import { useToast } from '../../../../hooks/useToast';
+import { apiService } from '@/services/api';
 
 interface TextSnippet {
     id: string;
@@ -27,13 +28,8 @@ export const TextSnippetManager: React.FC = () => {
     const fetchSnippets = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch('/api/text-snippets', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!response.ok) throw new Error('Failed to fetch snippets');
-            const data = await response.json();
-            setSnippets(data);
+            const res = await apiService.api.get('/text-snippets');
+            setSnippets(res.data?.data ?? res.data ?? []);
         } catch (err) {
             error('Erro ao carregar snippets');
         } finally {
@@ -43,25 +39,16 @@ export const TextSnippetManager: React.FC = () => {
 
     const handleSave = async () => {
         try {
-            const token = localStorage.getItem('token');
+            
             const method = currentSnippet.id ? 'PUT' : 'POST';
             const url = currentSnippet.id
                 ? `/api/text-snippets/${currentSnippet.id}`
                 : '/api/text-snippets';
-
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(currentSnippet)
+            const res = await apiService.api.request({
+                url,
+                method: method as any,
+                data: currentSnippet,
             });
-
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'Erro ao salvar snippet');
-            }
 
             success('Snippet salvo com sucesso');
             setIsEditing(false);
@@ -76,13 +63,7 @@ export const TextSnippetManager: React.FC = () => {
         if (!confirm('Tem certeza que deseja excluir este snippet?')) return;
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`/api/text-snippets/${id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error('Erro ao excluir snippet');
+            await apiService.api.delete(`/text-snippets/${id}`);
 
             success('Snippet excluído com sucesso');
             fetchSnippets();

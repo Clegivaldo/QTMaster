@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiService } from '@/services/api';
 
 export interface TemplateVariable {
   name: string;
@@ -41,19 +42,10 @@ export function useTemplateVariables() {
     setError(null);
 
     try {
-      const response = await fetch('/api/templates/variables', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao carregar variáveis');
-      }
-
-      const data = await response.json();
-      setVariables(data.data.variables);
-      setGrouped(data.data.grouped);
+      const res = await apiService.api.get('/templates/variables');
+      const data = res.data ?? {};
+      setVariables(data.data?.variables ?? []);
+      setGrouped(data.data?.grouped ?? {});
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
@@ -83,23 +75,11 @@ export function useTemplatePreview() {
     setWarnings([]);
 
     try {
-      const response = await fetch('/api/templates/preview', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ templateContent, sampleData }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao gerar preview');
-      }
-
-      const data = await response.json();
-      setPreviewHtml(data.data.html);
-      setWarnings(data.data.warnings || []);
-      setErrors(data.data.errors || []);
+      const res = await apiService.api.post('/templates/preview', { templateContent, sampleData });
+      const data = res.data ?? {};
+      setPreviewHtml(data.data?.html || '');
+      setWarnings(data.data?.warnings || []);
+      setErrors(data.data?.errors || []);
     } catch (err) {
       setErrors([err instanceof Error ? err.message : 'Erro desconhecido']);
     } finally {
@@ -123,22 +103,10 @@ export function useTemplateVersions(templateId: string) {
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/templates/${templateId}/versions?limit=${limit}&offset=${offset}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Falha ao carregar versões');
-      }
-
-      const data = await response.json();
-      setVersions(data.data);
-      setTotal(data.pagination.total);
+      const res = await apiService.api.get(`/templates/${templateId}/versions?limit=${limit}&offset=${offset}`);
+      const data = res.data ?? {};
+      setVersions(data.data ?? []);
+      setTotal(data.pagination?.total ?? 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
@@ -150,18 +118,9 @@ export function useTemplateVersions(templateId: string) {
     if (!templateId) return null;
 
     try {
-      const response = await fetch(`/api/templates/${templateId}/versions/${version}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao carregar versão');
-      }
-
-      const data = await response.json();
-      return data.data;
+      const res = await apiService.api.get(`/templates/${templateId}/versions/${version}`);
+      const data = res.data ?? {};
+      return data.data ?? null;
     } catch (err) {
       console.error('Erro ao carregar versão:', err);
       return null;
@@ -182,44 +141,15 @@ export function useTemplateVersions(templateId: string) {
     if (!templateId) return null;
 
     try {
-      const response = await fetch(`/api/templates/${templateId}/versions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(versionData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao criar versão');
-      }
-
-      const data = await response.json();
-      await fetchVersions(); // Recarregar lista
-      return data.data;
+      const res = await apiService.api.post(`/templates/${templateId}/versions`, versionData);
+      await fetchVersions();
+      return res.data?.data ?? null;
     } catch (err) {
       console.error('Erro ao criar versão:', err);
-      throw err;
-    }
-  }, [templateId, fetchVersions]);
-
-  const rollbackToVersion = useCallback(async (
-    version: number,
-    createNewVersion = true
-  ) => {
-    if (!templateId) return null;
-
-    try {
-      const response = await fetch(
-        `/api/templates/${templateId}/rollback/${version}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({ createNewVersion }),
+      try {
+        const res = await apiService.api.post(`/templates/${templateId}/rollback/${version}`, { createNewVersion });
+        await fetchVersions();
+        return res.data?.data ?? null;
         }
       );
 

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { buildApiUrl } from '@/config/api';
+import { apiService } from '@/services/api';
 
 // ==================== Interfaces ====================
 
@@ -85,17 +86,8 @@ export const useSignature = (reportId: string) => {
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl(`/reports/${reportId}/signature`), {
-        headers: getAuthHeaders(),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar informações da assinatura');
-      }
-
-      setSignatureInfo(result.data);
+      const res = await apiService.api.get(buildApiUrl(`/reports/${reportId}/signature`));
+      setSignatureInfo(res.data?.data ?? res.data ?? null);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
       setError(errorMsg);
@@ -114,22 +106,9 @@ export const useSignature = (reportId: string) => {
       setError(null);
 
       try {
-        const response = await fetch(buildApiUrl(`/reports/${reportId}/sign`), {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify(options || {}),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Erro ao assinar relatório');
-        }
-
-        // Atualizar info após assinar
+        const res = await apiService.api.post(buildApiUrl(`/reports/${reportId}/sign`), options || {});
         await fetchSignatureInfo();
-
-        return result.data;
+        return res.data?.data ?? res.data;
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
         setError(errorMsg);
@@ -150,15 +129,8 @@ export const useSignature = (reportId: string) => {
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl(`/reports/${reportId}/signature/verify`));
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao verificar assinatura');
-      }
-
-      return result.data;
+      const res = await apiService.api.get(buildApiUrl(`/reports/${reportId}/signature/verify`));
+      return res.data?.data ?? res.data;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
       setError(errorMsg);
@@ -180,21 +152,9 @@ export const useSignature = (reportId: string) => {
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl(`/reports/${reportId}/signature`), {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao remover assinatura');
-      }
-
-      // Atualizar info após remover
+      const res = await apiService.api.delete(buildApiUrl(`/reports/${reportId}/signature`));
       await fetchSignatureInfo();
-
-      return result;
+      return res.data?.data ?? res.data;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
       setError(errorMsg);
@@ -241,17 +201,8 @@ export const useSharing = (reportId: string) => {
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl(`/reports/${reportId}/share`), {
-        headers: getAuthHeaders(),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar links');
-      }
-
-      setSharedLinks(result.data);
+      const res = await apiService.api.get(buildApiUrl(`/reports/${reportId}/share`));
+      setSharedLinks(res.data?.data ?? res.data ?? []);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
       setError(errorMsg);
@@ -270,22 +221,9 @@ export const useSharing = (reportId: string) => {
       setError(null);
 
       try {
-        const response = await fetch(buildApiUrl(`/reports/${reportId}/share`), {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify(options || {}),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Erro ao criar link');
-        }
-
-        // Atualizar lista
+        const res = await apiService.api.post(buildApiUrl(`/reports/${reportId}/share`), options || {});
         await fetchSharedLinks();
-
-        return result.data;
+        return res.data?.data ?? res.data;
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
         setError(errorMsg);
@@ -307,21 +245,9 @@ export const useSharing = (reportId: string) => {
       setError(null);
 
       try {
-        const response = await fetch(buildApiUrl(`/reports/share/${linkId}`), {
-          method: 'DELETE',
-          headers: getAuthHeaders(),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Erro ao revogar link');
-        }
-
-        // Atualizar lista
+        const res = await apiService.api.delete(buildApiUrl(`/reports/share/${linkId}`));
         await fetchSharedLinks();
-
-        return result;
+        return res.data?.data ?? res.data;
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
         setError(errorMsg);
@@ -342,17 +268,8 @@ export const useSharing = (reportId: string) => {
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl(`/reports/share/${linkId}/stats`), {
-        headers: getAuthHeaders(),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar estatísticas');
-      }
-
-      return result.data;
+      const res = await apiService.api.get(buildApiUrl(`/reports/share/${linkId}/stats`));
+      return res.data?.data ?? res.data;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
       setError(errorMsg);

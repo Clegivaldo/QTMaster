@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { buildApiUrl } from '@/config/api';
+import { apiService } from '@/services/api';
 
 export const SharedReport: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -21,40 +22,26 @@ export const SharedReport: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl(`/reports/shared/${token}`), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          password: passwordValue || undefined,
-        }),
+      const res = await apiService.api.post(buildApiUrl(`/reports/shared/${token}`), {
+        password: passwordValue || undefined,
+      }, {
+        responseType: 'blob'
       });
 
-      if (!response.ok) {
-        const result = await response.json();
-        
-        // Detectar se requer senha
-        if (result.error?.includes('senha') || result.error?.includes('password')) {
-          setRequiresPassword(true);
-          setError('Este link está protegido por senha');
-        } else {
-          setError(result.error || 'Não foi possível acessar o relatório');
-        }
+      if (!res || !res.data) {
+        setError('Não foi possível acessar o relatório');
         setLoading(false);
         return;
       }
 
-      // Verificar se é PDF
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/pdf')) {
+      const contentType = res.headers?.['content-type'] || '';
+      if (!contentType.includes('application/pdf')) {
         setError('Formato de arquivo inválido');
         setLoading(false);
         return;
       }
 
-      // Criar URL do PDF
-      const blob = await response.blob();
+      const blob = new Blob([res.data], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
       setLoading(false);

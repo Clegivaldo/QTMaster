@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: laudo_db
       POSTGRES_USER: laudo_user
-      POSTGRES_PASSWORD: laudo123
+      POSTGRES_PASSWORD: laudo_password
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     ports:

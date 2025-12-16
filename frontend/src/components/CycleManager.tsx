@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, X, Clock, Calendar } from 'lucide-react';
 import { parseToDate, formatBRShort } from '@/utils/parseDate';
+import { apiService } from '@/services/api';
 import { useToast } from './ToastContext';
 
 interface Cycle {
@@ -87,22 +88,17 @@ const CycleManager: React.FC<CycleManagerProps> = ({ validationId, cycles, onUpd
       
       const method = editingCycle ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...formData,
-          startAt: parseToDate(formData.startAt).toISOString(),
-          endAt: parseToDate(formData.endAt).toISOString()
-        })
-      });
+      const payload = {
+        ...formData,
+        startAt: parseToDate(formData.startAt).toISOString(),
+        endAt: parseToDate(formData.endAt).toISOString()
+      };
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao salvar ciclo');
+      let response;
+      if (editingCycle) {
+        response = await apiService.api.put(`/validations/${validationId}/cycles/${editingCycle.id}`, payload);
+      } else {
+        response = await apiService.api.post(`/validations/${validationId}/cycles`, payload);
       }
 
       toast.success(editingCycle ? 'Ciclo atualizado com sucesso!' : 'Ciclo criado com sucesso!');
@@ -124,14 +120,7 @@ const CycleManager: React.FC<CycleManagerProps> = ({ validationId, cycles, onUpd
     if (!confirmDeleteCycle) return;
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/validations/${validationId}/cycles/${confirmDeleteCycle.id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao deletar ciclo');
-      }
+      await apiService.api.delete(`/validations/${validationId}/cycles/${confirmDeleteCycle.id}`);
 
       toast.success('Ciclo deletado com sucesso!');
       setConfirmDeleteCycle(null);

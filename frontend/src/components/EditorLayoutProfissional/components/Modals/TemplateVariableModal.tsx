@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Code, Search, Plus } from 'lucide-react';
 import ResponsiveModal from '../../../ResponsiveModal';
 import { getAvailableVariables } from '../../../../utils/templateUtils';
+import { apiService } from '@/services/api';
 
 interface TemplateVariableModalProps {
     isOpen: boolean;
@@ -28,14 +29,8 @@ const TemplateVariableModal: React.FC<TemplateVariableModalProps> = ({
 
     const fetchSnippets = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('/api/text-snippets?isActive=true', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setSnippets(data);
-            }
+            const res = await apiService.api.get('/text-snippets?isActive=true');
+            setSnippets(res.data?.data ?? res.data ?? []);
         } catch (error) {
             console.error('Failed to fetch snippets', error);
         }

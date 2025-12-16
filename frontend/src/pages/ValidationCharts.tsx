@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import PageHeader from '@/components/Layout/PageHeader';
 import { parseToDate, formatDisplayTime } from '@/utils/parseDate';
+import { apiService } from '@/services/api';
 
 interface SensorReading {
   timestamp: string;
@@ -120,17 +121,9 @@ const ValidationCharts: React.FC = () => {
   const fetchValidation = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/validations/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Erro ao buscar dados');
-
-      const result = await response.json();
-      const validationData = result.data.validation;
+      const response = await apiService.api.get(`/validations/${id}`);
+      const validationData = response.data?.data?.validation;
+      if (!validationData) throw new Error('Erro ao buscar dados');
       setData(validationData);
 
       // Inicializar configurações (Defaults vs Salvos)
@@ -586,31 +579,22 @@ const ValidationCharts: React.FC = () => {
                     setVisibleSensors(new Set(allSensorIds));
 
                     // Salvar o reset
-                    try {
+                      try {
                       setSaving(true);
-                      const token = localStorage.getItem('accessToken');
 
                       // Salvar sensores (enviando TODOS selecionados = nenhum oculto)
-                      await fetch(`/api/validations/${id}/sensors/selection`, {
-                        method: 'PUT',
-                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ selectedSensorIds: allSensorIds })
-                      });
+                      await apiService.api.put(`/validations/${id}/sensors/selection`, { selectedSensorIds: allSensorIds });
 
                       // Salvar config resetada
-                      await fetch(`/api/validations/${id}/criteria`, {
-                        method: 'PUT',
-                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          minTemperature: data.minTemperature,
-                          maxTemperature: data.maxTemperature,
-                          minHumidity: data.minHumidity,
-                          maxHumidity: data.maxHumidity,
-                          chartConfig: {
-                            yAxisConfig: defaultY,
-                            dateRange: defaultDates
-                          }
-                        })
+                      await apiService.api.put(`/validations/${id}/criteria`, {
+                        minTemperature: data.minTemperature,
+                        maxTemperature: data.maxTemperature,
+                        minHumidity: data.minHumidity,
+                        maxHumidity: data.maxHumidity,
+                        chartConfig: {
+                          yAxisConfig: defaultY,
+                          dateRange: defaultDates
+                        }
                       });
                       alert('Configurações restauradas.');
                     } catch (err) {
@@ -630,34 +614,19 @@ const ValidationCharts: React.FC = () => {
                     if (!id || !data) return;
                     try {
                       setSaving(true);
-                      const token = localStorage.getItem('accessToken');
-                      await fetch(`/api/validations/${id}/criteria`, {
-                        method: 'PUT',
-                        headers: {
-                          'Authorization': `Bearer ${token}`,
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                          minTemperature: data.minTemperature,
-                          maxTemperature: data.maxTemperature,
-                          minHumidity: data.minHumidity,
-                          maxHumidity: data.maxHumidity,
-                          chartConfig: {
-                            yAxisConfig,
-                            dateRange
-                          }
-                        })
+                      await apiService.api.put(`/validations/${id}/criteria`, {
+                        minTemperature: data.minTemperature,
+                        maxTemperature: data.maxTemperature,
+                        minHumidity: data.minHumidity,
+                        maxHumidity: data.maxHumidity,
+                        chartConfig: {
+                          yAxisConfig,
+                          dateRange
+                        }
                       });
                       // Persistir seleção de sensores visíveis
                       const selectedSensorIds = Array.from(visibleSensors);
-                      await fetch(`/api/validations/${id}/sensors/selection`, {
-                        method: 'PUT',
-                        headers: {
-                          'Authorization': `Bearer ${token}`,
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ selectedSensorIds })
-                      });
+                      await apiService.api.put(`/validations/${id}/sensors/selection`, { selectedSensorIds });
                       alert('Critérios e seleção de sensores salvos.');
                     } catch (err) {
                       console.error('Erro ao salvar critérios/seleção:', err);

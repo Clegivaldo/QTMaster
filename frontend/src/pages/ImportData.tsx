@@ -10,6 +10,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import PageHeader from '@/components/Layout/PageHeader';
+import { apiService } from '@/services/api';
 import { useFileUpload, useUploadFiles, useProcessingStatus } from '@/hooks/useFileProcessing';
 import { useSuitcases } from '@/hooks/useSuitcases';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -69,38 +70,20 @@ const ImportData: React.FC = () => {
       // Se não há validação associada, não há como ter duplicatas
       return true;
     }
-
     try {
-      const token = localStorage.getItem('accessToken');
-      
       // Extrair metadados do primeiro arquivo (aproximação)
       const file = selectedFiles[0];
       const fileName = file.name;
-      
-      const response = await fetch(`/api/validations/${validationIdFromQuery}/check-duplicate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          fileName,
-          // Nota: metadados completos viriam do parser, mas por enquanto enviamos só o nome
-        })
+
+      const res = await apiService.api.post(`/validations/${validationIdFromQuery}/check-duplicate`, {
+        fileName,
       });
 
-      if (!response.ok) {
-        // Se API falhar, continua com upload
-        console.warn('Failed to check duplicates, proceeding with upload');
-        toast.info('Não foi possível verificar duplicidade. Prosseguindo.');
-        return true;
-      }
-
-      const result = await response.json();
+      const result = res.data ?? {};
       const isDuplicate = result?.isDuplicate ?? result?.data?.isDuplicate ?? false;
       const message = result?.message ?? result?.data?.message;
       const existingCount = result?.existingCount ?? result?.data?.existingCount ?? 0;
-      
+
       if (isDuplicate) {
         toast.warning(message || 'Dados possivelmente já importados.');
         const confirmed = window.confirm(
@@ -109,10 +92,10 @@ const ImportData: React.FC = () => {
           `Novos arquivos: ${selectedFiles.length}\n\n` +
           `Deseja prosseguir com a importação mesmo assim?`
         );
-        
+
         return confirmed;
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error checking duplicates:', error);

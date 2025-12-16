@@ -13,6 +13,7 @@ import {
     ReferenceArea
 } from 'recharts';
 import { parseToDate, formatDisplayTime } from '@/utils/parseDate';
+import { apiService } from '@/services/api';
 
 interface SensorReading {
     timestamp: string;
@@ -88,15 +89,9 @@ const ValidationChartFullScreen: React.FC = () => {
     const fetchValidation = async () => {
         try {
             setIsLoading(true);
-            const token = localStorage.getItem('accessToken');
-            const response = await fetch(`/api/validations/${id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error('Erro ao buscar dados');
-
-            const result = await response.json();
-            const validationData = result.data.validation;
+            const response = await apiService.api.get(`/validations/${id}`);
+            const validationData = response.data?.data?.validation;
+            if (!validationData) throw new Error('Erro ao buscar dados');
             setData(validationData);
 
             if (validationData.sensorData && validationData.sensorData.length > 0) {

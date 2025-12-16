@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { SignaturePanel } from '@/components/ReportSignature/SignaturePanel';
 import { parseToDate, formatBRShort } from '@/utils/parseDate';
 import { buildApiUrl } from '@/config/api';
+import { apiService } from '@/services/api';
 import { SharingPanel } from '@/components/ReportSharing/SharingPanel';
 
 interface Report {
@@ -25,20 +26,8 @@ export const ReportDetails: React.FC = () => {
       if (!id) return;
 
       try {
-        const token = localStorage.getItem('token');
-
-        const response = await fetch(buildApiUrl(`/reports/${id}`), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Erro ao carregar relatório');
-        }
-
-        const result = await response.json();
-        setReport(result.data);
+        const res = await apiService.api.get(buildApiUrl(`/reports/${id}`));
+        setReport(res.data?.data ?? res.data ?? null);
       } catch (error) {
         console.error('Erro ao buscar relatório:', error);
       } finally {

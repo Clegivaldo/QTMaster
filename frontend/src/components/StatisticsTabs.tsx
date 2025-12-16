@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiService } from '@/services/api';
 import { parseToDate, formatDisplayTime } from '@/utils/parseDate';
 import { Thermometer, Droplets, Clock, Activity, TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -79,17 +80,8 @@ export default function StatisticsTabs({ validationId }: StatisticsTabsProps) {
   const fetchStatistics = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/validations/${validationId}/cycle-statistics`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Erro ao buscar estatísticas');
-
-      const result = await response.json();
-      setData(result.data);
+      const resp = await apiService.api.get(`/validations/${validationId}/cycle-statistics`);
+      setData(resp.data?.data || null);
     } catch (error) {
       console.error('Error fetching statistics:', error);
     } finally {
