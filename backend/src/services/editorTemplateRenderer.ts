@@ -412,8 +412,15 @@ export class EditorTemplateRenderer {
       const { chartRenderService } = await import('./chartRenderService.js');
 
       // Cast to ChartElement (assuming structure)
+      // Cast to ChartElement (assuming structure)
       const chartElement = element as any;
-      const chartConfig = chartElement.content || {};
+
+      // Merge properties into chartConfig to ensure frontend updates (stored in properties) are applied
+      // Priorities: element.properties > element.content
+      const chartConfig = {
+        ...(chartElement.content || {}),
+        ...(chartElement.properties || {})
+      };
 
       // Prepare chart data
       const chartData = this.prepareChartDataFromSource(chartConfig, data);
@@ -888,7 +895,9 @@ export class EditorTemplateRenderer {
       : 'sensorData';
 
     // Resolve data source
-    let tableData = this.resolveDataPath(dataSource, data);
+    // Handle Mustache-style brackets if present
+    const cleanDataSource = dataSource.replace('{{', '').replace('}}', '');
+    let tableData = this.resolveDataPath(cleanDataSource, data);
 
     // If data is not an array, try to wrap it or return empty
     if (!Array.isArray(tableData)) {
