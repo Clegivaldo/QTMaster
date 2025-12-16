@@ -99,21 +99,40 @@ export class EditorTemplateRenderer {
       }
 
       if (rootElements.length > 0) {
-        // Use root elements as the source of truth (they have the most up-to-date content)
-        // If pages exist, we still render one page per page in pages array for multi-page support
+        // Use root elements as the source of truth for content.
+        // For multi-page templates, each page has its own elements array with element IDs.
+        // We merge content from root to page elements.
         const numPages = Math.max(pages.length, 1);
 
         for (let i = 0; i < numPages; i++) {
           const page = pages[i] || { elements: [] };
+          const pageElements = (page.elements as EditorElement[]) || [];
 
-          // For single-page or legacy templates, render all root elements in the first page
-          // For multi-page templates, we would need a way to know which elements go on which page
-          // For now, put all root elements on page 1 (most common case)
-          const elementsToRender = i === 0 ? rootElements : (page.elements as EditorElement[]) || [];
+          // For each page, get elements from page.elements but use updated content from root
+          // If page has no elements, fall back to root elements on first page only
+          let elementsToRender: EditorElement[] = [];
+
+          if (pageElements.length > 0) {
+            // Merge page element structure with root element content
+            elementsToRender = pageElements.map(pageEl => {
+              const rootEl = elementMap.get(pageEl.id);
+              if (rootEl) {
+                // Use root element (has updated content)
+                return rootEl;
+              }
+              return pageEl;
+            });
+          } else if (i === 0) {
+            // Legacy single-page: put all root elements on first page
+            elementsToRender = rootElements;
+          }
 
           logger.debug(`Rendering page ${i + 1}`, {
             elementsCount: elementsToRender.length,
-            usingRootElements: i === 0
+            pageElementsCount: pageElements.length,
+            pageElementIds: pageElements.map(el => el.id),
+            rootElementIds: Array.from(elementMap.keys()),
+            matchedIds: pageElements.filter(el => elementMap.has(el.id)).map(el => el.id)
           });
 
           const elementsHTMLArray = await Promise.all(
@@ -325,6 +344,10 @@ export class EditorTemplateRenderer {
    * Resolve nested data path (e.g., "client.name", "validation.temperatureStats.avg")
    */
   private resolveDataPath(path: string, data: any): any {
+    if (typeof path !== 'string') {
+      logger.warn('Invalid path type in resolveDataPath', { path, type: typeof path });
+      return undefined;
+    }
     const parts = path.split('.');
     let current = data;
 
@@ -888,36 +911,54 @@ export class EditorTemplateRenderer {
    * Render table element with dynamic data
    */
   private renderTableElement(element: EditorElement, data: TemplateData, styles: string): string {
-    const tableElement = element as any; // Cast to TableElement
-    const tableConfig = tableElement.content || {};
-    const dataSource = (typeof tableConfig.dataSource === 'string' && tableConfig.dataSource)
-      ? tableConfig.dataSource
-      : 'sensorData';
+    try {
+      const tableElement = element as any; // Cast to TableElement
+      const tableConfig = tableElement.content || {};
+      const dataSource = (typeof tableConfig.dataSource === 'string' && tableConfig.dataSource)
+        ? tableConfig.dataSource
+        : 'sensorData';
 
-    // Resolve data source
-    // Handle Mustache-style brackets if present
-    const cleanDataSource = dataSource.replace('{{', '').replace('}}', '');
-    let tableData = this.resolveDataPath(cleanDataSource, data);
+      // Resolve data source
+      // Handle Mustache-style brackets if present
+      const cleanDataSource = dataSource.replace(/{{|}}/g, '');
+      let tableData = this.resolveDataPath(cleanDataSource, data);
 
-    // If data is not an array, try to wrap it or return empty
-    if (!Array.isArray(tableData)) {
-      if (tableData) {
-        tableData = [tableData];
-      } else {
-        // Fallback for preview/empty state
-        tableData = [
-          { col1: 'Sample 1', col2: 'Sample 2' },
-          { col1: 'Sample 3', col2: 'Sample 4' }
-        ];
+      // Check for Advanced Table Configuration
+      // Default to advanced (pivoted) mode when using sensorData, unless explicitly disabled
+      const dynamicColumnsEnabled = tableConfig.dynamicColumns !== false;
+      const isAdvanced = dynamicColumnsEnabled && (cleanDataSource === 'sensorData' || cleanDataSource === 'validation.cycles');
+
+      if (isAdvanced) {
+        const { rows, columns: dynamicColumns } = this.prepareAdvancedTableData(element, data);
+        tableData = rows;
+        // Override columns if dynamic
+        if (dynamicColumns.length > 0) {
+          // We need to cast or handle the assignment carefully if types were strict, but here it's any
+          (element as any).content.columns = dynamicColumns;
+        }
+      } else if (!Array.isArray(tableData)) {
+        // ... legacy fallback ...
+        if (tableData) {
+          tableData = [tableData];
+        } else {
+          // Fallback for preview/empty state
+          tableData = [
+            { col1: 'Sample 1', col2: 'Sample 2' },
+            { col1: 'Sample 3', col2: 'Sample 4' }
+          ];
+        }
       }
+
+      // Pagination logic (simple version for now, just taking first N rows if pagination not fully implemented)
+      // In a full implementation, this would handle page breaks
+      const rowsPerPage = tableConfig.pagination?.rowsPerPage || 50;
+      const pageData = tableData.slice(0, rowsPerPage);
+
+      return this.renderTablePage(element, pageData, 1, Math.ceil(tableData.length / rowsPerPage), styles);
+    } catch (error) {
+      logger.error('Error rendering table element', { error, elementId: element.id });
+      return `<div style="color: red; padding: 10px; border: 1px solid red; background: #ffebee;">Erro ao renderizar tabela: ${error instanceof Error ? error.message : String(error)}</div>`;
     }
-
-    // Pagination logic (simple version for now, just taking first N rows if pagination not fully implemented)
-    // In a full implementation, this would handle page breaks
-    const rowsPerPage = tableConfig.pagination?.rowsPerPage || 50;
-    const pageData = tableData.slice(0, rowsPerPage);
-
-    return this.renderTablePage(element, pageData, 1, Math.ceil(tableData.length / rowsPerPage));
   }
 
   /**
@@ -927,13 +968,18 @@ export class EditorTemplateRenderer {
     element: EditorElement,
     data: any[],
     pageIndex: number,
-    totalPages: number
+    totalPages: number,
+    combinedStyles: string
   ): string {
     const tableElement = element as any;
     const tableConfig = tableElement.content || {};
     // Ensure columns is an array. If not (e.g. from bad state or legacy), use defaults.
     const rawColumns = tableConfig.columns;
     let columns = Array.isArray(rawColumns) ? rawColumns : [];
+
+    const dataSource = (typeof tableConfig.dataSource === 'string' && tableConfig.dataSource)
+      ? tableConfig.dataSource
+      : 'sensorData';
 
     // If columns empty and using sensorData, auto-populate
     if (columns.length === 0 && (dataSource === 'sensorData' || dataSource === '{{sensorData}}')) {
@@ -983,7 +1029,8 @@ export class EditorTemplateRenderer {
 
       const cells = columns.map((col: any) => {
         // Resolve field value (support nested paths)
-        const value = this.resolveDataPath(col.field, row);
+        const fieldName = typeof col.field === 'string' ? col.field : '';
+        const value = this.resolveDataPath(fieldName, row);
 
         // Apply formatter
         const formattedValue = col.formatter
@@ -1007,8 +1054,8 @@ export class EditorTemplateRenderer {
       : '';
 
     // Build wrapper style string combining element styles (passed via `element.styles` => styles param
-    // from caller) and table-specific inline styles
-    const wrapperStyle = `${element.styles ? this.applyStyles(element.styles) : ''}; overflow: hidden; background-color: ${tableStylesObj.backgroundColor || 'transparent'};`;
+    // Use the combinedStyles passed from caller which includes positioning
+    const wrapperStyle = `${combinedStyles}; overflow: hidden; background-color: ${tableStylesObj.backgroundColor || 'transparent'};`;
 
     return `
       <div class="editor-element editor-table" style="${wrapperStyle}">
@@ -1044,6 +1091,10 @@ export class EditorTemplateRenderer {
         return `${Number(value).toFixed(1)} °C`;
       case 'formatHumidity':
         return `${Number(value).toFixed(1)} %`;
+      case 'formatTemperatureNoUnit':
+        return Number(value).toFixed(1);
+      case 'formatHumidityNoUnit':
+        return Number(value).toFixed(1);
       case 'formatCurrency':
         try {
           return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value));
@@ -1440,6 +1491,189 @@ export class EditorTemplateRenderer {
 
     return String(text).replace(/[&<>"']/g, (char) => map[char] || char);
   }
+
+  /**
+   * Prepare Advanced Table Data (Pivoting, Aggregation, Dynamic Columns)
+   */
+  private prepareAdvancedTableData(element: EditorElement, data: TemplateData): { rows: any[], columns: any[] } {
+    const config = element.content || {};
+    const dataType = config.dataType || 'temperature'; // temperature | humidity
+    const scope = config.dataScope || 'general'; // general | cycle
+    const aggregation = config.aggregation || 'all'; // all | min | max | avg
+    const filterExternal = config.filterExternalSensors === true; // true | false
+
+    const sensors = data.sensors || [];
+    const sensorData = data.sensorData || [];
+    const cycles = data.validation?.cycles || [];
+    const limits = {
+      min: dataType === 'temperature' ? data.validation?.minTemperature : undefined,
+      max: dataType === 'temperature' ? data.validation?.maxTemperature : undefined
+    };
+
+    // 1. Filter Sensors (Internal/External)
+    // data.sensors now comes sorted and with isExternal flag from pdfGenerationService
+    const activeSensors = sensors;
+
+    // Sensors to be used for STATISTICS (Row Min/Avg/Max)
+    // If "Ignore External" is checked, filter them out.
+    const statsSensors = filterExternal
+      ? activeSensors.filter((s: any) => !s.isExternal)
+      : activeSensors;
+
+    // 2. Pivot Data (one row per timestamp)
+    // Map<TimestampMs, RowObject>
+    const rowsMap = new Map<number, any>();
+
+    sensorData.forEach(reading => {
+      const time = new Date(reading.timestamp).getTime();
+      if (!rowsMap.has(time)) {
+        rowsMap.set(time, {
+          timestamp: reading.timestamp,
+          rawTimestamp: time,
+          values: {}
+        });
+      }
+      const row = rowsMap.get(time);
+      const val = dataType === 'humidity' ? reading.humidity : reading.temperature;
+      if (val !== undefined && val !== null) {
+        row.values[reading.sensorId] = val;
+        // Flatten for direct access: sensor_123 = 25.5
+        row[`sensor_${reading.sensorId}`] = val;
+      }
+    });
+
+    let rows = Array.from(rowsMap.values()).sort((a, b) => a.rawTimestamp - b.rawTimestamp);
+
+    // 3. Filter by Scope (Cycles)
+    let processedRows: any[] = [];
+
+    if (scope === 'cycle' && cycles.length > 0) {
+      cycles.forEach(cycle => {
+        const start = new Date(cycle.startAt).getTime();
+        const end = new Date(cycle.endAt).getTime();
+
+        // Get rows for this cycle
+        const cycleRows = rows.filter(r => r.rawTimestamp >= start && r.rawTimestamp <= end);
+
+        if (aggregation === 'all') {
+          // Add all rows but maybe mark them or just append?
+          // Usually for 'By Cycle' we might want a header row or just list them.
+          // For now, just append them.
+          processedRows.push(...cycleRows);
+        } else {
+          // Aggregation per cycle
+          // Create ONE synthetic row for this cycle
+          const statsRow = this.calculateAggregatedRow(cycleRows, activeSensors, statsSensors, aggregation, cycle.name);
+          if (statsRow) processedRows.push(statsRow);
+        }
+      });
+    } else {
+      // General Scope
+      if (aggregation === 'all') {
+        processedRows = rows;
+      } else {
+        // Aggregation over ENTIRE period
+        const statsRow = this.calculateAggregatedRow(rows, activeSensors, statsSensors, aggregation, 'Período Completo');
+        if (statsRow) processedRows.push(statsRow);
+      }
+    }
+
+    // 4. Calculate Row Stats (Min/Max/Avg for the row)
+    // Only for 'all' aggregation (listing readings), we calculate row stats (Row Min, Row Max)
+    // For 'min'/'max'/'avg' aggregation, the row itself IS the stat.
+    if (aggregation === 'all') {
+      processedRows = processedRows.map(row => {
+        const values: number[] = [];
+        statsSensors.forEach((s: any) => {
+          const val = row.values[s.id];
+          if (typeof val === 'number') values.push(val);
+        });
+
+        if (values.length > 0) {
+          row.rowMin = Math.min(...values);
+          row.rowMax = Math.max(...values);
+          row.rowAvg = values.reduce((a, b) => a + b, 0) / values.length;
+        }
+        return row;
+      });
+    }
+
+    // 5. Generate Columns
+    const columns: any[] = [];
+    // Time Column
+    columns.push({ header: 'Data/Hora', field: 'timestamp', formatter: aggregation === 'all' ? 'formatDateTime' : undefined, width: '15%' });
+
+    // Limits (Min only)
+    if (dataType === 'temperature') {
+      if (limits.min !== undefined) columns.push({ header: 'Lim. Min.', field: 'limitMin', width: '8%', default: limits.min });
+    }
+
+    // Sensor Columns (use unit-less formatters for cleaner table display)
+    activeSensors.forEach(sensor => {
+      columns.push({
+        header: sensor.name || sensor.serialNumber || `Sensor ${sensor.id}`,
+        field: `sensor_${sensor.id}`,
+        formatter: dataType === 'temperature' ? 'formatTemperatureNoUnit' : 'formatHumidityNoUnit',
+        width: 'auto'
+      });
+    });
+
+    // Limits (Max - after sensors)
+    if (dataType === 'temperature') {
+      if (limits.max !== undefined) columns.push({ header: 'Lim. Máx.', field: 'limitMax', width: '8%', default: limits.max });
+    }
+
+    // Row Stats Columns (use unit-less formatters)
+    columns.push({ header: 'Mín', field: 'rowMin', formatter: dataType === 'temperature' ? 'formatTemperatureNoUnit' : 'formatHumidityNoUnit', width: '8%' });
+    columns.push({ header: 'Méd', field: 'rowAvg', formatter: dataType === 'temperature' ? 'formatTemperatureNoUnit' : 'formatHumidityNoUnit', width: '8%' });
+    columns.push({ header: 'Máx', field: 'rowMax', formatter: dataType === 'temperature' ? 'formatTemperatureNoUnit' : 'formatHumidityNoUnit', width: '8%' });
+
+    // Add Limit defaults to rows if needed
+    if (dataType === 'temperature') {
+      processedRows.forEach(r => {
+        r.limitMin = limits.min;
+        r.limitMax = limits.max;
+      });
+    }
+
+    return { rows: processedRows, columns };
+  }
+
+  private calculateAggregatedRow(rows: any[], allSensors: any[], statsSensors: any[], type: string, label: string): any {
+    if (rows.length === 0) return null;
+
+    const result: any = { timestamp: label, values: {} };
+
+    // Calculate individual sensor columns (ALL sensors, including external)
+    allSensors.forEach((sensor: any) => {
+      const validValues = rows.map(r => r.values[sensor.id]).filter(v => typeof v === 'number');
+
+      if (validValues.length > 0) {
+        let val;
+        if (type === 'min') val = Math.min(...validValues);
+        else if (type === 'max') val = Math.max(...validValues);
+        else if (type === 'avg') val = validValues.reduce((a, b) => a + b, 0) / validValues.length;
+
+        result.values[sensor.id] = val;
+        result[`sensor_${sensor.id}`] = val;
+      }
+    });
+
+    // Calculate aggregated statistics (ONLY statsSensors, excluding external)
+    const validStatsValues = statsSensors.flatMap((s: any) => {
+      const v = result.values[s.id];
+      return typeof v === 'number' ? [v] : [];
+    });
+
+    if (validStatsValues.length > 0) {
+      result.rowMin = Math.min(...validStatsValues);
+      result.rowMax = Math.max(...validStatsValues);
+      result.rowAvg = validStatsValues.reduce((a: number, b: number) => a + b, 0) / validStatsValues.length;
+    }
+
+    return result;
+  }
 }
+
 
 export const editorTemplateRenderer = new EditorTemplateRenderer();

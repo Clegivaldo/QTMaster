@@ -465,12 +465,28 @@ export class PDFGenerationService {
           chartConfig: (validation as any).chartConfig,
           cycles: (validation as any).cycles || [],
         },
-        sensors: validation.equipment ? [{
-          id: validation.equipment.id,
-          name: validation.equipment.name || undefined,
-          serialNumber: validation.equipment.serialNumber,
-          model: validation.equipment.equipmentType.name || 'Unknown',
-        }] : [],
+        sensors: (() => {
+          const uniqueSensors = Array.from(new Map(validation.sensorData.map((sd: any) => [sd.sensor.id, sd.sensor])).values());
+          const metadata = (validation as any).chartConfig?.sensorMetadata || {};
+
+          // Map to enhanced objects
+          const enhancedSensors = uniqueSensors.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            serialNumber: s.serialNumber || '',
+            model: s.type?.name || 'Unknown',
+            isExternal: metadata[s.id]?.isExternal || false
+          }));
+
+          // Sort
+          enhancedSensors.sort((a, b) => {
+            const orderA = metadata[a.id]?.order ?? 999;
+            const orderB = metadata[b.id]?.order ?? 999;
+            return orderA - orderB;
+          });
+
+          return enhancedSensors;
+        })(),
         sensorData: activeSensorData.map((sd: any) => ({
           timestamp: new Date(sd.timestamp),
           temperature: sd.temperature,

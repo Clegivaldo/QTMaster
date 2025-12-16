@@ -33,7 +33,12 @@ export const TableBuilder: React.FC<TableBuilderProps> = ({
     }
 
     const config = {
-        dataSource: rawContent.dataSource || '',
+        dataSource: rawContent.dataSource || 'sensorData',
+        dataType: rawContent.dataType || 'temperature',
+        dataScope: rawContent.dataScope || 'general',
+        aggregation: rawContent.aggregation || 'all',
+        dynamicColumns: rawContent.dynamicColumns !== false,
+        filterExternalSensors: rawContent.filterExternalSensors === true,
         columns: columnsArray,
         showHeader: rawContent.showHeader !== false,
         alternatingRowColors: rawContent.alternatingRowColors !== false,
@@ -41,7 +46,7 @@ export const TableBuilder: React.FC<TableBuilderProps> = ({
         pagination: rawContent.pagination
     };
 
-    const [activeTab, setActiveTab] = useState<'columns' | 'data' | 'style'>('columns');
+    const [activeTab, setActiveTab] = useState<'columns' | 'data' | 'style'>('data');
 
     const handleUpdate = (updates: any) => {
         onUpdate({
@@ -200,13 +205,77 @@ export const TableBuilder: React.FC<TableBuilderProps> = ({
                         <select
                             value={config.dataSource || ''}
                             onChange={(e) => handleUpdate({ dataSource: e.target.value })}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm mb-2"
                         >
                             <option value="">Selecione uma fonte...</option>
                             <option value="sensorData">Dados dos Sensores</option>
                             <option value="validation.cycles">Ciclos da Validação</option>
                             <option value="custom">Dados Personalizados</option>
                         </select>
+
+                        {(config.dataSource === 'sensorData' || config.dataSource === '{{sensorData}}') && (
+                            <div className="space-y-3 mt-3 pl-2 border-l-2 border-gray-100">
+                                <div>
+                                    <label className="block text-[10px] text-gray-500 mb-1">Tipo de Dados</label>
+                                    <select
+                                        value={config.dataType}
+                                        onChange={(e) => handleUpdate({ dataType: e.target.value })}
+                                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    >
+                                        <option value="temperature">Temperatura</option>
+                                        <option value="humidity">Umidade</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] text-gray-500 mb-1">Escopo</label>
+                                    <select
+                                        value={config.dataScope}
+                                        onChange={(e) => handleUpdate({ dataScope: e.target.value })}
+                                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    >
+                                        <option value="general">Geral (Todas as Leituras)</option>
+                                        <option value="cycle">Por Ciclo</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] text-gray-500 mb-1">Agregação</label>
+                                    <select
+                                        value={config.aggregation}
+                                        onChange={(e) => handleUpdate({ aggregation: e.target.value })}
+                                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    >
+                                        <option value="all">Listar Tudo</option>
+                                        <option value="min">Apenas Mínimos</option>
+                                        <option value="max">Apenas Máximos</option>
+                                        <option value="avg">Apenas Médias</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2 pt-1">
+                                    <label className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={config.dynamicColumns}
+                                            onChange={(e) => handleUpdate({ dynamicColumns: e.target.checked })}
+                                            className="h-3 w-3 text-blue-600 border-gray-300 rounded"
+                                        />
+                                        <span className="ml-2 text-xs text-gray-700">Gerar Colunas Automaticamente</span>
+                                    </label>
+
+                                    <label className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={config.filterExternalSensors}
+                                            onChange={(e) => handleUpdate({ filterExternalSensors: e.target.checked })}
+                                            className="h-3 w-3 text-blue-600 border-gray-300 rounded"
+                                        />
+                                        <span className="ml-2 text-xs text-gray-700">Ignorar Sensores Externos (Médias)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mb-4">

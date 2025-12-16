@@ -77,6 +77,8 @@ const ValidationCharts: React.FC = () => {
   const [showSettings, setShowSettings] = useState(true);
   const [showCycleBands, setShowCycleBands] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sortedSensors, setSortedSensors] = useState<string[]>([]);
+  const [sensorMetadata, setSensorMetadata] = useState<Record<string, { isExternal?: boolean, order?: number }>>({});
   const [alignmentBucketSec, setAlignmentBucketSec] = useState<number>(() => {
     const saved = localStorage.getItem('validationToleranceSec');
     return saved ? Math.max(1, Number(saved)) : 60;
@@ -129,12 +131,24 @@ const ValidationCharts: React.FC = () => {
       // Inicializar configurações (Defaults vs Salvos)
       if (validationData.sensorData && validationData.sensorData.length > 0) {
 
-        // 1. Sensores Visíveis
+        // 1. Sensores Visíveis e Metadata
         const allSensorIds = [...new Set(validationData.sensorData.map((d: SensorReading) => d.sensor.id))] as string[];
         const hiddenSet = new Set(validationData.hiddenSensorIds || []);
         // Se houver hiddenSensorIds salvo, usa-o. Se não, todos visíveis.
         const initialVisible = new Set(allSensorIds.filter(id => !hiddenSet.has(id)));
         setVisibleSensors(initialVisible);
+
+        // Metadata de sensores (ordem, external)
+        const savedMetadata = validationData.chartConfig?.sensorMetadata || {};
+        setSensorMetadata(savedMetadata);
+
+        // Ordenar sensores baseado no metadata
+        const initialSorted = [...allSensorIds].sort((a, b) => {
+          const orderA = savedMetadata[a]?.order ?? 999;
+          const orderB = savedMetadata[b]?.order ?? 999;
+          return orderA - orderB;
+        });
+        setSortedSensors(initialSorted);
 
         // 2. Data Range Default
         const timestamps = validationData.sensorData.map((d: SensorReading) => parseToDate(d.timestamp).getTime());
@@ -291,6 +305,34 @@ const ValidationCharts: React.FC = () => {
     const sensors = Array.from(sensorMap.values());
     console.log('getSensorInfo() returning', sensors.length, 'sensors:', sensors.map(s => s.serialNumber).join(', '));
     return sensors;
+  };
+
+
+  const moveSensor = (sensorId: string, direction: 'up' | 'down') => {
+    const idx = sortedSensors.indexOf(sensorId);
+    if (idx === -1) return;
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === sortedSensors.length - 1) return;
+
+    const newOrder = [...sortedSensors];
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    [newOrder[idx], newOrder[swapIdx]] = [newOrder[swapIdx], newOrder[idx]];
+    setSortedSensors(newOrder);
+
+    // Update metadata orders
+    const newMetadata = { ...sensorMetadata };
+    newOrder.forEach((id, index) => {
+      if (!newMetadata[id]) newMetadata[id] = {};
+      newMetadata[id].order = index;
+    });
+    setSensorMetadata(newMetadata);
+  };
+
+  const toggleExternal = (sensorId: string) => {
+    const newMetadata = { ...sensorMetadata };
+    if (!newMetadata[sensorId]) newMetadata[sensorId] = {};
+    newMetadata[sensorId].isExternal = !newMetadata[sensorId].isExternal;
+    setSensorMetadata(newMetadata);
   };
 
   const handleExport = () => {
@@ -579,7 +621,7 @@ const ValidationCharts: React.FC = () => {
                     setVisibleSensors(new Set(allSensorIds));
 
                     // Salvar o reset
-                      try {
+                    try {
                       setSaving(true);
 
                       // Salvar sensores (enviando TODOS selecionados = nenhum oculto)
@@ -621,13 +663,14 @@ const ValidationCharts: React.FC = () => {
                         maxHumidity: data.maxHumidity,
                         chartConfig: {
                           yAxisConfig,
-                          dateRange
+                          dateRange,
+                          sensorMetadata // Persiste metadata de sensores
                         }
                       });
                       // Persistir seleção de sensores visíveis
                       const selectedSensorIds = Array.from(visibleSensors);
                       await apiService.api.put(`/validations/${id}/sensors/selection`, { selectedSensorIds });
-                      alert('Critérios e seleção de sensores salvos.');
+                      alert('Critérios, seleção e configuração de sensores salvos.');
                     } catch (err) {
                       console.error('Erro ao salvar critérios/seleção:', err);
                       alert('Erro ao salvar.');
@@ -647,19 +690,59 @@ const ValidationCharts: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Sensores Visíveis
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {sensors.map((sensor, idx) => (
-                  <label key={sensor.id} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={visibleSensors.has(sensor.id)}
-                      onChange={() => toggleSensor(sensor.id)}
-                      className="rounded border-gray-300"
-                      style={{ accentColor: COLORS[idx % COLORS.length] }}
-                    />
-                    <span className="text-sm">{sensor.serialNumber}</span>
-                  </label>
-                ))}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-2">
+                {sortedSensors.map((sensorId) => {
+                  const sensor = sensors.find(s => s.id === sensorId);
+                  if (!sensor) return null;
+                  const isExternal = sensorMetadata[sensorId]?.isExternal;
+                  const idx = sortedSensors.indexOf(sensorId);
+
+                  return (
+                    <div key={sensor.id} className={`flex items-center justify-between p-2 border rounded-md ${isExternal ? 'bg-orange-50 border-orange-200' : 'bg-white border-gray-200'}`}>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={visibleSensors.has(sensor.id)}
+                          onChange={() => toggleSensor(sensor.id)}
+                          className="rounded border-gray-300"
+                          style={{ accentColor: COLORS[idx % COLORS.length] }}
+                        />
+                        <span className="text-sm font-medium">{sensor.serialNumber}</span>
+                        <span className="text-xs text-gray-500 truncate max-w-[100px]" title={sensor.name}>{sensor.name}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!isExternal}
+                            onChange={() => toggleExternal(sensor.id)}
+                            className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                          />
+                          <span className="text-[10px] text-gray-500 uppercase font-bold">EXT</span>
+                        </label>
+
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            onClick={() => moveSensor(sensor.id, 'up')}
+                            disabled={idx === 0}
+                            className="p-0.5 hover:bg-gray-100 rounded disabled:opacity-30"
+                          >
+                            <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px] border-b-gray-600"></div>
+                          </button>
+                          <button
+                            onClick={() => moveSensor(sensor.id, 'down')}
+                            disabled={idx === sortedSensors.length - 1}
+                            className="p-0.5 hover:bg-gray-100 rounded disabled:opacity-30"
+                          >
+                            <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[6px] border-t-gray-600"></div>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -920,7 +1003,7 @@ const ValidationCharts: React.FC = () => {
             </ResponsiveContainer>
           </div>
         )}
-      </div>
+      </div >
     </>
   );
 };
