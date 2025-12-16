@@ -392,6 +392,11 @@ export class PDFGenerationService {
               timestamp: 'asc',
             },
           },
+          cycles: {
+            orderBy: {
+              startAt: 'asc'
+            }
+          },
         },
       });
 
@@ -455,7 +460,10 @@ export class PDFGenerationService {
           maxTemperature: (validation as any).maxTemperature,
           temperatureStats,
           humidityStats,
+          temperatureStats,
+          humidityStats,
           chartConfig: (validation as any).chartConfig,
+          cycles: (validation as any).cycles || [],
         },
         sensors: validation.equipment ? [{
           id: validation.equipment.id,

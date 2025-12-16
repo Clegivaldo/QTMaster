@@ -54,8 +54,8 @@ export const ChartElementConfig: React.FC<ChartElementConfigProps> = ({
                                 key={chart.type}
                                 onClick={() => handleChange('chartType', chart.type)}
                                 className={`flex flex-col items-center justify-center p-2 border rounded transition-colors ${properties.chartType === chart.type
-                                        ? 'bg-blue-50 border-blue-500 text-blue-700'
-                                        : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'
+                                    ? 'bg-blue-50 border-blue-500 text-blue-700'
+                                    : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-600'
                                     }`}
                             >
                                 <chart.icon className="h-5 w-5 mb-1" />
@@ -102,6 +102,28 @@ export const ChartElementConfig: React.FC<ChartElementConfigProps> = ({
                 {/* Campos (Eixos) */}
                 {(properties.dataSource === '{{sensorData}}' || properties.dataSource === '{{validation.cycles}}') && (
                     <div className="space-y-3">
+                        {properties.dataSource === '{{validation.cycles}}' && (
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Tipo de Ciclo</label>
+                                <select
+                                    value={properties.cycleType || ''}
+                                    onChange={(e) => handleChange('cycleType', e.target.value)}
+                                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                >
+                                    <option value="">Selecione o Ciclo...</option>
+                                    {[
+                                        { value: 'NORMAL', label: 'Normal' },
+                                        { value: 'CHEIO', label: 'Cheio' },
+                                        { value: 'VAZIO', label: 'Vazio' },
+                                        { value: 'FALTA_ENERGIA', label: 'Falta de Energia' },
+                                        { value: 'PORTA_ABERTA', label: 'Porta Aberta' }
+                                    ].map(type => (
+                                        <option key={type.value} value={type.value}>{type.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
                         <div>
                             <label className="block text-xs text-gray-500 mb-1">Eixo X (Categoria)</label>
                             <select

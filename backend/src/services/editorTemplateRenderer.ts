@@ -25,6 +25,13 @@ interface TemplateData {
       avg: number;
     };
     chartConfig?: any;
+    cycles?: Array<{
+      id: string;
+      name: string;
+      cycleType: string;
+      startAt: Date | string;
+      endAt: Date | string;
+    }>;
   };
   sensors: Array<{
     id: string;
@@ -428,8 +435,35 @@ export class EditorTemplateRenderer {
       // Extract annotations if present (added by prepareSensorDataChartData)
       const annotations = (chartData as any).annotations;
 
-      // Prepare options with annotations
+      // Prepare options with annotations and other config
       const options = chartConfig.options || {};
+
+      // Map visual properties from root to options if not already set
+      if (options.plugins === undefined) options.plugins = {};
+      if (options.plugins.legend === undefined) options.plugins.legend = {};
+      if (options.scales === undefined) options.scales = {};
+
+      // Legend
+      if (chartConfig.showLegend !== undefined) {
+        options.plugins.legend.display = chartConfig.showLegend;
+      }
+
+      // Grid lines
+      if (chartConfig.showGrid !== undefined) {
+        if (!options.scales.x) options.scales.x = {};
+        if (!options.scales.y) options.scales.y = {};
+        if (!options.scales.x.grid) options.scales.x.grid = {};
+        if (!options.scales.y.grid) options.scales.y.grid = {};
+
+        options.scales.x.grid.display = chartConfig.showGrid;
+        options.scales.y.grid.display = chartConfig.showGrid;
+      }
+
+      // Data Labels (requires plugin, assuming backend supports it or ignored if not)
+      if (chartConfig.showLabels !== undefined && options.plugins) {
+        if (!options.plugins.datalabels) options.plugins.datalabels = {};
+        options.plugins.datalabels.display = chartConfig.showLabels;
+      }
       if (annotations) {
         if (!options.plugins) options.plugins = {};
         if (!options.plugins.annotation) options.plugins.annotation = {};
@@ -458,7 +492,12 @@ export class EditorTemplateRenderer {
       const validationChartConfig = (data.validation as any).chartConfig;
       if (validationChartConfig?.yAxisConfig) {
         const dataSource = chartConfig.dataSource || {};
-        const field = dataSource.field || 'temperature';
+        // Detect field from nested dataSource OR root yAxis property (frontend compatibility)
+        let field = dataSource.field;
+        if (!field && typeof chartConfig.yAxis === 'string') {
+          field = chartConfig.yAxis;
+        }
+        if (!field) field = 'temperature';
         const { yAxisConfig } = validationChartConfig;
 
         if (!options.scales) options.scales = {};
@@ -560,6 +599,24 @@ export class EditorTemplateRenderer {
     // The chart in a validation report should show the real sensor readings
     if (data.sensorData && data.sensorData.length > 0) {
       logger.debug('Using sensor data for chart (sensorData available)', { count: data.sensorData.length });
+
+      // Inject field override if present in root config
+      if (typeof dataSource === 'object') {
+        if (!dataSource.field && chartConfig.yAxis) {
+          dataSource._fieldOverride = chartConfig.yAxis;
+        }
+        if (chartConfig.cycleType) {
+          dataSource._cycleType = chartConfig.cycleType;
+        }
+      } else if (typeof dataSource === 'string') {
+        // If dataSource is string (e.g. {{validation.cycles}}) and we have config
+        const newSource: any = { type: dataSource };
+        if (chartConfig.yAxis) newSource._fieldOverride = chartConfig.yAxis;
+        if (chartConfig.cycleType) newSource._cycleType = chartConfig.cycleType;
+
+        return this.prepareSensorDataChartData(newSource, data);
+      }
+
       return this.prepareSensorDataChartData(dataSource, data);
     }
 
@@ -594,7 +651,19 @@ export class EditorTemplateRenderer {
    */
   private prepareSensorDataChartData(dataSource: any, data: TemplateData): any {
     // Normalize field names so templates using Portuguese or short names still work
-    const rawField = (dataSource.field || 'temperature') as string;
+    // Check if we have a parent config context (hacky, but needed if dataSource is just string)
+    // Ideally we pass context or fixed config.
+    // For now, assume 'temperature' unless we can find indicators in the dataSource object itself 
+    // or if the caller passed a enriched dataSource.
+
+    // In this flow, `dataSource` passed here is the raw object from config. 
+    // We need to look up if there's a wider context or if we should check yAxis here?
+    // Actually, `prepareSensorDataChartData` only sees `dataSource` arg.
+    // Let's modify the caller `prepareChartDataFromSource` to pass the valid context.
+
+    let rawField = (dataSource.field || 'temperature') as string;
+    if (dataSource._fieldOverride) rawField = dataSource._fieldOverride;
+
     const fieldKey = String(rawField).toLowerCase();
     const tempKeys = ['temperature', 'temp', 'temperatura', 't'];
     const humKeys = ['humidity', 'hum', 'umidade', 'u'];
@@ -622,9 +691,24 @@ export class EditorTemplateRenderer {
 
     // Filter by date range if configured in validation chartConfig
     const chartConfig = data.validation?.chartConfig;
-    if (chartConfig?.dateRange?.start && chartConfig?.dateRange?.end) {
-      const startTime = new Date(chartConfig.dateRange.start).getTime();
-      const endTime = new Date(chartConfig.dateRange.end).getTime();
+    let rangeStart = chartConfig?.dateRange?.start ? new Date(chartConfig.dateRange.start).getTime() : null;
+    let rangeEnd = chartConfig?.dateRange?.end ? new Date(chartConfig.dateRange.end).toISOString() : null; // Keep end as ISO for now or similar? using timestamps below
+
+    // Filter by Cycle if configured
+    if (dataSource._cycleType && data.validation.cycles) {
+      const cycleType = dataSource._cycleType;
+      // Search for a cycle of this type
+      const cycle = data.validation.cycles.find((c: any) => c.cycleType === cycleType);
+      if (cycle) {
+        rangeStart = new Date(cycle.startAt).getTime();
+        rangeEnd = new Date(cycle.endAt).getTime();
+        logger.debug('Filtering by cycle', { cycleType, start: cycle.startAt, end: cycle.endAt });
+      }
+    }
+
+    if (rangeStart && rangeEnd) {
+      const startTime = rangeStart;
+      const endTime = typeof rangeEnd === 'number' ? rangeEnd : new Date(rangeEnd).getTime();
 
       if (!isNaN(startTime) && !isNaN(endTime)) {
         filteredData = filteredData.filter((d: any) => {
@@ -840,10 +924,22 @@ export class EditorTemplateRenderer {
     const tableConfig = tableElement.content || {};
     // Ensure columns is an array. If not (e.g. from bad state or legacy), use defaults.
     const rawColumns = tableConfig.columns;
-    const columns = Array.isArray(rawColumns) ? rawColumns : [
-      { header: 'Column 1', field: 'col1' },
-      { header: 'Column 2', field: 'col2' }
-    ];
+    let columns = Array.isArray(rawColumns) ? rawColumns : [];
+
+    // If columns empty and using sensorData, auto-populate
+    if (columns.length === 0 && (dataSource === 'sensorData' || dataSource === '{{sensorData}}')) {
+      columns = [
+        { header: 'Data/Hora', field: 'timestamp', formatter: 'formatDateTime', width: '20%' },
+        { header: 'Sensor', field: 'sensorId', width: '20%' },
+        { header: 'Temp (°C)', field: 'temperature', formatter: 'formatTemperature', width: '20%' },
+        { header: 'Umid (%)', field: 'humidity', formatter: 'formatHumidity', width: '20%' }
+      ];
+    } else if (columns.length === 0) {
+      columns = [
+        { header: 'Column 1', field: 'col1' },
+        { header: 'Column 2', field: 'col2' }
+      ];
+    }
 
     // tableConfig.styles is an object describing table appearance
     const tableStylesObj: any = tableConfig.styles || {};
